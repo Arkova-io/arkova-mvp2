@@ -114,6 +114,12 @@ function checkFile(filePath: string): Violation[] {
       continue;
     }
 
+    // Skip lines that are clearly CSS class names (className=)
+    // The word "block" in Tailwind CSS means display:block, not blockchain
+    if (line.includes('className=')) {
+      continue;
+    }
+
     // Check for forbidden terms in string literals
     // Look for strings in JSX text content and string literals
     for (const term of FORBIDDEN_TERMS) {

@@ -12,7 +12,12 @@
       "Bash(docker info:*)",
       "Bash(supabase status:*)",
       "Bash(printf:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run gen:types:*)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

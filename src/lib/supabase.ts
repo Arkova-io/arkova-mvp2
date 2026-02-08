@@ -1,0 +1,26 @@
+/**
+ * Supabase Client
+ *
+ * Client-side Supabase client for authentication and data access.
+ * Uses anonymous key only - service role key is NEVER exposed to client.
+ */
+
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database.types';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!supabaseAnonKey) {
+  console.warn('VITE_SUPABASE_ANON_KEY not set. Authentication will not work.');
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
+
+export type { Database };

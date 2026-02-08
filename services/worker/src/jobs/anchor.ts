@@ -1,0 +1,113 @@
+/**
+ * Anchor Processing Job
+ *
+ * Processes PENDING anchors and submits them to the chain.
+ */
+
+import { db } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
+import { chainClient } from '../chain/client.js';
+import { getNetworkDisplayName, config } from '../config.js';
+
+/**
+ * Process a single anchor
+ */
+export async function processAnchor(anchorId: string): Promise<boolean> {
+  logger.info({ anchorId }, 'Processing anchor');
+
+  // Fetch anchor with PENDING status
+  const { data: anchor, error: fetchError } = await db
+    .from('anchors')
+    .select('*')
+    .eq('id', anchorId)
+    .eq('status', 'PENDING')
+    .single();
+
+  if (fetchError || !anchor) {
+    logger.warn({ anchorId, error: fetchError }, 'Anchor not found or not pending');
+    return false;
+  }
+
+  try {
+    // Submit fingerprint to chain
+    const receipt = await chainClient.submitFingerprint({
+      fingerprint: anchor.fingerprint,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Update anchor with chain data
+    const { error: updateError } = await db
+      .from('anchors')
+      .update({
+        status: 'SECURED',
+        chain_tx_id: receipt.receiptId,
+        chain_block_height: receipt.blockHeight,
+        chain_timestamp: receipt.blockTimestamp,
+      })
+      .eq('id', anchorId);
+
+    if (updateError) {
+      logger.error({ anchorId, error: updateError }, 'Failed to update anchor');
+      throw updateError;
+    }
+
+    // Log audit event
+    await db.from('audit_events').insert({
+      event_type: 'anchor.secured',
+      event_category: 'ANCHOR',
+      actor_id: anchor.user_id,
+      target_type: 'anchor',
+      target_id: anchorId,
+      org_id: anchor.org_id,
+      details: `Secured on ${getNetworkDisplayName(config.chainNetwork)}: ${receipt.receiptId}`,
+    });
+
+    logger.info({ anchorId, receiptId: receipt.receiptId }, 'Anchor secured successfully');
+    return true;
+  } catch (error) {
+    logger.error({ anchorId, error }, 'Failed to process anchor');
+    return false;
+  }
+}
+
+/**
+ * Process all pending anchors
+ */
+export async function processPendingAnchors(): Promise<{ processed: number; failed: number }> {
+  logger.info('Starting pending anchor processing');
+
+  // Fetch all PENDING anchors
+  const { data: anchors, error } = await db
+    .from('anchors')
+    .select('id')
+    .eq('status', 'PENDING')
+    .is('deleted_at', null)
+    .limit(100); // Process in batches
+
+  if (error) {
+    logger.error({ error }, 'Failed to fetch pending anchors');
+    return { processed: 0, failed: 0 };
+  }
+
+  if (!anchors || anchors.length === 0) {
+    logger.debug('No pending anchors to process');
+    return { processed: 0, failed: 0 };
+  }
+
+  logger.info({ count: anchors.length }, 'Found pending anchors');
+
+  let processed = 0;
+  let failed = 0;
+
+  for (const anchor of anchors) {
+    const success = await processAnchor(anchor.id);
+    if (success) {
+      processed++;
+    } else {
+      failed++;
+    }
+  }
+
+  logger.info({ processed, failed }, 'Finished processing pending anchors');
+  return { processed, failed };
+}
