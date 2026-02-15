@@ -5,145 +5,174 @@
  * Uses approved terminology per Constitution.
  */
 
-import { useAuth } from '../hooks/useAuth';
-import { useProfile } from '../hooks/useProfile';
+import { useState, useCallback } from 'react';
+import { FileText, CheckCircle, Clock, Plus, Shield } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { AppShell } from '@/components/layout';
+import { StatCard, EmptyState } from '@/components/dashboard';
+import { SecureDocumentDialog } from '@/components/anchor';
+import { RecordsList, type Record } from '@/components/records';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface DashboardPageProps {
   onSignOut: () => void;
 }
 
+// Demo records can be used for UI testing by uncommenting below
+// const _demoRecords: Record[] = [
+//   { id: '1', filename: 'contract.pdf', fingerprint: 'a1b2...', status: 'SECURED', ... }
+// ];
+
 export function DashboardPage({ onSignOut }: DashboardPageProps) {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const [secureDialogOpen, setSecureDialogOpen] = useState(false);
+  const [records, setRecords] = useState<Record[]>([]);
 
   const handleSignOut = async () => {
     await signOut();
     onSignOut();
   };
 
+  const handleSecureSuccess = useCallback(() => {
+    // In real app, this would refresh records from API
+    // For demo, we add a mock record
+    const newRecord: Record = {
+      id: Date.now().toString(),
+      filename: 'new-document.pdf',
+      fingerprint: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      fileSize: 100000,
+    };
+    setRecords(prev => [newRecord, ...prev]);
+  }, []);
+
+  const handleViewRecord = useCallback((record: Record) => {
+    // TODO: Navigate to record detail view
+    console.log('View record:', record.id);
+  }, []);
+
+  const handleDownloadProof = useCallback((record: Record) => {
+    // TODO: Download proof package
+    console.log('Download proof:', record.id);
+  }, []);
+
+  const handleRevokeRecord = useCallback((record: Record) => {
+    // TODO: Open revoke confirmation dialog
+    console.log('Revoke record:', record.id);
+  }, []);
+
+  // Calculate stats from records
+  const stats = {
+    total: records.length,
+    secured: records.filter(r => r.status === 'SECURED').length,
+    pending: records.filter(r => r.status === 'PENDING').length,
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Arkova</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              {profileLoading ? 'Loading...' : profile?.full_name || user?.email}
-            </span>
-            <button
-              onClick={handleSignOut}
-              className="text-sm text-red-600 hover:text-red-800"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
+    <AppShell
+      user={user}
+      profile={profile}
+      profileLoading={profileLoading}
+      onSignOut={handleSignOut}
+    >
+      {/* Welcome section */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Manage and verify your secured documents
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-blue-100 rounded-md flex items-center justify-center">
-                    <span className="text-blue-600 text-xl">📄</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Total Records
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">0</dd>
-                  </dl>
-                </div>
+      {/* Stats grid */}
+      <div className="grid gap-4 md:grid-cols-3 mb-8">
+        <StatCard
+          label="Total Records"
+          value={stats.total}
+          icon={FileText}
+          variant="primary"
+          loading={profileLoading}
+        />
+        <StatCard
+          label="Secured"
+          value={stats.secured}
+          icon={CheckCircle}
+          variant="success"
+          loading={profileLoading}
+        />
+        <StatCard
+          label="Pending"
+          value={stats.pending}
+          icon={Clock}
+          variant="warning"
+          loading={profileLoading}
+        />
+      </div>
+
+      {/* Records section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-lg font-semibold">My Records</CardTitle>
+          <Button onClick={() => setSecureDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Secure Document
+          </Button>
+        </CardHeader>
+        <Separator />
+        <CardContent className="pt-0">
+          {records.length === 0 ? (
+            <EmptyState
+              title="No records yet"
+              description="Secure your first document to create a permanent, tamper-proof record. Your documents never leave your device."
+              actionLabel="Secure Document"
+              onAction={() => setSecureDialogOpen(true)}
+            />
+          ) : (
+            <RecordsList
+              records={records}
+              onViewRecord={handleViewRecord}
+              onDownloadProof={handleDownloadProof}
+              onRevokeRecord={handleRevokeRecord}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Account info */}
+      {profile && (
+        <Card className="mt-6">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Account Type</p>
+                <p className="text-sm text-muted-foreground">
+                  {profile.role === 'ORG_ADMIN' ? 'Organization Administrator' : 'Individual'}
+                </p>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-green-100 rounded-md flex items-center justify-center">
-                    <span className="text-green-600 text-xl">✓</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Secured
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">0</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-yellow-100 rounded-md flex items-center justify-center">
-                    <span className="text-yellow-600 text-xl">⏳</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Pending
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">0</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Records Section */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">
-                My Records
-              </h2>
-              <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Secure Document
-              </button>
-            </div>
-          </div>
-
-          <div className="px-4 py-12 text-center">
-            <div className="text-gray-500">
-              <p className="text-lg font-medium">No records yet</p>
-              <p className="mt-1 text-sm">
-                Secure your first document to create a permanent record.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Role Info */}
-        {profile && (
-          <div className="mt-6 bg-white shadow rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-500">Account Type</h3>
-            <p className="mt-1 text-lg font-semibold">
-              {profile.role === 'ORG_ADMIN' ? 'Organization Administrator' : 'Individual'}
-            </p>
             {profile.org_id && (
-              <p className="text-sm text-gray-500 mt-1">
-                Organization member
-              </p>
+              <Badge variant="secondary">Organization Member</Badge>
             )}
-          </div>
-        )}
-      </main>
-    </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Secure Document Dialog */}
+      <SecureDocumentDialog
+        open={secureDialogOpen}
+        onOpenChange={setSecureDialogOpen}
+        onSuccess={handleSecureSuccess}
+      />
+    </AppShell>
   );
 }

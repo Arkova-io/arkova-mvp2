@@ -6,7 +6,12 @@
  */
 
 import { useState, FormEvent } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { User, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SignUpFormProps {
   onSuccess?: () => void;
@@ -46,120 +51,105 @@ export function SignUpForm({ onSuccess, onLoginClick }: SignUpFormProps) {
   const displayError = validationError || error;
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          Create Your Account
-        </h2>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {displayError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{displayError}</AlertDescription>
+        </Alert>
+      )}
 
-        {displayError && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {displayError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="fullName"
-            >
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="John Doe"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="signupEmail"
-            >
-              Email
-            </label>
-            <input
-              id="signupEmail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="signupPassword"
-            >
-              Password
-            </label>
-            <input
-              id="signupPassword"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              required
-              minLength={8}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="mb-6">
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="confirmPassword"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
-          </div>
-        </form>
-
-        {onLoginClick && (
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Already have an account?{' '}
-              <button
-                onClick={onLoginClick}
-                className="text-blue-500 hover:text-blue-700 font-semibold"
-              >
-                Sign In
-              </button>
-            </p>
-          </div>
-        )}
+      <div className="space-y-2">
+        <Label htmlFor="fullName">Full name</Label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Enter your full name"
+            disabled={loading}
+            className="pl-10"
+          />
+        </div>
       </div>
-    </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signupEmail">Email address</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="signupEmail"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+            disabled={loading}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signupPassword">Password</Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="signupPassword"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Create a password (8+ characters)"
+            required
+            minLength={8}
+            disabled={loading}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm password</Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm your password"
+            required
+            disabled={loading}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full" size="lg" disabled={loading}>
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating account...
+          </>
+        ) : (
+          'Create account'
+        )}
+      </Button>
+
+      {onLoginClick && (
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={onLoginClick}
+            className="font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Sign in
+          </button>
+        </p>
+      )}
+    </form>
   );
 }

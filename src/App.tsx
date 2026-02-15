@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAuth } from './hooks/useAuth';
-import { LoginPage, SignUpPage, DashboardPage } from './pages';
+import { Shield, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { LoginPage, SignUpPage, DashboardPage } from '@/pages';
 
 type Page = 'login' | 'signup' | 'dashboard';
 
@@ -28,10 +29,15 @@ export function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+            <Shield className="h-8 w-8 text-primary" />
+          </div>
+          <div className="flex items-center space-x-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading Arkova...</span>
+          </div>
         </div>
       </div>
     );

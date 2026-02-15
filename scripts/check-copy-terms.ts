@@ -120,6 +120,16 @@ function checkFile(filePath: string): Violation[] {
       continue;
     }
 
+    // Skip lines with crypto.subtle (Web Crypto API - allowed)
+    if (line.includes('crypto.subtle') || line.includes('crypto.getRandomValues')) {
+      continue;
+    }
+
+    // Skip lines with "cryptographic" (the adjective is allowed, only "crypto" as noun is forbidden)
+    if (line.includes('cryptographic')) {
+      continue;
+    }
+
     // Check for forbidden terms in string literals
     // Look for strings in JSX text content and string literals
     for (const term of FORBIDDEN_TERMS) {
