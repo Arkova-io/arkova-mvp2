@@ -1,9 +1,12 @@
 /**
- * Ralph Anchoring Worker
+ * Arkova Anchoring Worker
  *
  * Dedicated Node.js service for backend processing.
  * Per Constitution: Next.js API routes are forbidden.
  */
+
+// Load environment variables FIRST before any other imports
+import 'dotenv/config';
 
 import express from 'express';
 import cron from 'node-cron';
