@@ -45,6 +45,7 @@ const EXCLUDE_PATTERNS = [
   '**/*.test.tsx',
   '**/node_modules/**',
   '**/dist/**',
+  'src/components/ui/**', // UI primitives don't contain user-facing copy
 ];
 
 interface Violation {

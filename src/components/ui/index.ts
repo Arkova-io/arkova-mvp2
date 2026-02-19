@@ -68,3 +68,14 @@ export {
   AlertDialogAction,
   AlertDialogCancel,
 } from './alert-dialog';
+export { Switch } from './switch';
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+} from './select';

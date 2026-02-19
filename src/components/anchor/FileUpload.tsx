@@ -6,9 +6,10 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { Upload, FileText, X, Shield, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Shield, Loader2, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { generateFingerprint } from '@/lib/fileHasher';
 
 interface FileUploadProps {
   onFileSelect: (file: File, fingerprint: string) => void;
@@ -26,14 +27,6 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const generateFingerprint = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-  };
 
   const processFile = useCallback(async (file: File) => {
     setError(null);
@@ -95,6 +88,12 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
 
   return (
     <div className="space-y-4">
+      {/* Privacy notice - file never leaves device */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+        <Lock className="h-3 w-3" />
+        <span>File never leaves your device</span>
+      </div>
+
       {/* Drop zone */}
       <div
         className={cn(
