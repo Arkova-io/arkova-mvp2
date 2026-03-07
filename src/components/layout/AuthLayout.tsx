@@ -73,7 +73,7 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
             Enterprise-grade security
           </span>
           <span className="hidden sm:inline">|</span>
-          <span className="hidden sm:block">SOC 2 Compliant</span>
+          <span className="hidden sm:block">Preparing for SOC 2</span>
         </div>
       </footer>
     </div>
