@@ -1,160 +1,567 @@
-# Arkova MVP - Development Guidelines
+# ARKOVA — Claude Code Engineering Directive
+## How to Use This Document
 
-## Quick Start Commands
+Paste the contents of this file into the **system prompt** of Claude Code, or save it as `CLAUDE.md` at the root of the `arkova-mvpcopy-main` repo. Claude Code will read it automatically before every task.
 
-```bash
-# Start Supabase locally
-supabase start
+This directive tells Claude Code exactly how to operate on the Arkova codebase: what to read first, how to scope each task, what "done" means, and what it must never do.
 
-# Reset database (runs migrations + seed)
-supabase db reset
+---
 
-# Generate TypeScript types from schema
-npm run gen:types
+## 0. READ THESE FILES FIRST — EVERY SESSION
 
-# Start development server
-npm run dev
+Before making any change, read these files in order:
 
-# Run all tests
-npm test
-
-# Run RLS integration tests
-npm run test:rls
-
-# Run linting
-npm run lint
-
-# Check UI copy for forbidden terms
-npm run lint:copy
-# or directly:
-npx tsx scripts/check-copy-terms.ts
+```
+1. CLAUDE.md                                          ← demo credentials, repo overview
+2. docs/confluence/01_architecture_overview.md        ← if it exists
+3. The relevant agents.md in any folder you are about to edit
+4. The story card from the Technical Backlog for the story you are implementing
 ```
 
-## Worker Service
+If a folder you are editing contains an `agents.md` file, read it before touching anything. If you learn something important during your work, update that folder's `agents.md`.
 
-The anchoring worker is a dedicated Node.js service located at `services/worker/`.
+---
 
-```bash
-# Navigate to worker
-cd services/worker
+## 1. THE CONSTITUTION — RULES THAT CANNOT BE BROKEN
 
-# Install dependencies
-npm install
+These rules apply to every task. If a story conflicts with any rule below, the rule wins.
 
-# Start worker in development
-npm run dev
+### Tech Stack (Locked)
+- React + TypeScript + Tailwind CSS + shadcn/ui + Lucide React
+- Supabase (Postgres + Auth)
+- Zod for all validation
+- Node.js worker in `services/worker/` for webhooks and anchoring
+- **Never use Next.js API routes for long-running jobs**
+- New AI libraries require explicit architecture review before introduction
 
-# Build for production
-npm run build
+### Schema-First (Non-Negotiable)
+- Define DB schema + enums + constraints + RLS **before** building any UI that depends on them
+- Once a table exists, **never use mock data or useState arrays** to represent that table's data
+- Every schema change requires: migration file + rollback script + regenerated `database.types.ts` + updated seed data + updated Confluence page
 
-# Run worker
-npm start
+### Terminology (UI Copy Only)
+**Banned terms — never appear in any user-visible string:**
+`Wallet` `Gas` `Hash` `Block` `Transaction` `Crypto` `Blockchain` `Bitcoin` `Testnet` `Mainnet` `UTXO` `Broadcast`
+
+**Required replacements:**
+| Banned | Use instead |
+|--------|-------------|
+| Wallet | Fee Account / Billing Account |
+| Transaction | Network Receipt / Anchor Receipt |
+| Hash | Fingerprint |
+| Block | (omit or use "Network Record") |
+| Testnet/Mainnet | Test Environment / Production Network |
+| Broadcast | Publish Anchor |
+
+All UI copy sourced from `src/lib/copy.ts`. CI must fail if banned terms appear in UI copy.
+
+### Security (Mandatory)
+- RLS on every table, always. `FORCE ROW LEVEL SECURITY` on all tables.
+- No direct writes to privileged fields from client code
+- SECURITY DEFINER functions must include `SET search_path = public`
+- Never expose `supabase.auth.admin` or service role key to the browser
+- Never hardcode secrets, API keys, or private keys anywhere
+- Treasury/signing keys: server-side only, loaded from env vars, never logged
+- Stripe webhook handlers must call `stripe.webhooks.constructEvent()` — no exceptions
+
+### Testing
+- RLS tests must use `src/tests/rls/helpers.ts` `withUser()` / `withAuth()` utilities — no ad-hoc auth mocking
+- Tests must not call real Stripe or Bitcoin APIs — use `IPaymentProvider` and `IAnchorPublisher` interfaces
+- Every task must keep the repo green: `typecheck`, `lint`, `tests` all pass before the task is complete
+
+### Timestamps
+- All server-side timestamps: Postgres `timestamptz`, treated as UTC
+- Bitcoin timestamps displayed as **"Network Observed Time"** — never "Confirmed At" or "Finalized"
+- Proof packages must state: what is measured, what is asserted, what is NOT asserted
+
+### Client-Side Processing Boundary
+- Arkova must not process document contents server-side
+- File fingerprinting (`generateFingerprint`) runs in the browser only — never server-side
+- `generateFingerprint` must never be imported or called in `services/worker/`
+
+---
+
+## 2. HOW TO RECEIVE A TASK
+
+Every task will be given to you in one of these formats:
+
+**Format A — Story ID reference:**
+> "Implement P2-TS-03"
+
+When you receive a story ID, do the following before writing any code:
+1. Locate the story card in the Technical Backlog (`Arkova_Technical_Backlog_P1_P7_March2026.docx`)
+2. Read the full card: User Story, Acceptance Criteria, Dependencies, Tech Notes, DoD
+3. Check the Audit Note — it tells you what already exists and what the specific gap is
+4. Verify all dependencies are met before starting
+5. Confirm the file path listed in the story card matches what exists in the repo
+6. **State your plan** before writing any code: what you will change, what you will not touch, and what tests you will run
+
+**Format B — Direct instruction:**
+> "Fix the Stripe webhook signature verification"
+
+When you receive a direct instruction:
+1. Map it to the closest story ID in the Technical Backlog
+2. Proceed as Format A from step 2
+
+**Format C — Brand/UI task:**
+> "Apply Arkova brand tokens to the app"
+
+See Section 5 (Brand Application) for the exact procedure.
+
+---
+
+## 3. TASK EXECUTION RULES
+
+### Before writing code
+- [ ] Read the story card fully
+- [ ] Confirm dependencies are met
+- [ ] Read `agents.md` in any folder you will touch
+- [ ] State your plan (files to change, files to leave alone, tests to run)
+
+### While writing code
+- [ ] One story at a time — do not fix unrelated things you notice
+- [ ] If you find a bug outside your story scope, note it in `agents.md` and stop
+- [ ] Every new Supabase table needs: migration + rollback + RLS + `database.types.ts` regenerated + seed update
+- [ ] Every new hook follows the pattern of existing hooks (`useAuth.ts`, `useProfile.ts`)
+- [ ] Every new component goes in `src/components/` — not inline in pages
+- [ ] Validators go in `src/lib/validators.ts` — not defined inline in components
+- [ ] All user-visible strings go through `src/lib/copy.ts` — not hardcoded in JSX
+
+### After writing code
+- [ ] Run: `npx tsc --noEmit` — zero type errors
+- [ ] Run: `npm run lint` — zero lint errors
+- [ ] Run: `npm test` — all tests pass
+- [ ] Run: `npm run lint:copy` (if it exists) — no banned terminology in UI copy
+- [ ] Run Playwright E2E suite — all specs pass
+- [ ] Update seed data if schema changed — confirm click-through still works
+- [ ] Update the relevant `docs/confluence/*.md` page
+- [ ] Update `agents.md` in any folder you modified
+
+### Definition of Done (a story is NOT done until all of these are true)
+- [ ] All Acceptance Criteria in the story card are met
+- [ ] Unit tests written and passing
+- [ ] E2E / integration tests passing
+- [ ] `typecheck`, `lint`, `tests` all green
+- [ ] `lint:copy` passes (no banned terms)
+- [ ] Code reviewed (self-review: read your own diff before declaring done)
+- [ ] Seed data click-through still works
+- [ ] Confluence documentation updated
+- [ ] `agents.md` updated in modified folders
+- [ ] No regressions in existing passing tests
+
+---
+
+## 4. STORY EXECUTION ORDER
+
+Work stories in this order. Do not start a story until all of its dependencies are complete.
+
+### Phase 0 — Unblocking (Do These First)
+
+These three tasks unblock everything else. Nothing else is worth doing until they are done.
+
+| Order | Story ID | Task | Why It Unblocks |
+|-------|----------|------|-----------------|
+| 1 | **P2-TS-03** | Install react-router-dom, refactor App.tsx from useState to BrowserRouter + Routes, define all named routes | ~15 components are invisible without this |
+| 2 | **Brand** | Apply Arkova brand tokens to `src/index.css` and `tailwind.config.ts` | Single-file change, makes every screen correct immediately |
+| 3 | **P1-TS-05** | Add `validateAnchorCreate()` call in `ConfirmAnchorModal.tsx` before the Supabase insert | 1-point fix, closes a security gap |
+
+### Phase 1 — Complete PARTIAL Stories (P1–P3)
+
+| Story ID | Task | Current Gap |
+|----------|------|-------------|
+| P2-TS-04 | Wire AuthGuard + RouteGuard into router | Guards exist but App.tsx doesn't use them |
+| P3-TS-01 | Replace useState mock arrays in DashboardPage + VaultDashboard with real Supabase queries | Mock data, Math.random() fingerprints, console.log stubs |
+| P3-TS-02 | Add `is_public_profile` migration, RLS policy, wire toggle to DB | Cosmetic toggle only |
+| P3-TS-03 | Replace `href="#"` in Sidebar.tsx with `<Link>` components + active route highlighting | Dead links, no navigation |
+| P4-TS-03 | Wire AssetDetailView to `/records/:id` route + real Supabase query | No route, generic chain proof data |
+
+### Phase 2 — New Schema Work (P4-E2, highest unstarted priority)
+
+| Story ID | Task | Dependency |
+|----------|------|------------|
+| P4-TS-04 | `credential_type` column migration | None |
+| P4-TS-05 | `metadata` JSONB column + editability trigger | P4-TS-04 |
+| P4-TS-06 | `parent_anchor_id` + `version_number` lineage columns | P4-TS-05 |
+
+### Phase 3 — P5 Org Admin
+
+| Story ID | Task |
+|----------|------|
+| P5-TS-01 | OrgRegistryTable: date range filter, bulk selection, fingerprint search |
+| P5-TS-02 | RevokeDialog: add reason field + update `revoke_anchor` DB function |
+| P5-TS-03 | Wire MembersTable to real Supabase query |
+| P5-TS-05 | Move `public_id` generation to INSERT + build IssueCredentialForm |
+| P5-TS-06 | BulkUploadWizard: add credential_type + metadata columns |
+| P5-TS-07 | `credential_templates` migration + CRUD hook |
+
+### Phase 4 — P6 Verification Portal
+
+| Story ID | Task |
+|----------|------|
+| P6-TS-01 | Rebuild `get_public_anchor` RPC + PublicVerification.tsx to full 5-section spec |
+| P6-TS-02 | Install qrcode.react + wire QR code into AssetDetailView |
+| P6-TS-04 | `useCredentialLifecycle` hook + timeline display |
+| P6-TS-05 | Install jsPDF + `generateAuditReport()` function |
+| P6-TS-06 | `verification_events` analytics schema |
+| P6-TS-03 | Embeddable widget bundle |
+
+### Phase 5 — P7 Go-Live (Security-Critical First)
+
+| Story ID | Task | Priority |
+|----------|------|----------|
+| P7-TS-03 | **Fix Stripe webhook signature verification** | SECURITY — do before connecting real Stripe |
+| P7-TS-01 | Align billing schema with GTM pricing ($1K/$3K/custom) | |
+| P7-TS-02 | Stripe checkout session endpoint in worker | |
+| P7-TS-05 | **Replace MockChainClient with real Bitcoin OP_RETURN client** | PRODUCTION BLOCKER |
+| P7-TS-07 | Wire JSON proof package download (ProofDownload.tsx) | |
+| P7-TS-08 | PDF certificate generation | |
+| P7-TS-09 | Wire WebhookSettings to router + fix secret hashing | |
+| P7-TS-10 | Wire delivery engine to anchor lifecycle events | |
+
+### Phase 6 — P4.5 Verification API
+
+| Story ID | Task |
+|----------|------|
+| P4.5-TS-03 | API key table + middleware |
+| P4.5-TS-01 | GET /api/v1/verify/:publicId endpoint |
+| P4.5-TS-02 | POST /api/v1/verify/batch endpoint |
+| P4.5-TS-04 | OpenAPI documentation |
+| P4.5-TS-05 | Free tier entitlement enforcement |
+
+---
+
+## 5. BRAND APPLICATION PROCEDURE
+
+The codebase currently uses generic shadcn blue (`#3b82f6`) as primary. The correct Arkova brand color is Steel Blue (`#82b8d0`). This is a single-file fix that corrects every screen simultaneously.
+
+### Step 1 — Replace `src/index.css` `:root` block
+
+Replace the entire `:root { ... }` and `.dark { ... }` blocks in `src/index.css` with the following:
+
+```css
+:root {
+  --background: 0 0% 100%;
+  --foreground: 156 4% 19%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 156 4% 19%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 156 4% 19%;
+
+  --primary: 197 42% 66%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 199 44% 90%;
+  --secondary-foreground: 156 4% 19%;
+
+  --muted: 199 30% 95%;
+  --muted-foreground: 160 4% 35%;
+
+  --accent: 200 40% 53%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 160 84% 39%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 92% 50%;
+  --warning-foreground: 30 80% 15%;
+
+  --border: 199 20% 88%;
+  --input: 199 20% 88%;
+  --ring: 197 42% 66%;
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 156 4% 19%;
+  --sidebar-foreground: 199 30% 85%;
+  --sidebar-primary: 197 42% 66%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 156 4% 25%;
+  --sidebar-accent-foreground: 199 30% 90%;
+  --sidebar-border: 156 4% 25%;
+  --sidebar-ring: 197 42% 66%;
+}
+
+.dark {
+  --background: 156 4% 10%;
+  --foreground: 199 30% 90%;
+
+  --card: 156 4% 12%;
+  --card-foreground: 199 30% 90%;
+
+  --popover: 156 4% 12%;
+  --popover-foreground: 199 30% 90%;
+
+  --primary: 197 42% 66%;
+  --primary-foreground: 156 4% 10%;
+
+  --secondary: 156 4% 18%;
+  --secondary-foreground: 199 30% 90%;
+
+  --muted: 156 4% 18%;
+  --muted-foreground: 199 20% 55%;
+
+  --accent: 200 40% 53%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 160 70% 45%;
+  --success-foreground: 160 80% 10%;
+
+  --warning: 48 97% 53%;
+  --warning-foreground: 30 80% 15%;
+
+  --border: 156 4% 20%;
+  --input: 156 4% 20%;
+  --ring: 197 42% 55%;
+
+  --sidebar-background: 156 4% 8%;
+  --sidebar-foreground: 199 30% 85%;
+  --sidebar-primary: 197 42% 66%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 156 4% 15%;
+  --sidebar-accent-foreground: 199 30% 90%;
+  --sidebar-border: 156 4% 15%;
+  --sidebar-ring: 197 42% 66%;
+}
 ```
 
-**Important**: Next.js API routes are FORBIDDEN. All backend logic must run in the worker service.
+### Step 2 — Add Arkova brand colors to `tailwind.config.ts`
 
-## Schema-First Development
+Add to `theme.extend.colors`:
 
-1. Create migrations in `supabase/migrations/`
-2. Add rollback notes to every migration
-3. Enable RLS on all tables
-4. Run `supabase db reset`
-5. Run `npm run gen:types`
-6. Update documentation in same PR
-
-## Documentation Requirements
-
-When changing schema or features:
-- Update relevant docs in `docs/confluence/`
-- Required docs: 01-11 (see docs folder)
-- Docs must be updated in the same PR as code changes
-
-## UI Terminology
-
-### Forbidden Terms (NEVER use in UI)
-- Wallet
-- Gas
-- Hash
-- Block
-- Transaction
-- Crypto
-- Cryptocurrency
-- Bitcoin
-- Blockchain
-
-### Required Terms
-- Vault (not Wallet)
-- Anchor
-- Fingerprint (not Hash)
-- Record (not Block/Transaction)
-- Secure
-- Verify
-
-### Priority 7 Terminology
-- Fee Account / Billing Account (not Wallet)
-- Network Receipt / Anchor Receipt (not Transaction)
-- Test Environment (not Testnet)
-- Production Network (not Mainnet)
-
-Run `npm run lint:copy` to check for violations.
-
-## Security Requirements
-
-- RLS enabled on ALL tables
-- FORCE ROW LEVEL SECURITY on all tables
-- Revoke public grants
-- Role immutability enforced via trigger
-- Audit events are append-only
-- Never expose service keys to client
-- All `.env` files gitignored
-- Secret scanning in CI (TruffleHog, Gitleaks)
-- All timestamps are `timestamptz` (UTC)
-
-## Non-Custodial Model
-
-Arkova does NOT:
-- Store user cryptocurrency
-- Accept deposits
-- Process withdrawals
-- Hold user private keys
-
-All on-chain fees are paid from a corporate fee account.
-
-## Testing
-
-```bash
-# Unit tests
-npm test
-
-# RLS integration tests (requires Supabase running)
-npm run test:rls
-
-# Type checking
-npm run typecheck
-
-# Full lint
-npm run lint && npm run lint:copy
+```ts
+arkova: {
+  steel:         '#82b8d0',
+  'steel-light': '#a8d1e2',
+  'steel-dark':  '#3d8aad',
+  deep:          '#5496ba',
+  ocean:         '#2f7495',
+  charcoal:      '#303433',
+  ice:           '#dbeaf1',
+  frost:         '#edf5f9',
+  slate:         '#4a4f4e',
+  mist:          '#f4f8fa',
+},
 ```
 
-## Seed Data
+### Step 3 — Verify
 
-Demo users for local testing:
+After applying:
+- Run the app locally — sidebar should be charcoal (`#303433`), primary buttons should be Steel Blue (`#82b8d0`)
+- Check `src/index.css` for any remaining `#3b82f6` — replace with `hsl(var(--primary))`
+- Run `npm run lint` — no errors
 
-| Email | Password | Role |
-|-------|----------|------|
-| admin_demo@arkova.local | demo_password_123 | ORG_ADMIN |
-| user_demo@arkova.local | demo_password_123 | INDIVIDUAL |
-| beta_admin@betacorp.local | demo_password_123 | ORG_ADMIN |
+### Brand Rules for New Components
+- Sidebar background: always `bg-arkova-charcoal` or `bg-sidebar-background`
+- Primary buttons: `bg-primary` (resolves to Steel Blue)
+- Status badges: SECURED=green (`#059669`), PENDING=amber (`#d97706`), REVOKED=gray (`#6b7280`), EXPIRED=gray
+- Fingerprint/hash display: always `font-mono text-xs bg-muted rounded px-2 py-1`
+- Public verification page status badge: large pill, full-width on mobile, color-coded
+- Logo on dark backgrounds (sidebar): white wordmark + light blue bear
+- Logo on white: full-color as-is
 
-## End of Task Checklist
+---
 
-Before completing any task:
+## 6. DOCUMENTATION UPDATE PROCEDURE
 
-- [ ] Tests pass (`npm test`)
-- [ ] RLS tests pass (`npm run test:rls`)
-- [ ] Type check passes (`npm run typecheck`)
-- [ ] Lint passes (`npm run lint`)
-- [ ] Copy lint passes (`npm run lint:copy`)
-- [ ] Types regenerated if schema changed (`npm run gen:types`)
-- [ ] Documentation updated if schema changed
-- [ ] No forbidden terminology in UI code
+Every story that changes schema, security posture, or API contracts must update documentation in the same commit. This is not optional.
+
+### Confluence Pages (Markdown files in `docs/confluence/`)
+
+| What changed | Page to update |
+|-------------|----------------|
+| Any schema change | `02_data_model.md` |
+| RLS policy change | `03_security_rls.md` |
+| Audit events change | `04_audit_events.md` |
+| Legal hold / retention | `05_retention_legal_hold.md` |
+| Bitcoin / chain policy | `06_on_chain_policy.md` |
+| Seed data / click-through | `07_seed_clickthrough.md` |
+| Billing or entitlements (P7+) | `08_payments_entitlements.md` |
+| Webhooks (P7+) | `09_webhooks.md` |
+| Anchoring worker (P7+) | `10_anchoring_worker.md` |
+| Proof packages (P7+) | `11_proof_packages.md` |
+
+If a page does not exist yet, create it. Use this template:
+
+```markdown
+# [Page Title]
+_Last updated: [date] | Story: [story ID]_
+
+## Overview
+[1-2 sentence summary of what this covers]
+
+## Current State
+[What is implemented as of this update]
+
+## Schema / Contract
+[Tables, columns, functions, or API contracts relevant to this page]
+
+## Security Notes
+[RLS policies, SECURITY DEFINER functions, access control decisions]
+
+## Change Log
+| Date | Story | Change |
+|------|-------|--------|
+| [date] | [story ID] | [what changed] |
+```
+
+### agents.md Updates
+
+After modifying any folder, update or create `agents.md` in that folder:
+
+```markdown
+# agents.md — [folder name]
+_Last updated: [date]_
+
+## What This Folder Contains
+[Brief description]
+
+## Recent Changes
+- [date] [story ID]: [what changed and why]
+
+## Do / Don't Rules
+- DO: [important pattern to follow]
+- DON'T: [thing that looks reasonable but breaks something]
+
+## Dependencies
+- [other files or services this folder depends on]
+```
+
+---
+
+## 7. MIGRATION PROCEDURE
+
+Every database migration must follow this exact procedure:
+
+```bash
+# 1. Create migration file
+# File naming: supabase/migrations/NNNN_descriptive_name.sql
+# Use next sequential number
+
+# 2. Write the migration
+# Include at the bottom of every migration file:
+-- ROLLBACK:
+-- [compensating SQL to undo this migration]
+
+# 3. Apply locally
+npx supabase db push
+
+# 4. Regenerate types
+npx supabase gen types typescript --local > src/types/database.types.ts
+
+# 5. Update seed data
+# Edit supabase/seed.sql to work with new schema
+
+# 6. Verify click-through
+npx supabase db reset   # applies migrations + seed
+# Manually verify the app click-through still works
+
+# 7. Update Confluence
+# Edit docs/confluence/02_data_model.md
+```
+
+**Never modify an existing migration file.** Write a new compensating migration instead.
+
+---
+
+## 8. TESTING REQUIREMENTS
+
+### RLS Tests
+```typescript
+// Always use the shared helper — never mock auth ad-hoc
+import { withUser, withAuth } from '../tests/rls/helpers';
+
+it('blocks cross-tenant access', async () => {
+  await withUser(userFromOrgA, async (client) => {
+    const { data } = await client.from('anchors').select();
+    expect(data).toEqual([]); // OrgB records not returned
+  });
+});
+```
+
+### Worker Tests (Stripe / Bitcoin)
+```typescript
+// Always inject interfaces — never call real APIs
+const mockPayment: IPaymentProvider = { createCheckout: jest.fn(), ... };
+const mockChain: IAnchorPublisher = { publishAnchor: jest.fn().mockResolvedValue({ txId: 'mock_tx' }) };
+```
+
+### Gherkin → Test Mapping
+Each story card contains Gherkin scenarios. Map them directly to tests:
+- `Given` → test setup / `beforeEach`
+- `When` → the action being tested
+- `Then` / `And` → `expect()` assertions
+
+---
+
+## 9. COMMON MISTAKES — DO NOT DO THESE
+
+| Mistake | Why It's Wrong | What To Do Instead |
+|---------|---------------|-------------------|
+| Using `useState` to store records from a Supabase table | Violates schema-first rule, shows stale data | Create a `useXxx()` hook that queries Supabase |
+| Calling `supabase.from('anchors').insert()` without `validateAnchorCreate()` | Skips client-side validation, allows forbidden fields | Always call the Zod validator first |
+| Writing a SECURITY DEFINER function without `SET search_path = public` | Security vulnerability — search path injection | Always add `SET search_path = public` |
+| Adding user-visible text directly to JSX | Terminology drift, no copy lint coverage | Add the string to `src/lib/copy.ts` first |
+| Adding a new table without regenerating `database.types.ts` | TypeScript types out of sync | Run `supabase gen types typescript --local` after every migration |
+| Calling real Stripe or Bitcoin APIs in tests | CI breaks without credentials, flaky tests | Use `IPaymentProvider` and `IAnchorPublisher` mocks |
+| Setting `anchor.status = 'SECURED'` from client code | Constitution violation — only worker via service_role can do this | Trigger the anchoring worker; let it set SECURED via `complete_anchoring_job()` |
+| Exposing `user_id`, `org_id`, or `anchors.id` on the public verification page | Privacy violation | Expose only `public_id` and derived display fields |
+| Adding a nav link with `href="#"` | Dead link, breaks navigation | Use `<Link to="/path">` from react-router-dom |
+| Storing a raw Stripe webhook secret or Bitcoin private key in code | Security critical | Load from environment variable only, never log it |
+
+---
+
+## 10. ENVIRONMENT VARIABLES REFERENCE
+
+Never commit these. Load from `.env` (gitignored). The worker reads them at startup and fails loudly if missing.
+
+```bash
+# Supabase
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=        # worker only — never in browser
+
+# Stripe (worker only)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# Bitcoin (worker only)
+BITCOIN_TREASURY_WIF=             # treasury signing key — never logged
+BITCOIN_NETWORK=                  # "mainnet" or "testnet" (displayed as "Production Network" / "Test Environment")
+
+# Worker
+WORKER_PORT=3001
+```
+
+---
+
+## 11. QUICK REFERENCE — STORY STATUS AT MARCH 2026
+
+| Priority | Complete | Partial | Not Started |
+|----------|----------|---------|-------------|
+| P1 Bedrock | 5/6 | 1/6 (P1-TS-05 Zod fix) | 0 |
+| P2 Identity | 3/5 | 2/5 (router, route guards) | 0 |
+| P3 Vault | 0/3 | 3/3 (all need data wiring) | 0 |
+| P4-E1 Anchor Engine | 1/3 | 2/3 | 0 |
+| P4-E2 Credential Metadata | 0/3 | 0/3 | 3/3 |
+| P5 Org Admin | 3/7 | 2/7 | 2/7 |
+| P6 Verification | 0/6 | 2/6 | 4/6 |
+| P7 Go-Live | 4/9 | 3/9 | 2/9 |
+| P4.5 Verification API | 0/5 | 0/5 | 5/5 |
+| **Total** | **16/47** | **15/47** | **16/47** |
+
+**Overall: 34% complete. 34% partial. 34% not started.**
+
+The 15 partial stories represent the fastest path to value — most require data wiring, routing, or small targeted fixes rather than new architecture.
+
+---
+
+_Document version: March 2026 | Repo: arkova-mvpcopy-main | 20,398 lines | 21 migrations_
+_Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Business Backlog P1-P7 March 2026_
