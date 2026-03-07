@@ -15,7 +15,11 @@ if (!supabaseAnonKey) {
   console.warn('VITE_SUPABASE_ANON_KEY not set. Authentication will not work.');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Use a placeholder key when none is configured so the client can instantiate
+// without throwing. Auth calls will fail gracefully at runtime instead.
+const safeKey = supabaseAnonKey || 'missing-key-placeholder';
+
+export const supabase = createClient<Database>(supabaseUrl, safeKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

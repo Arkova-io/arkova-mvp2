@@ -10,6 +10,7 @@ import {
   FileText,
   CheckCircle,
   XCircle,
+  AlertTriangle,
   Clock,
   Copy,
   Check,
@@ -32,7 +33,7 @@ interface AnchorRecord {
   id: string;
   filename: string;
   fingerprint: string;
-  status: 'PENDING' | 'SECURED' | 'REVOKED';
+  status: 'PENDING' | 'SECURED' | 'REVOKED' | 'EXPIRED';
   createdAt: string;
   securedAt?: string;
   fileSize: number;
@@ -64,6 +65,12 @@ const statusConfig = {
     label: 'Revoked',
     variant: 'secondary' as const,
     icon: XCircle,
+    color: 'text-gray-500',
+  },
+  EXPIRED: {
+    label: 'Expired',
+    variant: 'secondary' as const,
+    icon: AlertTriangle,
     color: 'text-gray-500',
   },
 };

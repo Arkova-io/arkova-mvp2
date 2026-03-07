@@ -4,111 +4,95 @@
 
 @layer base {
   :root {
-    /* Arkova Design System - Professional & Trustworthy */
-
-    /* Background: Clean white with subtle warmth */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 156 4% 19%;
 
-    /* Cards: Slightly elevated feel */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 156 4% 19%;
 
-    /* Popover: Same as card for consistency */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 156 4% 19%;
 
-    /* Primary: Deep professional blue - trustworthy and secure */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 197 42% 66%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Neutral gray for less emphasis */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 199 44% 90%;
+    --secondary-foreground: 156 4% 19%;
 
-    /* Muted: Subtle backgrounds and text */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 199 30% 95%;
+    --muted-foreground: 160 4% 35%;
 
-    /* Accent: Light highlight for hover states */
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 200 40% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Destructive: Clear red for dangerous actions */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Success: Professional green for positive states */
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
 
-    /* Warning: Amber for caution states */
-    --warning: 45.4 93.4% 47.5%;
-    --warning-foreground: 26 83.3% 14.1%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 30 80% 15%;
 
-    /* Border: Subtle separator */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 199 20% 88%;
+    --input: 199 20% 88%;
+    --ring: 197 42% 66%;
 
-    /* Border radius */
     --radius: 0.5rem;
 
-    /* Sidebar: Professional sidebar with depth */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-background: 156 4% 19%;
+    --sidebar-foreground: 199 30% 85%;
+    --sidebar-primary: 197 42% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    --sidebar-accent: 156 4% 25%;
+    --sidebar-accent-foreground: 199 30% 90%;
+    --sidebar-border: 156 4% 25%;
+    --sidebar-ring: 197 42% 66%;
   }
 
   .dark {
-    /* Dark mode tokens for future use */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 156 4% 10%;
+    --foreground: 199 30% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 156 4% 12%;
+    --card-foreground: 199 30% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 156 4% 12%;
+    --popover-foreground: 199 30% 90%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 197 42% 66%;
+    --primary-foreground: 156 4% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 156 4% 18%;
+    --secondary-foreground: 199 30% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 156 4% 18%;
+    --muted-foreground: 199 20% 55%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 200 40% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142.1 70.6% 45.3%;
-    --success-foreground: 144.9 80.4% 10%;
+    --success: 160 70% 45%;
+    --success-foreground: 160 80% 10%;
 
-    --warning: 48 96.5% 53.1%;
-    --warning-foreground: 26 83.3% 14.1%;
+    --warning: 48 97% 53%;
+    --warning-foreground: 30 80% 15%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 156 4% 20%;
+    --input: 156 4% 20%;
+    --ring: 197 42% 55%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 156 4% 8%;
+    --sidebar-foreground: 199 30% 85%;
+    --sidebar-primary: 197 42% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 156 4% 15%;
+    --sidebar-accent-foreground: 199 30% 90%;
+    --sidebar-border: 156 4% 15%;
+    --sidebar-ring: 197 42% 66%;
   }
 }
 

@@ -6,7 +6,10 @@
  */
 
 import { ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../lib/routes';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -15,11 +18,12 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, fallback }: AuthGuardProps) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -29,13 +33,8 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
       return <>{fallback}</>;
     }
 
-    // Default fallback - redirect message
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-        <p className="text-gray-600">Please sign in to access this page.</p>
-      </div>
-    );
+    // Redirect to login, preserving the intended destination
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -4,9 +4,11 @@
  * Public-facing page for verifying documents without authentication.
  */
 
+import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { VerificationForm } from '@/components/verify';
+import { ROUTES } from '@/lib/routes';
 
 interface PublicVerifyPageProps {
   fingerprintFromUrl?: string;
@@ -27,12 +29,12 @@ export function PublicVerifyPage({ fingerprintFromUrl: _fingerprintFromUrl }: Pu
             <span className="text-lg font-semibold">Arkova</span>
           </div>
           <nav>
-            <a
-              href="#"
+            <Link
+              to={ROUTES.LOGIN}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Sign in
-            </a>
+            </Link>
           </nav>
         </div>
       </header>

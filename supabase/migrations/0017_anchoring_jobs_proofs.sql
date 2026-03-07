@@ -34,8 +34,8 @@ CREATE TABLE anchoring_jobs (
 );
 
 CREATE INDEX idx_anchoring_jobs_status ON anchoring_jobs(status);
-CREATE INDEX idx_anchoring_jobs_claimed ON anchoring_jobs(status, claimed_at)
-  WHERE status = 'pending' OR (status = 'processing' AND claim_expires_at < now());
+CREATE INDEX idx_anchoring_jobs_claimed ON anchoring_jobs(status, claimed_at, claim_expires_at)
+  WHERE status IN ('pending', 'processing');
 CREATE INDEX idx_anchoring_jobs_anchor_id ON anchoring_jobs(anchor_id);
 
 -- =============================================================================

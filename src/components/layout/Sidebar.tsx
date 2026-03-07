@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Shield,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ROUTES } from '@/lib/routes';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -28,19 +30,18 @@ import {
 interface NavItem {
   label: string;
   icon: React.ElementType;
-  href: string;
-  active?: boolean;
+  to: string;
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '#', active: true },
-  { label: 'My Records', icon: FileText, href: '#' },
-  { label: 'Organization', icon: Building2, href: '#' },
+  { label: 'Dashboard', icon: LayoutDashboard, to: ROUTES.DASHBOARD },
+  { label: 'My Records', icon: FileText, to: ROUTES.RECORDS },
+  { label: 'Organization', icon: Building2, to: ROUTES.ORGANIZATION },
 ];
 
 const secondaryNavItems: NavItem[] = [
-  { label: 'Settings', icon: Settings, href: '#' },
-  { label: 'Help', icon: HelpCircle, href: '#' },
+  { label: 'Settings', icon: Settings, to: ROUTES.SETTINGS },
+  { label: 'Help', icon: HelpCircle, to: '#' },
 ];
 
 interface SidebarProps {
@@ -49,6 +50,7 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -77,10 +79,11 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Main Navigation */}
         <nav className="flex-1 space-y-1 p-3">
           {mainNavItems.map((item) => (
-            <NavLink
+            <SidebarNavLink
               key={item.label}
               item={item}
               collapsed={collapsed}
+              active={location.pathname === item.to || location.pathname.startsWith(item.to + '/')}
             />
           ))}
         </nav>
@@ -90,10 +93,11 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Secondary Navigation */}
         <nav className="space-y-1 p-3">
           {secondaryNavItems.map((item) => (
-            <NavLink
+            <SidebarNavLink
               key={item.label}
               item={item}
               collapsed={collapsed}
+              active={location.pathname === item.to || location.pathname.startsWith(item.to + '/')}
             />
           ))}
         </nav>
@@ -124,20 +128,21 @@ export function Sidebar({ className }: SidebarProps) {
   );
 }
 
-interface NavLinkProps {
+interface SidebarNavLinkProps {
   item: NavItem;
   collapsed: boolean;
+  active: boolean;
 }
 
-function NavLink({ item, collapsed }: NavLinkProps) {
+function SidebarNavLink({ item, collapsed, active }: SidebarNavLinkProps) {
   const Icon = item.icon;
 
   const link = (
-    <a
-      href={item.href}
+    <Link
+      to={item.to}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-        item.active
+        active
           ? 'bg-sidebar-accent text-sidebar-accent-foreground'
           : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
         collapsed && 'justify-center px-2'
@@ -145,7 +150,7 @@ function NavLink({ item, collapsed }: NavLinkProps) {
     >
       <Icon className="h-4 w-4 shrink-0" />
       {!collapsed && <span>{item.label}</span>}
-    </a>
+    </Link>
   );
 
   if (collapsed) {

@@ -1,39 +1,45 @@
 /**
  * Route Guard Component
  *
- * Enforces routing based on authentication and profile state:
- * - unauth -> /auth
- * - role NULL -> /onboarding/role
- * - INDIVIDUAL -> /vault
- * - ORG_ADMIN incomplete -> /onboarding/org
- * - ORG_ADMIN complete -> /dashboard
- * - requires_manual_review -> /review-pending
+ * Enforces routing based on profile state (role, org, review status).
+ * Must be used inside AuthGuard (assumes user is authenticated).
+ *
+ * Redirects users to the correct destination when they try to access
+ * a route that doesn't match their profile state:
+ * - role NULL        → /onboarding/role
+ * - ORG_ADMIN no org → /onboarding/org
+ * - requires_manual_review → /review-pending
+ * - INDIVIDUAL ready → main app
+ * - ORG_ADMIN ready  → main app
  */
 
 import { ReactNode } from 'react';
-import { useProfile, RouteDestination } from '@/hooks/useProfile';
+import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useProfile, type RouteDestination } from '@/hooks/useProfile';
+import { destinationToRoute } from '@/lib/routes';
 
 interface RouteGuardProps {
   children: ReactNode;
-  /** The route this guard is protecting */
-  route: RouteDestination;
-  /** Fallback component when user should not access this route */
-  fallback?: ReactNode;
+  /** Which profile destinations are allowed to view this route */
+  allow: RouteDestination[];
 }
 
 /**
- * RouteGuard ensures users can only access routes appropriate for their state.
+ * RouteGuard checks the user's profile-computed destination against
+ * a list of allowed destinations. If the user's destination is not
+ * in the allow list, they are redirected to their correct destination.
  *
  * Usage:
- * <RouteGuard route="/vault">
- *   <VaultPage />
- * </RouteGuard>
+ *   <AuthGuard>
+ *     <RouteGuard allow={['/vault', '/dashboard']}>
+ *       <DashboardPage />
+ *     </RouteGuard>
+ *   </AuthGuard>
  */
-export function RouteGuard({ children, route, fallback }: RouteGuardProps) {
+export function RouteGuard({ children, allow }: RouteGuardProps) {
   const { loading, destination } = useProfile();
 
-  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -42,23 +48,10 @@ export function RouteGuard({ children, route, fallback }: RouteGuardProps) {
     );
   }
 
-  // Check if user should be on this route
-  if (destination !== route) {
-    // If a fallback is provided, show it
-    if (fallback) {
-      return <>{fallback}</>;
-    }
-
-    // Otherwise show redirect message
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Redirecting...</p>
-      </div>
-    );
+  if (!allow.includes(destination)) {
+    return <Navigate to={destinationToRoute(destination)} replace />;
   }
 
-  // User is authorized for this route
   return <>{children}</>;
 }
 

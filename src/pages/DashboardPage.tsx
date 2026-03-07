@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, CheckCircle, Clock, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -17,17 +18,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ROUTES } from '@/lib/routes';
 
-interface DashboardPageProps {
-  onSignOut: () => void;
-}
-
-// Demo records can be used for UI testing by uncommenting below
-// const _demoRecords: Record[] = [
-//   { id: '1', filename: 'contract.pdf', fingerprint: 'a1b2...', status: 'SECURED', ... }
-// ];
-
-export function DashboardPage({ onSignOut }: DashboardPageProps) {
+export function DashboardPage() {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const [secureDialogOpen, setSecureDialogOpen] = useState(false);
@@ -35,7 +29,7 @@ export function DashboardPage({ onSignOut }: DashboardPageProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    onSignOut();
+    navigate(ROUTES.LOGIN);
   };
 
   const handleSecureSuccess = useCallback(() => {
@@ -53,9 +47,8 @@ export function DashboardPage({ onSignOut }: DashboardPageProps) {
   }, []);
 
   const handleViewRecord = useCallback((record: Record) => {
-    // TODO: Navigate to record detail view
-    console.log('View record:', record.id);
-  }, []);
+    navigate(`/records/${record.id}`);
+  }, [navigate]);
 
   const handleDownloadProof = useCallback((record: Record) => {
     // TODO: Download proof package
