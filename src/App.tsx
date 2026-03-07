@@ -1,75 +1,196 @@
 /**
  * Arkova MVP - Main Application
  *
- * Simple routing without external router library.
- * Handles auth state and page navigation.
+ * Uses react-router-dom for client-side routing.
+ * AuthGuard protects authenticated routes (checks login).
+ * RouteGuard enforces profile-based routing (onboarding flow).
+ * Public routes (login, signup, verify) are accessible without auth.
  */
 
-import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Shield, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { LoginPage, SignUpPage, DashboardPage } from '@/pages';
+import { useProfile } from '@/hooks/useProfile';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { RouteGuard } from '@/components/auth/RouteGuard';
+import { LoginPage } from '@/pages/LoginPage';
+import { SignUpPage } from '@/pages/SignUpPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { PublicVerifyPage } from '@/components/public/PublicVerifyPage';
+import { ROUTES, MAIN_APP_DESTINATIONS, destinationToRoute } from '@/lib/routes';
 
-type Page = 'login' | 'signup' | 'dashboard';
+/**
+ * Redirect authenticated users away from login/signup.
+ * Uses profile destination so users go to onboarding if needed,
+ * not always to dashboard.
+ */
+function PublicOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
+  const { destination, loading: profileLoading } = useProfile();
 
-export function App() {
-  const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>('login');
+  if (authLoading || (user && profileLoading)) {
+    return <LoadingScreen />;
+  }
 
-  // Redirect based on auth state
-  useEffect(() => {
-    if (!loading) {
-      if (user) {
-        setCurrentPage('dashboard');
-      } else {
-        setCurrentPage('login');
-      }
-    }
-  }, [user, loading]);
+  if (user) {
+    return <Navigate to={destinationToRoute(destination)} replace />;
+  }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-            <Shield className="h-8 w-8 text-primary" />
-          </div>
-          <div className="flex items-center space-x-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Loading Arkova...</span>
-          </div>
+  return <>{children}</>;
+}
+
+function LoadingScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+          <Shield className="h-8 w-8 text-primary" />
+        </div>
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Loading Arkova...</span>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  switch (currentPage) {
-    case 'login':
-      return (
-        <LoginPage
-          onNavigateToSignUp={() => setCurrentPage('signup')}
-          onLoginSuccess={() => setCurrentPage('dashboard')}
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes — no auth required */}
+        <Route
+          path={ROUTES.LOGIN}
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
         />
-      );
-
-    case 'signup':
-      return (
-        <SignUpPage
-          onNavigateToLogin={() => setCurrentPage('login')}
-          onSignUpSuccess={() => setCurrentPage('dashboard')}
+        <Route
+          path={ROUTES.SIGNUP}
+          element={
+            <PublicOnly>
+              <SignUpPage />
+            </PublicOnly>
+          }
         />
-      );
-
-    case 'dashboard':
-      return (
-        <DashboardPage
-          onSignOut={() => setCurrentPage('login')}
+        <Route
+          path={ROUTES.VERIFY}
+          element={<PublicVerifyPage />}
         />
-      );
 
-    default:
-      return null;
-  }
+        {/* Onboarding routes — auth required, only for users needing setup */}
+        <Route
+          path={ROUTES.ONBOARDING_ROLE}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={['/onboarding/role']}>
+                {/* TODO: Wire OnboardingRolePage when implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.ONBOARDING_ORG}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={['/onboarding/org']}>
+                {/* TODO: Wire OnboardingOrgPage when implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+
+        {/* Review pending — auth required, only for users under review */}
+        <Route
+          path={ROUTES.REVIEW_PENDING}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={['/review-pending']}>
+                {/* TODO: Wire ReviewPendingPage when implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+
+        {/* Main app routes — auth required, onboarding must be complete */}
+        <Route
+          path={ROUTES.DASHBOARD}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.RECORDS}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.RECORD_DETAIL}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                {/* TODO: Wire AssetDetailView when P4-TS-03 is implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.ORGANIZATION}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                {/* TODO: Wire OrgDashboard when implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.SETTINGS}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                {/* TODO: Wire SettingsPage when implemented */}
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.SETTINGS_API_KEYS}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+
+        {/* Root redirects to dashboard (guards will bounce to correct destination) */}
+        <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+
+        {/* Catch-all — redirect to dashboard */}
+        <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;

@@ -2,23 +2,22 @@
  * Login Page
  */
 
+import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '@/components/auth';
 import { AuthLayout } from '@/components/layout';
+import { ROUTES } from '@/lib/routes';
 
-interface LoginPageProps {
-  onNavigateToSignUp: () => void;
-  onLoginSuccess: () => void;
-}
+export function LoginPage() {
+  const navigate = useNavigate();
 
-export function LoginPage({ onNavigateToSignUp, onLoginSuccess }: LoginPageProps) {
   return (
     <AuthLayout
       title="Welcome back"
       description="Enter your credentials to access your vault"
     >
       <LoginForm
-        onSuccess={onLoginSuccess}
-        onSignUpClick={onNavigateToSignUp}
+        onSuccess={() => navigate(ROUTES.DASHBOARD)}
+        onSignUpClick={() => navigate(ROUTES.SIGNUP)}
       />
     </AuthLayout>
   );

@@ -2,6 +2,9 @@
 -- Description: Billing and entitlement tables for Stripe integration
 -- Rollback: DROP TABLE IF EXISTS billing_events; DROP TABLE IF EXISTS entitlements; DROP TABLE IF EXISTS subscriptions; DROP TABLE IF EXISTS plans;
 
+-- Enable moddatetime extension for auto-updating updated_at columns
+CREATE EXTENSION IF NOT EXISTS moddatetime WITH SCHEMA extensions;
+
 -- =============================================================================
 -- PLANS TABLE
 -- =============================================================================

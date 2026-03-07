@@ -59,6 +59,19 @@ const config: Config = {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
         },
+        // Arkova named palette
+        arkova: {
+          steel:         '#82b8d0',
+          'steel-light': '#a8d1e2',
+          'steel-dark':  '#3d8aad',
+          deep:          '#5496ba',
+          ocean:         '#2f7495',
+          charcoal:      '#303433',
+          ice:           '#dbeaf1',
+          frost:         '#edf5f9',
+          slate:         '#4a4f4e',
+          mist:          '#f4f8fa',
+        },
         // Sidebar specific
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
