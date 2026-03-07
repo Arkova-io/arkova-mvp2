@@ -562,6 +562,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_public_profile: boolean
           manual_review_completed_at: string | null
           manual_review_completed_by: string | null
           manual_review_reason: string | null
@@ -577,6 +578,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          is_public_profile?: boolean
           manual_review_completed_at?: string | null
           manual_review_completed_by?: string | null
           manual_review_reason?: string | null
@@ -592,6 +594,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_public_profile?: boolean
           manual_review_completed_at?: string | null
           manual_review_completed_by?: string | null
           manual_review_reason?: string | null

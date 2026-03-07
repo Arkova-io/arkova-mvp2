@@ -16,6 +16,7 @@ import { RouteGuard } from '@/components/auth/RouteGuard';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignUpPage } from '@/pages/SignUpPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { RecordDetailPage } from '@/pages/RecordDetailPage';
 import { PublicVerifyPage } from '@/components/public/PublicVerifyPage';
 import { ROUTES, MAIN_APP_DESTINATIONS, destinationToRoute } from '@/lib/routes';
 
@@ -144,8 +145,7 @@ export function App() {
           element={
             <AuthGuard>
               <RouteGuard allow={MAIN_APP_DESTINATIONS}>
-                {/* TODO: Wire AssetDetailView when P4-TS-03 is implemented */}
-                <DashboardPage />
+                <RecordDetailPage />
               </RouteGuard>
             </AuthGuard>
           }
