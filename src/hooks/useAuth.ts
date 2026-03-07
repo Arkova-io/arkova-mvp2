@@ -35,6 +35,9 @@ export function useAuth(): AuthState & AuthActions {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch(() => {
+      // Auth unavailable (e.g. missing credentials) — fall through to login
+      setLoading(false);
     });
 
     // Listen for auth changes

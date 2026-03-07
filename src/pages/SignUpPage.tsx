@@ -2,23 +2,22 @@
  * Sign Up Page
  */
 
+import { useNavigate } from 'react-router-dom';
 import { SignUpForm } from '@/components/auth';
 import { AuthLayout } from '@/components/layout';
+import { ROUTES } from '@/lib/routes';
 
-interface SignUpPageProps {
-  onNavigateToLogin: () => void;
-  onSignUpSuccess: () => void;
-}
+export function SignUpPage() {
+  const navigate = useNavigate();
 
-export function SignUpPage({ onNavigateToLogin, onSignUpSuccess }: SignUpPageProps) {
   return (
     <AuthLayout
       title="Create your account"
       description="Start securing your documents today"
     >
       <SignUpForm
-        onSuccess={onSignUpSuccess}
-        onLoginClick={onNavigateToLogin}
+        onSuccess={() => navigate(ROUTES.DASHBOARD)}
+        onLoginClick={() => navigate(ROUTES.LOGIN)}
       />
     </AuthLayout>
   );

@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatFingerprint } from '@/lib/fileHasher';
 import { supabase } from '@/lib/supabase';
+import { validateAnchorCreate } from '@/lib/validators';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -59,15 +60,20 @@ export function ConfirmAnchorModal({
     setIsCreating(true);
 
     try {
+      // Validate client-side fields via Zod before inserting
+      const validated = validateAnchorCreate({
+        fingerprint,
+        filename: file.name,
+        file_size: file.size,
+        file_mime: file.type || null,
+        org_id: profile?.org_id || null,
+      });
+
       const { data, error } = await supabase
         .from('anchors')
         .insert({
-          filename: file.name,
-          fingerprint: fingerprint,
-          file_size: file.size,
-          file_mime: file.type || null,
+          ...validated,
           user_id: user.id,
-          org_id: profile?.org_id || null,
           status: 'PENDING',
         })
         .select('id')
@@ -80,8 +86,14 @@ export function ConfirmAnchorModal({
       onSuccess?.(data.id);
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create anchor';
-      onError?.(message);
+      if (err instanceof Error && err.name === 'ZodError') {
+        const zodErr = err as import('zod').ZodError;
+        const message = zodErr.issues.map((i) => i.message).join('; ');
+        onError?.(message);
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to create anchor';
+        onError?.(message);
+      }
     } finally {
       setIsCreating(false);
     }

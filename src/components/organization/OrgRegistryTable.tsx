@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -75,6 +76,11 @@ const statusConfig = {
     label: 'Revoked',
     variant: 'secondary' as const,
     icon: XCircle,
+  },
+  EXPIRED: {
+    label: 'Expired',
+    variant: 'secondary' as const,
+    icon: AlertTriangle,
   },
 };
 
