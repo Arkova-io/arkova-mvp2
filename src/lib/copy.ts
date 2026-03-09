@@ -27,6 +27,19 @@ export const ANCHOR_STATUS_DESCRIPTIONS = {
 } as const;
 
 // =============================================================================
+// CREDENTIAL TYPES
+// =============================================================================
+
+export const CREDENTIAL_TYPE_LABELS = {
+  CERTIFICATE: 'Certificate',
+  LICENSE: 'License',
+  DIPLOMA: 'Diploma',
+  BADGE: 'Badge',
+  ATTESTATION: 'Attestation',
+  OTHER: 'Other',
+} as const;
+
+// =============================================================================
 // USER ROLES
 // =============================================================================
 
