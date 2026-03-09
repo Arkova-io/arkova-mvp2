@@ -1,0 +1,23 @@
+# agents.md — pages
+_Last updated: 2026-03-07_
+
+## What This Folder Contains
+Top-level page components rendered by react-router-dom routes. Each page composes layout (AppShell) with domain-specific hooks and components.
+
+## Recent Changes
+- 2026-03-07 Code-review fixes: `DashboardPage.tsx` — surfaced `revokeError` from `useRevokeAnchor` with dismissible Alert; used `recordDetailPath()` instead of hardcoded path; corrected docstring.
+- 2026-03-07 P3-TS-01: `DashboardPage.tsx` — replaced `useState<Record[]>([])` mock with `useAnchors()` hook for real Supabase data. Wired `handleRevokeRecord` to `useRevokeAnchor`. Removed `Math.random()` fingerprints and `console.log` stubs.
+- 2026-03-07 P4-TS-03: Created `RecordDetailPage.tsx` — extracts `:id` from URL params, uses `useAnchor` hook, renders `AssetDetailView` with real Supabase data. Wired into App.tsx route.
+
+## Do / Don't Rules
+- DO: Use hooks from `@/hooks/` for all data fetching — never `useState` for DB-backed data
+- DO: Pass `loading` state from hooks to child components (RecordsList, StatCard)
+- DON'T: Create mock records with `Math.random()` or `Date.now()` IDs
+- DON'T: Use `console.log` as a placeholder for actions — use no-op functions or wire to real hooks
+
+## Dependencies
+- `@/hooks/useAnchors` — anchor data for dashboard and vault
+- `@/hooks/useAnchor` — single anchor data for record detail page
+- `@/hooks/useAuth`, `@/hooks/useProfile` — auth and profile state
+- `@/components/layout/AppShell` — page shell with sidebar
+- `@/lib/routes` — named route constants

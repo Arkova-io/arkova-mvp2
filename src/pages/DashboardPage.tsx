@@ -1,8 +1,11 @@
 /**
- * Dashboard Page (Vault Dashboard)
+ * Dashboard Page
  *
  * Main authenticated view showing user's secured records.
+ * Serves both INDIVIDUAL and ORG_ADMIN users.
  * Uses approved terminology per Constitution.
+ *
+ * @see P3-TS-01 — Wired to real Supabase queries via useAnchors hook
  */
 
 import { useState, useCallback } from 'react';
@@ -10,6 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, CheckCircle, Clock, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useAnchors } from '@/hooks/useAnchors';
+import { useRevokeAnchor } from '@/hooks/useRevokeAnchor';
 import { AppShell } from '@/components/layout';
 import { StatCard, EmptyState } from '@/components/dashboard';
 import { SecureDocumentDialog } from '@/components/anchor';
@@ -18,54 +23,48 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ROUTES } from '@/lib/routes';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ROUTES, recordDetailPath } from '@/lib/routes';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const { records, loading: recordsLoading, refreshAnchors } = useAnchors();
+  const { revokeAnchor, error: revokeError, clearError: clearRevokeError } = useRevokeAnchor();
   const [secureDialogOpen, setSecureDialogOpen] = useState(false);
-  const [records, setRecords] = useState<Record[]>([]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate(ROUTES.LOGIN);
   };
 
-  const handleSecureSuccess = useCallback(() => {
-    // In real app, this would refresh records from API
-    // For demo, we add a mock record
-    const newRecord: Record = {
-      id: Date.now().toString(),
-      filename: 'new-document.pdf',
-      fingerprint: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      fileSize: 100000,
-    };
-    setRecords(prev => [newRecord, ...prev]);
-  }, []);
+  const handleSecureSuccess = useCallback(async () => {
+    await refreshAnchors();
+  }, [refreshAnchors]);
 
   const handleViewRecord = useCallback((record: Record) => {
-    navigate(`/records/${record.id}`);
+    navigate(recordDetailPath(record.id));
   }, [navigate]);
 
-  const handleDownloadProof = useCallback((record: Record) => {
-    // TODO: Download proof package
-    console.log('Download proof:', record.id);
+  const handleDownloadProof = useCallback((_record: Record) => {
+    // Proof download is implemented in P7-TS-07
   }, []);
 
-  const handleRevokeRecord = useCallback((record: Record) => {
-    // TODO: Open revoke confirmation dialog
-    console.log('Revoke record:', record.id);
-  }, []);
+  const handleRevokeRecord = useCallback(async (record: Record) => {
+    const success = await revokeAnchor(record.id);
+    if (success) {
+      await refreshAnchors();
+    }
+  }, [revokeAnchor, refreshAnchors]);
 
-  // Calculate stats from records
   const stats = {
     total: records.length,
     secured: records.filter(r => r.status === 'SECURED').length,
     pending: records.filter(r => r.status === 'PENDING').length,
   };
+
+  const loading = profileLoading || recordsLoading;
 
   return (
     <AppShell
@@ -91,23 +90,33 @@ export function DashboardPage() {
           value={stats.total}
           icon={FileText}
           variant="primary"
-          loading={profileLoading}
+          loading={loading}
         />
         <StatCard
           label="Secured"
           value={stats.secured}
           icon={CheckCircle}
           variant="success"
-          loading={profileLoading}
+          loading={loading}
         />
         <StatCard
           label="Pending"
           value={stats.pending}
           icon={Clock}
           variant="warning"
-          loading={profileLoading}
+          loading={loading}
         />
       </div>
+
+      {/* Revoke error */}
+      {revokeError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription className="flex items-center justify-between">
+            <span>{revokeError}</span>
+            <Button variant="ghost" size="sm" onClick={clearRevokeError}>Dismiss</Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Records section */}
       <Card>
@@ -120,7 +129,7 @@ export function DashboardPage() {
         </CardHeader>
         <Separator />
         <CardContent className="pt-0">
-          {records.length === 0 ? (
+          {!loading && records.length === 0 ? (
             <EmptyState
               title="No records yet"
               description="Secure your first document to create a permanent, tamper-proof record. Your documents never leave your device."
@@ -130,6 +139,7 @@ export function DashboardPage() {
           ) : (
             <RecordsList
               records={records}
+              loading={recordsLoading}
               onViewRecord={handleViewRecord}
               onDownloadProof={handleDownloadProof}
               onRevokeRecord={handleRevokeRecord}

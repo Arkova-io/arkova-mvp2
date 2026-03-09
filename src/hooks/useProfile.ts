@@ -32,19 +32,21 @@ export type RouteDestination =
 interface ProfileState {
   profile: Profile | null;
   loading: boolean;
+  updating: boolean;
   error: string | null;
   destination: RouteDestination;
 }
 
 interface ProfileActions {
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url'>>) => Promise<void>;
+  updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>>) => Promise<void>;
 }
 
 export function useProfile(): ProfileState & ProfileActions {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Compute destination based on auth and profile state
@@ -127,13 +129,13 @@ export function useProfile(): ProfileState & ProfileActions {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(
-    async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url'>>) => {
+    async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>>) => {
       if (!user) {
         setError('Not authenticated');
         return;
       }
 
-      setLoading(true);
+      setUpdating(true);
       setError(null);
 
       const { error: updateError } = await supabase
@@ -144,17 +146,24 @@ export function useProfile(): ProfileState & ProfileActions {
       if (updateError) {
         setError(updateError.message);
       } else {
-        await fetchProfile();
+        // Silently refresh without triggering full loading state
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (data) setProfile(data);
       }
 
-      setLoading(false);
+      setUpdating(false);
     },
-    [user, fetchProfile]
+    [user]
   );
 
   return {
     profile,
     loading: authLoading || loading,
+    updating,
     error,
     destination,
     refreshProfile,
