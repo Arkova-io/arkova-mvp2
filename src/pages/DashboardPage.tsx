@@ -8,9 +8,9 @@
  * @see P3-TS-01 — Wired to real Supabase queries via useAnchors hook
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, CheckCircle, Clock, Plus, Shield } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Plus, Shield, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useAnchors } from '@/hooks/useAnchors';
@@ -24,15 +24,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { ROUTES, recordDetailPath } from '@/lib/routes';
+import { IDENTITY_LABELS } from '@/lib/copy';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading, updateProfile } = useProfile();
   const { records, loading: recordsLoading, refreshAnchors } = useAnchors();
   const { revokeAnchor, error: revokeError, clearError: clearRevokeError } = useRevokeAnchor();
   const [secureDialogOpen, setSecureDialogOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+
+  const handleCopyId = useCallback(async () => {
+    if (profile?.public_id) {
+      await navigator.clipboard.writeText(profile.public_id);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  }, [profile?.public_id]);
+
+  // Privacy toggle — reads from DB, persisted via updateProfile
+  const isPublicProfile = useMemo(() => profile?.is_public_profile ?? false, [profile]);
+  const handleTogglePublicProfile = useCallback(async (checked: boolean) => {
+    await updateProfile({ is_public_profile: checked });
+  }, [updateProfile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -108,6 +126,36 @@ export function DashboardPage() {
         />
       </div>
 
+      {/* Privacy toggle */}
+      <Card className="mb-8">
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              {isPublicProfile ? (
+                <Eye className="h-5 w-5 text-primary" />
+              ) : (
+                <EyeOff className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <div className="space-y-0.5">
+              <Label htmlFor="public-profile" className="text-sm font-medium">
+                Public Verification Profile
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {isPublicProfile
+                  ? 'Your records can be verified by anyone with the fingerprint'
+                  : 'Only you can access your verification records'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="public-profile"
+            checked={isPublicProfile}
+            onCheckedChange={handleTogglePublicProfile}
+          />
+        </CardContent>
+      </Card>
+
       {/* Revoke error */}
       {revokeError && (
         <Alert variant="destructive" className="mb-4">
@@ -151,20 +199,51 @@ export function DashboardPage() {
       {/* Account info */}
       {profile && (
         <Card className="mt-6">
-          <CardContent className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Shield className="h-5 w-5 text-primary" />
+          <CardContent className="py-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Account Type</p>
+                  <p className="text-sm text-muted-foreground">
+                    {profile.role === 'ORG_ADMIN' ? 'Organization Administrator' : 'Individual'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium">Account Type</p>
-                <p className="text-sm text-muted-foreground">
-                  {profile.role === 'ORG_ADMIN' ? 'Organization Administrator' : 'Individual'}
-                </p>
-              </div>
+              {profile.org_id && (
+                <Badge variant="secondary">Organization Member</Badge>
+              )}
             </div>
-            {profile.org_id && (
-              <Badge variant="secondary">Organization Member</Badge>
+            {profile.public_id && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{IDENTITY_LABELS.USER_ID}</p>
+                    <p className="text-xs text-muted-foreground">{IDENTITY_LABELS.USER_ID_DESC}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm font-mono bg-muted rounded px-2 py-1">
+                      {profile.public_id}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleCopyId}
+                    >
+                      {copiedId ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">Copy User ID</span>
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

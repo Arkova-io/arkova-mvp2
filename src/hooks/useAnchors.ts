@@ -29,6 +29,7 @@ function mapAnchorToRecord(anchor: AnchorRow): Record {
     createdAt: anchor.created_at,
     securedAt: anchor.chain_timestamp ?? undefined,
     fileSize: anchor.file_size ?? 0,
+    credentialType: anchor.credential_type ?? undefined,
   };
 }
 

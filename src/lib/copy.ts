@@ -41,6 +41,17 @@ export const USER_ROLE_DESCRIPTIONS = {
 } as const;
 
 // =============================================================================
+// IDENTITY
+// =============================================================================
+
+export const IDENTITY_LABELS = {
+  USER_ID: 'User ID',
+  USER_ID_DESC: 'Your unique identifier. Share this instead of your name to stay anonymous.',
+  ORG_ID: 'Organization ID',
+  ORG_ID_DESC: 'Your organization\'s unique identifier for searchable verification.',
+} as const;
+
+// =============================================================================
 // ACTIONS
 // =============================================================================
 
