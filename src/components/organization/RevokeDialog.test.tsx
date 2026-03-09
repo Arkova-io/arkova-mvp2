@@ -25,6 +25,12 @@ describe('RevokeDialog', () => {
     expect(screen.getByText('test-document.pdf')).toBeInTheDocument();
   });
 
+  it('should render reason textarea', () => {
+    render(<RevokeDialog {...defaultProps} />);
+
+    expect(screen.getByLabelText(/reason for revocation/i)).toBeInTheDocument();
+  });
+
   it('should disable confirm button until "revoke" is typed', () => {
     render(<RevokeDialog {...defaultProps} />);
 
@@ -47,7 +53,30 @@ describe('RevokeDialog', () => {
     expect(confirmButton).not.toBeDisabled();
   });
 
-  it('should call onConfirm and close dialog on confirm', async () => {
+  it('should call onConfirm with reason and close dialog on confirm', async () => {
+    render(<RevokeDialog {...defaultProps} />);
+
+    // Enter a reason
+    const reasonTextarea = screen.getByLabelText(/reason for revocation/i);
+    fireEvent.change(reasonTextarea, { target: { value: 'Credential expired' } });
+
+    // Type confirmation
+    const input = screen.getByPlaceholderText('revoke');
+    fireEvent.change(input, { target: { value: 'revoke' } });
+
+    const confirmButton = screen.getByRole('button', { name: /revoke record/i });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(defaultProps.onConfirm).toHaveBeenCalledWith('Credential expired');
+    });
+
+    await waitFor(() => {
+      expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  it('should call onConfirm with empty string when no reason provided', async () => {
     render(<RevokeDialog {...defaultProps} />);
 
     const input = screen.getByPlaceholderText('revoke');
@@ -57,11 +86,7 @@ describe('RevokeDialog', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(defaultProps.onConfirm).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
+      expect(defaultProps.onConfirm).toHaveBeenCalledWith('');
     });
   });
 

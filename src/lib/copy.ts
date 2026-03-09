@@ -129,6 +129,12 @@ export const FORM_LABELS = {
   ISSUED_AT: 'Issued',
   REVOKED_AT: 'Revoked',
   EXPIRES_AT: 'Expires',
+  REVOCATION_REASON: 'Reason for Revocation',
+  REVOCATION_REASON_PLACEHOLDER: 'Describe why this record is being revoked (optional)',
+  CREDENTIAL_TYPE: 'Credential Type',
+  CREDENTIAL_TYPE_PLACEHOLDER: 'Select a credential type',
+  LABEL: 'Label',
+  LABEL_PLACEHOLDER: 'Enter a descriptive label for this credential',
 } as const;
 
 // =============================================================================
