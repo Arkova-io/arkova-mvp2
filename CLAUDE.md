@@ -220,13 +220,48 @@ These three tasks unblock everything else. Nothing else is worth doing until the
 
 ### Phase 6 — P4.5 Verification API
 
-| Story ID | Task |
-|----------|------|
-| P4.5-TS-03 | API key table + middleware |
-| P4.5-TS-01 | GET /api/v1/verify/:publicId endpoint |
-| P4.5-TS-02 | POST /api/v1/verify/batch endpoint |
-| P4.5-TS-04 | OpenAPI documentation |
-| P4.5-TS-05 | Free tier entitlement enforcement |
+Build order matters. Stories are listed in dependency order. Do not start a story until its dependencies are complete.
+
+**Architecture Decision (ADR-001 — RESOLVED):** record_uri format is `https://app.arkova.io/verify/{public_id}` (HTTPS URL). Do NOT use `arkova://rec/{public_id}`. The HTTPS format is universally resolvable by agents, browsers, and HTTP clients without custom protocol handlers.
+
+| Order | Story ID | Task | Dependency |
+|-------|----------|------|------------|
+| 1 | P4.5-TS-12 | Feature flag middleware (`ENABLE_VERIFICATION_API`) | None |
+| 2 | P4.5-TS-03 | API keys table, HMAC middleware, rate limiting | P1-TS-03 |
+| 3 | P4.5-TS-01 | GET /api/v1/verify/:publicId (frozen schema) | P6-TS-01, P4.5-TS-03, ADR-001 |
+| 4 | P4.5-TS-06 | GET /api/v1/jobs/:jobId (async job polling) | P4.5-TS-03 |
+| 5 | P4.5-TS-02 | POST /api/v1/verify/batch | P4.5-TS-01, P4.5-TS-06 |
+| 6 | P4.5-TS-07 | GET/POST/DELETE /api/v1/keys (key CRUD endpoints) | P4.5-TS-03 |
+| 7 | P4.5-TS-05 | Free tier entitlement enforcement (10K/month) | P4.5-TS-03 |
+| 8 | P4.5-TS-08 | GET /api/v1/usage | P4.5-TS-05 |
+| 9 | P4.5-TS-04 | OpenAPI 3.0 documentation (/api/docs) | All endpoints above |
+| 10 | P4.5-TS-09 | API Key Management UI (/settings/api-keys) | P4.5-TS-07, P2-TS-03, P2-TS-04 |
+| 11 | P4.5-TS-10 | API Usage Dashboard Widget | P4.5-TS-05, P3-TS-01 |
+| 12 | P4.5-TS-11 | API Key Scope Display + Read-Write Guard (UI) | P4.5-TS-09, P4.5-TS-07 |
+| 13 | P4.5-TS-13 | Rate limit load test suite (operational) | All endpoints deployed |
+
+**Phase 1.5 frozen response schema (reference for all verify endpoint stories):**
+
+{ "verified": boolean, "status": "ACTIVE" | "REVOKED" | "SUPERSEDED" | "EXPIRED", "issuer_name": string, "recipient_identifier": string, "credential_type": string, "issued_date": string | null, "expiry_date": string | null, "anchor_timestamp": string, "bitcoin_block": number | null, "network_receipt_id": string | null, "merkle_proof_hash": string | null, "record_uri": "https://app.arkova.io/verify/{public_id}", "jurisdiction": string | null }
+
+Notes: recipient_identifier is always hashed (never raw PII). jurisdiction key is omitted entirely when null (not returned as null). Breaking changes require v2+ endpoint prefix with >= 12-month deprecation notice.
+
+**Phase 1.5 file placement (extends Constitution Section 11):**
+- API route handlers: `services/worker/src/api/`
+- API middleware: `services/worker/src/middleware/`
+- API Zod schemas: `services/worker/src/schemas/`
+- API key management UI: `src/components/ApiKeySettings.tsx`, `src/pages/ApiKeySettingsPage.tsx`
+- API usage widget: `src/components/ApiUsageWidget.tsx`
+- Load tests: `tests/load/`
+
+**Phase 1.5 Constitution compliance reminders:**
+- All API endpoints run in `services/worker/` — never Next.js API routes
+- API returns only derived metadata and fingerprints — no document content (Rule 4A)
+- `recipient_identifier` is always hashed — no raw PII in API responses (Rule 4)
+- API key secrets hashed with HMAC-SHA256 — raw key never persisted (Rule 4)
+- UI copy for API key pages goes through `src/lib/copy.ts` (Rule 3)
+- All new tables require RLS + `FORCE ROW LEVEL SECURITY` + migration + rollback (Rule 2)
+- Feature flag `ENABLE_VERIFICATION_API` must be `false` until launch criteria are met
 
 ---
 
@@ -387,6 +422,7 @@ Every story that changes schema, security posture, or API contracts must update 
 | Webhooks (P7+) | `09_webhooks.md` |
 | Anchoring worker (P7+) | `10_anchoring_worker.md` |
 | Proof packages (P7+) | `11_proof_packages.md` |
+| Verification API (P4.5+) | `12_verification_api.md` |
 
 If a page does not exist yet, create it. Use this template:
 
@@ -538,6 +574,11 @@ BITCOIN_NETWORK=                  # "mainnet" or "testnet" (displayed as "Produc
 
 # Worker
 WORKER_PORT=3001
+
+# Verification API (worker only — Phase 1.5)
+ENABLE_VERIFICATION_API=false       # Feature flag: set to true only when ALL launch criteria are met
+API_KEY_HMAC_SECRET=                # HMAC-SHA256 secret for API key hashing — never logged, rotatable
+CORS_ALLOWED_ORIGINS=*              # Comma-separated allowed origins for verification API CORS
 ```
 
 ---
@@ -546,22 +587,26 @@ WORKER_PORT=3001
 
 | Priority | Complete | Partial | Not Started |
 |----------|----------|---------|-------------|
-| P1 Bedrock | 5/6 | 1/6 (P1-TS-05 Zod fix) | 0 |
-| P2 Identity | 3/5 | 2/5 (router, route guards) | 0 |
-| P3 Vault | 0/3 | 3/3 (all need data wiring) | 0 |
-| P4-E1 Anchor Engine | 1/3 | 2/3 | 0 |
+| P1 Bedrock | 5/6 | 1/6 (P1-TS-06 audit logging) | 0 |
+| P2 Identity | 3/5 (router, guards, hooks) | 0 | 2/5 (profile page, org settings page) |
+| P3 Vault | 2/3 (data wiring, privacy toggle) | 1/3 (P3-TS-03 Help link still `#`) | 0 |
+| P4-E1 Anchor Engine | 2/3 (creation flow, record detail) | 1/3 (P4-TS-02 lifecycle UI) | 0 |
 | P4-E2 Credential Metadata | 0/3 | 0/3 | 3/3 |
-| P5 Org Admin | 3/7 | 2/7 | 2/7 |
-| P6 Verification | 0/6 | 2/6 | 4/6 |
-| P7 Go-Live | 4/9 | 3/9 | 2/9 |
-| P4.5 Verification API | 0/5 | 0/5 | 5/5 |
-| **Total** | **16/47** | **15/47** | **16/47** |
+| P5 Org Admin | 0/6 | 3/6 (registry table, revoke dialog, public_id) | 3/6 |
+| P6 Verification | 0/6 | 1/6 (P6-TS-01 public anchor RPC) | 5/6 |
+| P7 Go-Live | 0/8 | 4/8 (billing schema, proof download, webhooks settings, delivery engine) | 4/8 |
+| P4.5 Verification API | 0/13 | 0/13 | 13/13 |
+| **Total** | **12/53** | **11/53** | **30/53** |
 
-**Overall: 34% complete. 34% partial. 34% not started.**
+**Overall: 23% complete. 21% partial. 57% not started.**
 
-The 15 partial stories represent the fastest path to value — most require data wiring, routing, or small targeted fixes rather than new architecture.
+_Audited against codebase on 2026-03-09. Previous counts (16/15/23) were stale — commits fb7ccc0 and 4419602 completed P3-TS-01, P3-TS-02, P4-TS-03, and P1-TS-05, but P5/P7 "complete" counts were overstated (components exist but don't meet DoD). Denominators corrected: P5=6 (P5-TS-04 does not exist), P7=8 (P7-TS-04 and P7-TS-06 do not exist), P4.5=13 (13 stories in Phase 6 table)._
+
+The 11 partial stories remain the fastest path to value — most need targeted fixes (reason field, route wiring, download handlers) rather than new architecture. The 13 Phase 1.5 stories are all new and should be built during Phase I weeks 6-7 behind the ENABLE_VERIFICATION_API feature flag.
+
+Phase 1.5 stories added: P4.5-TS-06 (async job polling), P4.5-TS-07 (key CRUD endpoints), P4.5-TS-08 (usage endpoint), P4.5-TS-09 (API key management UI), P4.5-TS-10 (usage dashboard widget), P4.5-TS-11 (key scope UI), P4.5-TS-12 (feature flag), P4.5-TS-13 (load test suite). Full story cards in Arkova_Phase15_Technical_Backlog.docx.
 
 ---
 
-_Document version: March 2026 | Repo: arkova-mvpcopy-main | 20,398 lines | 21 migrations_
-_Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Business Backlog P1-P7 March 2026_
+_Document version: March 2026 (Phase 1.5 update) | Repo: arkova-mvpcopy-main | 20,398 lines | 21 migrations_
+_Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Phase 1.5 Technical Backlog March 2026 | Arkova Business Backlog P1-P7 March 2026_
