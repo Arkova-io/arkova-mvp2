@@ -11,6 +11,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
+// Counter to generate unique storage keys per client instance.
+// Without this, multiple GoTrueClient instances share the same storage key
+// and the last signInWithPassword overwrites all previous sessions.
+let clientCounter = 0;
+
 // Test configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
 const SUPABASE_ANON_KEY =
@@ -70,7 +75,9 @@ export async function withUser(email: string, role: UserRole): Promise<TypedClie
   // Get password based on email (all demo users have same password)
   const password = getPasswordForEmail(email);
 
-  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storageKey: `test-user-${email}-${++clientCounter}` },
+  });
   const { error } = await client.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -85,7 +92,9 @@ export async function withUser(email: string, role: UserRole): Promise<TypedClie
  * Use only for test setup/teardown operations
  */
 export function createServiceClient(): TypedClient {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    auth: { storageKey: `test-service-${++clientCounter}` },
+  });
 }
 
 /**
@@ -93,7 +102,9 @@ export function createServiceClient(): TypedClient {
  * Use to test anonymous access restrictions
  */
 export function createAnonClient(): TypedClient {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storageKey: `test-anon-${++clientCounter}` },
+  });
 }
 
 /**
