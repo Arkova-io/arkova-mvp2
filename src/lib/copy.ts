@@ -27,6 +27,19 @@ export const ANCHOR_STATUS_DESCRIPTIONS = {
 } as const;
 
 // =============================================================================
+// CREDENTIAL TYPES
+// =============================================================================
+
+export const CREDENTIAL_TYPE_LABELS = {
+  CERTIFICATE: 'Certificate',
+  LICENSE: 'License',
+  DIPLOMA: 'Diploma',
+  BADGE: 'Badge',
+  ATTESTATION: 'Attestation',
+  OTHER: 'Other',
+} as const;
+
+// =============================================================================
 // USER ROLES
 // =============================================================================
 
@@ -38,6 +51,17 @@ export const USER_ROLE_LABELS = {
 export const USER_ROLE_DESCRIPTIONS = {
   INDIVIDUAL: 'Personal account for securing your documents.',
   ORG_ADMIN: 'Administrator account with access to organization records.',
+} as const;
+
+// =============================================================================
+// IDENTITY
+// =============================================================================
+
+export const IDENTITY_LABELS = {
+  USER_ID: 'User ID',
+  USER_ID_DESC: 'Your unique identifier. Share this instead of your name to stay anonymous.',
+  ORG_ID: 'Organization ID',
+  ORG_ID_DESC: 'Your organization\'s unique identifier for searchable verification.',
 } as const;
 
 // =============================================================================

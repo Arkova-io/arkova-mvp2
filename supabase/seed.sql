@@ -233,10 +233,11 @@ ON CONFLICT DO NOTHING;
 -- Schema: id, legal_name, display_name, domain, verification_status
 -- =============================================================================
 
-INSERT INTO organizations (id, legal_name, display_name, domain, verification_status, created_at, updated_at)
+INSERT INTO organizations (id, public_id, legal_name, display_name, domain, verification_status, created_at, updated_at)
 VALUES
   (
     'aaaaaaaa-0000-0000-0000-000000000001',
+    'umch2025reg4',
     'University of Michigan — Office of the Registrar',
     'UMich Registrar',
     'umich.edu',
@@ -246,6 +247,7 @@ VALUES
   ),
   (
     'bbbbbbbb-0000-0000-0000-000000000001',
+    'mwmb2025med7',
     'Midwest Medical Licensing Board',
     'Midwest Medical Board',
     'midwest-medical.org',
@@ -262,10 +264,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Current schema: profiles.id references auth.users(id) directly.
 -- =============================================================================
 
-INSERT INTO profiles (id, email, org_id, full_name, role, created_at, updated_at)
+INSERT INTO profiles (id, public_id, email, org_id, full_name, role, created_at, updated_at)
 VALUES
   (
     '11111111-0000-0000-0000-000000000001',
+    'usr4kx7mn2qp5e',
     'admin@umich-demo.arkova.io',
     'aaaaaaaa-0000-0000-0000-000000000001',
     'Alex Rivera',
@@ -275,6 +278,7 @@ VALUES
   ),
   (
     '11111111-0000-0000-0000-000000000002',
+    'usr8ht3wb6rf9a',
     'registrar@umich-demo.arkova.io',
     'aaaaaaaa-0000-0000-0000-000000000001',
     'Jordan Lee',
@@ -284,6 +288,7 @@ VALUES
   ),
   (
     '22222222-0000-0000-0000-000000000001',
+    'usr2jn9vc5ks4d',
     'admin@midwest-medical.arkova.io',
     'bbbbbbbb-0000-0000-0000-000000000001',
     'Dr. Renata Kowalski',
@@ -293,6 +298,7 @@ VALUES
   ),
   (
     '33333333-0000-0000-0000-000000000001',
+    'usr6pm3yt8nw7g',
     'individual@demo.arkova.io',
     NULL,
     'Casey Morgan',
