@@ -4,7 +4,8 @@
  * Displays a list of secured documents with status and actions.
  */
 
-import { FileText, CheckCircle, Clock, MoreHorizontal, Eye, Download, XCircle, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, Clock, MoreHorizontal, Eye, Download, XCircle, AlertTriangle, GraduationCap } from 'lucide-react';
+import { CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -24,6 +25,7 @@ export interface Record {
   createdAt: string;
   securedAt?: string;
   fileSize: number;
+  credentialType?: string | null;
 }
 
 interface RecordsListProps {
@@ -120,9 +122,17 @@ function RecordRow({ record, onView, onDownload, onRevoke }: RecordRowProps) {
             {status.label}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground font-mono truncate">
-          {record.fingerprint.slice(0, 16)}...{record.fingerprint.slice(-8)}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground font-mono truncate">
+            {record.fingerprint.slice(0, 16)}...{record.fingerprint.slice(-8)}
+          </p>
+          {record.credentialType && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <GraduationCap className="h-3 w-3" />
+              {CREDENTIAL_TYPE_LABELS[record.credentialType as keyof typeof CREDENTIAL_TYPE_LABELS] ?? record.credentialType}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="text-right hidden sm:block shrink-0">
