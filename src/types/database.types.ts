@@ -137,6 +137,7 @@ export type Database = {
           chain_timestamp: string | null
           chain_tx_id: string | null
           created_at: string
+          credential_type: Database["public"]["Enums"]["credential_type"] | null
           deleted_at: string | null
           expires_at: string | null
           file_mime: string | null
@@ -147,7 +148,9 @@ export type Database = {
           issued_at: string | null
           label: string | null
           legal_hold: boolean
+          metadata: Json | null
           org_id: string | null
+          parent_anchor_id: string | null
           public_id: string | null
           retention_until: string | null
           revocation_reason: string | null
@@ -155,12 +158,14 @@ export type Database = {
           status: Database["public"]["Enums"]["anchor_status"]
           updated_at: string
           user_id: string
+          version_number: number
         }
         Insert: {
           chain_block_height?: number | null
           chain_timestamp?: string | null
           chain_tx_id?: string | null
           created_at?: string
+          credential_type?: Database["public"]["Enums"]["credential_type"] | null
           deleted_at?: string | null
           expires_at?: string | null
           file_mime?: string | null
@@ -171,7 +176,9 @@ export type Database = {
           issued_at?: string | null
           label?: string | null
           legal_hold?: boolean
+          metadata?: Json | null
           org_id?: string | null
+          parent_anchor_id?: string | null
           public_id?: string | null
           retention_until?: string | null
           revocation_reason?: string | null
@@ -179,12 +186,14 @@ export type Database = {
           status?: Database["public"]["Enums"]["anchor_status"]
           updated_at?: string
           user_id: string
+          version_number?: number
         }
         Update: {
           chain_block_height?: number | null
           chain_timestamp?: string | null
           chain_tx_id?: string | null
           created_at?: string
+          credential_type?: Database["public"]["Enums"]["credential_type"] | null
           deleted_at?: string | null
           expires_at?: string | null
           file_mime?: string | null
@@ -195,7 +204,9 @@ export type Database = {
           issued_at?: string | null
           label?: string | null
           legal_hold?: boolean
+          metadata?: Json | null
           org_id?: string | null
+          parent_anchor_id?: string | null
           public_id?: string | null
           retention_until?: string | null
           revocation_reason?: string | null
@@ -203,6 +214,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["anchor_status"]
           updated_at?: string
           user_id?: string
+          version_number?: number
         }
         Relationships: [
           {
@@ -210,6 +222,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anchors_parent_anchor_id_fkey"
+            columns: ["parent_anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
             referencedColumns: ["id"]
           },
           {
@@ -1057,6 +1076,7 @@ export type Database = {
     }
     Enums: {
       anchor_status: "PENDING" | "SECURED" | "REVOKED" | "EXPIRED"
+      credential_type: "DEGREE" | "LICENSE" | "CERTIFICATE" | "TRANSCRIPT" | "PROFESSIONAL" | "OTHER"
       job_status: "pending" | "processing" | "completed" | "failed"
       report_status: "pending" | "generating" | "completed" | "failed"
       report_type:
