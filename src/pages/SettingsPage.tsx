@@ -8,7 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, User, Shield, Eye, EyeOff, Loader2, Check } from 'lucide-react';
+import { Settings, User, Shield, Eye, EyeOff, Loader2, Check, Copy, Fingerprint } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { AppShell } from '@/components/layout';
@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, USER_ROLE_LABELS } from '@/lib/copy';
+import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS } from '@/lib/copy';
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -30,6 +30,7 @@ export function SettingsPage() {
   const [fullName, setFullName] = useState('');
   const [nameInitialized, setNameInitialized] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize name field once profile loads
@@ -56,6 +57,12 @@ export function SettingsPage() {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     }
   }, [fullName, updateProfile]);
+
+  const handleCopy = useCallback(async (value: string, label: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
+  }, []);
 
   const handleTogglePublicProfile = useCallback(async (checked: boolean) => {
     await updateProfile({ is_public_profile: checked });
@@ -154,6 +161,68 @@ export function SettingsPage() {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Identity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Fingerprint className="h-5 w-5" />
+              Identity
+            </CardTitle>
+            <CardDescription>
+              {IDENTITY_LABELS.USER_ID_DESC}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profile?.public_id && (
+              <div className="space-y-2">
+                <Label>{IDENTITY_LABELS.USER_ID}</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-muted px-3 py-2 font-mono text-xs break-all">
+                    {profile.public_id}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => handleCopy(profile.public_id!, 'userId')}
+                  >
+                    {copied === 'userId' ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {profile?.org_id && (
+              <div className="space-y-2">
+                <Label>{IDENTITY_LABELS.ORG_ID}</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-muted px-3 py-2 font-mono text-xs break-all">
+                    {profile.org_id}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => handleCopy(profile.org_id!, 'orgId')}
+                  >
+                    {copied === 'orgId' ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {IDENTITY_LABELS.ORG_ID_DESC}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
