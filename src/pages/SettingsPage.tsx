@@ -49,12 +49,12 @@ export function SettingsPage() {
     if (!trimmed) return;
     setError(null);
 
-    try {
-      await updateProfile({ full_name: trimmed });
+    const success = await updateProfile({ full_name: trimmed });
+    if (success) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
+    } else {
+      setError('Failed to update profile');
     }
   }, [fullName, updateProfile]);
 

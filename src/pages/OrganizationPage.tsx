@@ -140,12 +140,14 @@ export function OrganizationPage() {
           </div>
           <Button
             onClick={async () => {
-              await updateOrganization({
+              const success = await updateOrganization({
                 display_name: orgDisplayName.trim(),
                 domain: orgDomain.trim() || null,
               });
-              setOrgSaved(true);
-              setTimeout(() => setOrgSaved(false), 2000);
+              if (success) {
+                setOrgSaved(true);
+                setTimeout(() => setOrgSaved(false), 2000);
+              }
             }}
             disabled={orgUpdating || !orgDisplayName.trim()}
             size="sm"

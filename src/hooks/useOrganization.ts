@@ -18,7 +18,7 @@ interface UseOrganizationResult {
   loading: boolean;
   updating: boolean;
   error: string | null;
-  updateOrganization: (updates: Partial<Pick<Organization, 'display_name' | 'domain'>>) => Promise<void>;
+  updateOrganization: (updates: Partial<Pick<Organization, 'display_name' | 'domain'>>) => Promise<boolean>;
   refreshOrganization: () => Promise<void>;
 }
 
@@ -62,10 +62,10 @@ export function useOrganization(orgId: string | null | undefined): UseOrganizati
   }, [fetchOrganization]);
 
   const updateOrganization = useCallback(
-    async (updates: Partial<Pick<Organization, 'display_name' | 'domain'>>) => {
+    async (updates: Partial<Pick<Organization, 'display_name' | 'domain'>>): Promise<boolean> => {
       if (!orgId) {
         setError('No organization');
-        return;
+        return false;
       }
 
       setUpdating(true);
@@ -78,25 +78,28 @@ export function useOrganization(orgId: string | null | undefined): UseOrganizati
 
       if (updateError) {
         setError(updateError.message);
-      } else {
-        logAuditEvent({
-          eventType: 'ORG_UPDATED',
-          eventCategory: 'ORG',
-          targetType: 'organization',
-          targetId: orgId,
-          orgId,
-          details: `Updated fields: ${Object.keys(updates).join(', ')}`,
-        });
-
-        const { data } = await supabase
-          .from('organizations')
-          .select('*')
-          .eq('id', orgId)
-          .single();
-        if (data) setOrganization(data);
+        setUpdating(false);
+        return false;
       }
 
+      logAuditEvent({
+        eventType: 'ORG_UPDATED',
+        eventCategory: 'ORG',
+        targetType: 'organization',
+        targetId: orgId,
+        orgId,
+        details: `Updated fields: ${Object.keys(updates).join(', ')}`,
+      });
+
+      const { data } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', orgId)
+        .single();
+      if (data) setOrganization(data);
+
       setUpdating(false);
+      return true;
     },
     [orgId]
   );
