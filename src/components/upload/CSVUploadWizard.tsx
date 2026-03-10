@@ -2,9 +2,12 @@
  * CSV Upload Wizard Component
  *
  * Multi-step wizard for bulk document anchoring via CSV upload.
+ * Uses real CSV parsing, validation, and bulk anchor creation.
+ *
+ * @see CRIT-6 — replaced mock/simulated data with real parsers
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Upload,
   FileSpreadsheet,
@@ -30,26 +33,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  parseCsvFile,
+  autoDetectMapping,
+  validateCsvRows,
+  extractAnchorRecords,
+} from '@/lib/csvParser';
+import type { CsvColumn, CsvRow, ColumnMapping, ValidationResult } from '@/lib/csvParser';
+import { useBulkAnchors } from '@/hooks/useBulkAnchors';
 
 type Step = 'upload' | 'mapping' | 'validation' | 'processing' | 'complete';
-
-interface CSVColumn {
-  index: number;
-  name: string;
-  sample: string;
-}
-
-interface ColumnMapping {
-  fingerprint: number | null;
-  filename: number | null;
-  fileSize: number | null;
-}
-
-interface ValidationResult {
-  valid: number;
-  invalid: number;
-  errors: Array<{ row: number; message: string }>;
-}
 
 interface ProcessingResult {
   total: number;
@@ -72,104 +65,100 @@ interface CSVUploadWizardProps {
 
 export function CSVUploadWizard({ onComplete, onCancel }: CSVUploadWizardProps) {
   const [step, setStep] = useState<Step>('upload');
-  const [, setFile] = useState<File | null>(null);
-  const [columns, setColumns] = useState<CSVColumn[]>([]);
+  const [columns, setColumns] = useState<CsvColumn[]>([]);
+  const [rows, setRows] = useState<CsvRow[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({
     fingerprint: null,
     filename: null,
     fileSize: null,
+    email: null,
+    credentialType: null,
+    metadata: null,
   });
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [processing, setProcessing] = useState<{
-    progress: number;
-    current: number;
-    total: number;
-  } | null>(null);
   const [result, setResult] = useState<ProcessingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const validRowsRef = useRef<CsvRow[]>([]);
+  const { createBulkAnchors, loading: bulkLoading, progress, processedCount, totalCount } = useBulkAnchors();
+
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
-  const handleFileUpload = useCallback(async (_uploadedFile: File) => {
+  const handleFileUpload = useCallback(async (uploadedFile: File) => {
     setError(null);
-    // In production, parse the actual file. For now use mock data.
-    // const parsedData = parseCSV(_uploadedFile);
+    try {
+      const parsed = await parseCsvFile(uploadedFile);
 
-    // Parse CSV headers (simulate)
-    // In real implementation, use a CSV parser library
-    const mockColumns: CSVColumn[] = [
-      { index: 0, name: 'filename', sample: 'document.pdf' },
-      { index: 1, name: 'fingerprint', sample: 'a1b2c3d4e5f6...' },
-      { index: 2, name: 'size', sample: '1024' },
-      { index: 3, name: 'description', sample: 'Contract file' },
-    ];
-    setColumns(mockColumns);
+      if (parsed.columns.length === 0) {
+        setError('CSV file is empty or has no headers.');
+        return;
+      }
 
-    // Auto-detect mapping
-    setMapping({
-      fingerprint: mockColumns.find(c => c.name.toLowerCase().includes('fingerprint'))?.index ?? null,
-      filename: mockColumns.find(c => c.name.toLowerCase().includes('filename') || c.name.toLowerCase().includes('name'))?.index ?? null,
-      fileSize: mockColumns.find(c => c.name.toLowerCase().includes('size'))?.index ?? null,
-    });
+      if (parsed.rows.length === 0) {
+        setError('CSV file has headers but no data rows.');
+        return;
+      }
 
-    setStep('mapping');
+      setColumns(parsed.columns);
+      setRows(parsed.rows);
+
+      const detectedMapping = autoDetectMapping(parsed.columns);
+      setMapping(detectedMapping);
+
+      setStep('mapping');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to parse CSV file.');
+    }
   }, []);
 
   const handleValidate = useCallback(async () => {
     setStep('validation');
     setError(null);
 
-    // Simulate validation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const mockValidation: ValidationResult = {
-      valid: 47,
-      invalid: 3,
-      errors: [
-        { row: 12, message: 'Invalid fingerprint format' },
-        { row: 28, message: 'Missing filename' },
-        { row: 45, message: 'Duplicate fingerprint' },
-      ],
-    };
-    setValidation(mockValidation);
-  }, []);
+    const result = validateCsvRows(rows, columns, mapping);
+    validRowsRef.current = result.valid;
+    setValidation(result);
+  }, [rows, columns, mapping]);
 
   const handleProcess = useCallback(async () => {
-    if (!validation) return;
+    if (!validation || validRowsRef.current.length === 0) return;
 
     setStep('processing');
     setError(null);
 
-    const total = validation.valid;
-    setProcessing({ progress: 0, current: 0, total });
+    const records = extractAnchorRecords(validRowsRef.current, columns, mapping);
+    const bulkResult = await createBulkAnchors(records);
 
-    // Simulate processing
-    for (let i = 0; i <= total; i++) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-      setProcessing({
-        progress: (i / total) * 100,
-        current: i,
-        total,
-      });
+    if (bulkResult) {
+      const processingResult: ProcessingResult = {
+        total: bulkResult.total,
+        successful: bulkResult.created + bulkResult.skipped,
+        failed: bulkResult.failed,
+      };
+      setResult(processingResult);
+      setStep('complete');
+      onComplete?.(processingResult);
+    } else {
+      // Error is handled by useBulkAnchors hook
+      setError('Processing failed. Please try again.');
+      setStep('validation');
     }
-
-    const processingResult: ProcessingResult = {
-      total,
-      successful: total - 2,
-      failed: 2,
-    };
-    setResult(processingResult);
-    setStep('complete');
-    onComplete?.(processingResult);
-  }, [validation, onComplete]);
+  }, [validation, columns, mapping, createBulkAnchors, onComplete]);
 
   const handleReset = useCallback(() => {
     setStep('upload');
-    setFile(null);
     setColumns([]);
-    setMapping({ fingerprint: null, filename: null, fileSize: null });
+    setRows([]);
+    setMapping({
+      fingerprint: null,
+      filename: null,
+      fileSize: null,
+      email: null,
+      credentialType: null,
+      metadata: null,
+    });
     setValidation(null);
-    setProcessing(null);
+    validRowsRef.current = [];
     setResult(null);
     setError(null);
   }, []);
@@ -278,11 +267,12 @@ export function CSVUploadWizard({ onComplete, onCancel }: CSVUploadWizardProps) 
         )}
 
         {/* Step: Processing */}
-        {step === 'processing' && processing && (
+        {step === 'processing' && (
           <ProcessingStep
-            progress={processing.progress}
-            current={processing.current}
-            total={processing.total}
+            progress={progress}
+            current={processedCount}
+            total={totalCount}
+            loading={bulkLoading}
           />
         )}
 
@@ -327,7 +317,7 @@ function UploadStep({ onFileUpload }: { onFileUpload: (file: File) => void }) {
       </label>
       <div className="text-xs text-muted-foreground space-y-1">
         <p>Required columns: fingerprint, filename</p>
-        <p>Optional columns: file_size</p>
+        <p>Optional columns: file_size, email, credential_type, metadata</p>
       </div>
     </div>
   );
@@ -340,7 +330,7 @@ function MappingStep({
   onBack,
   onNext,
 }: {
-  columns: CSVColumn[];
+  columns: CsvColumn[];
   mapping: ColumnMapping;
   onMappingChange: (mapping: ColumnMapping) => void;
   onBack: () => void;
@@ -367,7 +357,7 @@ function MappingStep({
         <option value="">Select column</option>
         {columns.map((col) => (
           <option key={col.index} value={col.index}>
-            {col.name}
+            {col.name} {col.sample ? `(${col.sample.slice(0, 20)})` : ''}
           </option>
         ))}
       </select>
@@ -395,6 +385,24 @@ function MappingStep({
           'File Size',
           mapping.fileSize,
           (v) => onMappingChange({ ...mapping, fileSize: v })
+        )}
+        <Separator />
+        {renderSelect(
+          'Email',
+          mapping.email,
+          (v) => onMappingChange({ ...mapping, email: v })
+        )}
+        <Separator />
+        {renderSelect(
+          'Credential Type',
+          mapping.credentialType,
+          (v) => onMappingChange({ ...mapping, credentialType: v })
+        )}
+        <Separator />
+        {renderSelect(
+          'Metadata',
+          mapping.metadata,
+          (v) => onMappingChange({ ...mapping, metadata: v })
         )}
       </div>
 
@@ -430,19 +438,22 @@ function ValidationStep({
     );
   }
 
+  const validCount = validation.valid.length;
+  const invalidCount = validation.invalid.length;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Card className="border-success/50 bg-success/5">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-success">{validation.valid}</div>
+            <div className="text-2xl font-bold text-success">{validCount}</div>
             <p className="text-sm text-muted-foreground">Valid records</p>
           </CardContent>
         </Card>
-        <Card className={cn(validation.invalid > 0 && 'border-destructive/50 bg-destructive/5')}>
+        <Card className={cn(invalidCount > 0 && 'border-destructive/50 bg-destructive/5')}>
           <CardContent className="pt-4">
-            <div className={cn('text-2xl font-bold', validation.invalid > 0 ? 'text-destructive' : '')}>
-              {validation.invalid}
+            <div className={cn('text-2xl font-bold', invalidCount > 0 ? 'text-destructive' : '')}>
+              {invalidCount}
             </div>
             <p className="text-sm text-muted-foreground">Invalid records</p>
           </CardContent>
@@ -455,6 +466,7 @@ function ValidationStep({
             <TableHeader>
               <TableRow>
                 <TableHead>Row</TableHead>
+                <TableHead>Column</TableHead>
                 <TableHead>Error</TableHead>
               </TableRow>
             </TableHeader>
@@ -462,6 +474,7 @@ function ValidationStep({
               {validation.errors.slice(0, 5).map((err, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-mono">{err.row}</TableCell>
+                  <TableCell className="text-muted-foreground">{err.column}</TableCell>
                   <TableCell className="text-destructive">{err.message}</TableCell>
                 </TableRow>
               ))}
@@ -480,8 +493,8 @@ function ValidationStep({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <Button onClick={onProcess} disabled={validation.valid === 0}>
-          Process {validation.valid} Records
+        <Button onClick={onProcess} disabled={validCount === 0}>
+          Process {validCount} Records
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
@@ -493,18 +506,24 @@ function ProcessingStep({
   progress,
   current,
   total,
+  loading,
 }: {
   progress: number;
   current: number;
   total: number;
+  loading: boolean;
 }) {
   return (
     <div className="space-y-4 py-4">
       <div className="flex justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        {loading ? (
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        ) : (
+          <CheckCircle className="h-10 w-10 text-primary" />
+        )}
       </div>
       <div className="text-center space-y-2">
-        <p className="font-medium">Processing records...</p>
+        <p className="font-medium">{loading ? 'Processing records...' : 'Finalizing...'}</p>
         <p className="text-sm text-muted-foreground">
           {current} of {total} records
         </p>

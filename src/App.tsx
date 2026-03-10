@@ -16,6 +16,9 @@ import { RouteGuard } from '@/components/auth/RouteGuard';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignUpPage } from '@/pages/SignUpPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { OnboardingRolePage } from '@/pages/OnboardingRolePage';
+import { OnboardingOrgPage } from '@/pages/OnboardingOrgPage';
+import { ReviewPendingPage } from '@/pages/ReviewPendingPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
 import { OrganizationPage } from '@/pages/OrganizationPage';
 import { RecordDetailPage } from '@/pages/RecordDetailPage';
@@ -98,8 +101,7 @@ export function App() {
           element={
             <AuthGuard>
               <RouteGuard allow={['/onboarding/role']}>
-                {/* TODO: Wire OnboardingRolePage when implemented */}
-                <DashboardPage />
+                <OnboardingRolePage />
               </RouteGuard>
             </AuthGuard>
           }
@@ -109,8 +111,7 @@ export function App() {
           element={
             <AuthGuard>
               <RouteGuard allow={['/onboarding/org']}>
-                {/* TODO: Wire OnboardingOrgPage when implemented */}
-                <DashboardPage />
+                <OnboardingOrgPage />
               </RouteGuard>
             </AuthGuard>
           }
@@ -122,8 +123,7 @@ export function App() {
           element={
             <AuthGuard>
               <RouteGuard allow={['/review-pending']}>
-                {/* TODO: Wire ReviewPendingPage when implemented */}
-                <DashboardPage />
+                <ReviewPendingPage />
               </RouteGuard>
             </AuthGuard>
           }

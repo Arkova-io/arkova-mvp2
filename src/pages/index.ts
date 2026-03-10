@@ -12,4 +12,7 @@ export { SettingsPage } from './SettingsPage';
 export { HelpPage } from './HelpPage';
 export { WebhookSettingsPage } from './WebhookSettingsPage';
 export { CredentialTemplatesPage } from './CredentialTemplatesPage';
+export { OnboardingRolePage } from './OnboardingRolePage';
+export { OnboardingOrgPage } from './OnboardingOrgPage';
+export { ReviewPendingPage } from './ReviewPendingPage';
 export { VaultDashboard } from '../components/vault';

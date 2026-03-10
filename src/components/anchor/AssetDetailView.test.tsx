@@ -71,13 +71,15 @@ describe('AssetDetailView', () => {
     });
   });
 
-  it('should show download button for secured anchors', () => {
+  it('should show download buttons for secured anchors', () => {
     const onDownloadProof = vi.fn();
+    const onDownloadProofJson = vi.fn();
     const { getByText } = render(
-      <AssetDetailView anchor={mockAnchor} onDownloadProof={onDownloadProof} />
+      <AssetDetailView anchor={mockAnchor} onDownloadProof={onDownloadProof} onDownloadProofJson={onDownloadProofJson} />
     );
 
-    expect(getByText('Download')).toBeInTheDocument();
+    expect(getByText('PDF')).toBeInTheDocument();
+    expect(getByText('JSON')).toBeInTheDocument();
   });
 
   it('should hide download button for pending anchors', () => {

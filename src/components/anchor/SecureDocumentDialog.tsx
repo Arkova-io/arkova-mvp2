@@ -2,6 +2,9 @@
  * Secure Document Dialog
  *
  * Modal for securing a new document with step-by-step flow.
+ * Uses real Supabase insert (following IssueCredentialForm pattern).
+ *
+ * @see CRIT-1 — replaced setTimeout simulation with real DB insert
  */
 
 import { useState, useCallback } from 'react';
@@ -15,9 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from './FileUpload';
+import { supabase } from '@/lib/supabase';
+import { validateAnchorCreate } from '@/lib/validators';
+import { logAuditEvent } from '@/lib/auditLog';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 interface SecureDocumentDialogProps {
   open: boolean;
@@ -37,9 +44,11 @@ export function SecureDocumentDialog({
   onOpenChange,
   onSuccess,
 }: SecureDocumentDialogProps) {
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
   const [step, setStep] = useState<Step>('upload');
   const [fileData, setFileData] = useState<FileData | null>(null);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = useCallback((file: File, fingerprint: string) => {
@@ -47,31 +56,58 @@ export function SecureDocumentDialog({
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!fileData) return;
+    if (!fileData || !user) return;
 
     setStep('processing');
-    setProgress(0);
+    setError(null);
 
     try {
-      // Simulate anchor creation process
-      // In real implementation, this would call the API
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setProgress(i);
-      }
+      const validated = validateAnchorCreate({
+        fingerprint: fileData.fingerprint,
+        filename: fileData.file.name,
+        file_size: fileData.file.size,
+        file_mime: fileData.file.type || null,
+        org_id: profile?.org_id || null,
+      });
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('anchors')
+        .insert({
+          ...validated,
+          user_id: user.id,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      logAuditEvent({
+        eventType: 'ANCHOR_CREATED',
+        eventCategory: 'ANCHOR',
+        targetType: 'anchor',
+        targetId: inserted.id,
+        orgId: profile?.org_id,
+        details: `Secured document "${fileData.file.name}"`,
+      });
 
       setStep('success');
       onSuccess?.();
-    } catch {
-      setError('Failed to secure document. Please try again.');
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ZodError') {
+        const zodErr = err as import('zod').ZodError;
+        setError(zodErr.issues.map((i) => i.message).join('; '));
+      } else {
+        setError(
+          err instanceof Error ? err.message : 'Failed to secure document. Please try again.'
+        );
+      }
       setStep('error');
     }
-  }, [fileData, onSuccess]);
+  }, [fileData, user, profile, onSuccess]);
 
   const handleClose = useCallback(() => {
     setStep('upload');
     setFileData(null);
-    setProgress(0);
     setError(null);
     onOpenChange(false);
   }, [onOpenChange]);
@@ -139,10 +175,6 @@ export function SecureDocumentDialog({
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-medium">Securing your document...</p>
-                <Progress value={progress} className="w-full" />
-                <p className="text-xs text-muted-foreground">
-                  {progress < 50 ? 'Generating record...' : 'Finalizing...'}
-                </p>
               </div>
             </div>
           )}

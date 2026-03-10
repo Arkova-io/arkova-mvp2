@@ -121,6 +121,30 @@ export function RecordDetailPage() {
             });
           });
         }}
+        onDownloadProofJson={() => {
+          import('@/lib/proofPackage').then(({ generateProofPackage, downloadProofPackage, getProofPackageFilename }) => {
+            const proofPackage = generateProofPackage({
+              id: anchor.id,
+              fingerprint: anchor.fingerprint,
+              filename: anchor.filename,
+              file_size: anchor.file_size,
+              file_mime: anchor.file_mime,
+              status: anchor.status as 'PENDING' | 'SECURED' | 'REVOKED',
+              public_id: anchor.public_id,
+              chain_tx_id: anchor.chain_tx_id,
+              chain_block_height: anchor.chain_block_height,
+              chain_timestamp: anchor.chain_timestamp,
+              created_at: anchor.created_at,
+              user_id: anchor.user_id,
+              org_id: anchor.org_id,
+            });
+            const filename = getProofPackageFilename({
+              filename: anchor.filename,
+              public_id: anchor.public_id,
+            });
+            downloadProofPackage(proofPackage, filename);
+          });
+        }}
       />
     </AppShell>
   );

@@ -54,6 +54,7 @@ interface AssetDetailViewProps {
   anchor: AnchorRecord;
   onBack?: () => void;
   onDownloadProof?: () => void;
+  onDownloadProofJson?: () => void;
 }
 
 type VerificationState = 'idle' | 'verifying' | 'match' | 'mismatch';
@@ -85,7 +86,7 @@ const statusConfig = {
   },
 };
 
-export function AssetDetailView({ anchor, onBack, onDownloadProof }: AssetDetailViewProps) {
+export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadProofJson }: AssetDetailViewProps) {
   const [copied, setCopied] = useState(false);
   const [verificationState, setVerificationState] = useState<VerificationState>('idle');
   const [showVerifyDropzone, setShowVerifyDropzone] = useState(false);
@@ -382,7 +383,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof }: AssetDetail
       </Card>
 
       {/* Actions */}
-      {anchor.status === 'SECURED' && onDownloadProof && (
+      {anchor.status === 'SECURED' && (onDownloadProof || onDownloadProofJson) && (
         <Card>
           <CardContent className="flex items-center justify-between py-4">
             <div>
@@ -391,10 +392,20 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof }: AssetDetail
                 Get a complete verification package with all metadata
               </p>
             </div>
-            <Button onClick={onDownloadProof}>
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </Button>
+            <div className="flex gap-2">
+              {onDownloadProof && (
+                <Button onClick={onDownloadProof} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+              )}
+              {onDownloadProofJson && (
+                <Button onClick={onDownloadProofJson}>
+                  <Download className="mr-2 h-4 w-4" />
+                  JSON
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
