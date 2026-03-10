@@ -205,13 +205,13 @@ Available regardless of feature flag state (Constitution 1.9).
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Express server + cron | Complete | `index.ts` with graceful shutdown |
-| Anchor processing jobs | Complete | `anchor.ts`, `anchorWithClaim.ts` |
+| Anchor processing jobs | Complete | `anchor.ts` (anchorWithClaim.ts removed — dead code, HARDENING-1) |
 | Chain client interface | Complete | MockChainClient only (CRIT-2) |
 | Stripe webhook handlers | Complete | P7-TS-03 |
 | Outbound webhook delivery | Partial | Engine exists, not wired to anchor lifecycle |
 | Report generation | Complete | `report.ts` |
 | Rate limiter | Complete | `utils/rateLimit.ts` |
-| Worker test coverage | 0% | Production blocker — hardening sprint planned |
+| Worker test coverage | 114 tests, 80%+ on all critical paths | HARDENING-1/2/3 complete (2026-03-10) |
 
 ## Testing
 
@@ -222,7 +222,7 @@ cd services/worker
 npm test
 ```
 
-**Current coverage: 0%.** Worker hardening sprint (CLAUDE.md Section 9, Week 1) is the prerequisite before real chain integration.
+**Current coverage (2026-03-10):** 114 tests across 6 test files. All 6 critical path files (`anchor.ts`, `chain/client.ts`, `chain/mock.ts`, `webhooks/delivery.ts`, `stripe/client.ts`, `stripe/handlers.ts`) pass 80% per-file thresholds. Non-critical files (`stripe/mock.ts`, `jobs/report.ts`, `jobs/webhook.ts`, `utils/*`, `config.ts`, `index.ts`) remain untested.
 
 ### Mock Mode
 
@@ -245,3 +245,4 @@ const mockChain: IAnchorPublisher = {
 | Date | Story | Change |
 |------|-------|--------|
 | 2026-03-10 | Audit | Rewrote: fixed "Next.js" to "Vite" framing, updated directory structure to match actual files (added webhooks/delivery.ts, anchorWithClaim.ts, report.ts, utils/correlationId.ts, utils/rateLimit.ts; removed nonexistent cleanup.ts, Dockerfile), documented implementation status and known gaps |
+| 2026-03-10 | HARDENING-1/2/3 | Updated coverage status: 114 tests, 80%+ thresholds on all 6 critical paths. Removed anchorWithClaim.ts reference (deleted as dead code in HARDENING-1). |

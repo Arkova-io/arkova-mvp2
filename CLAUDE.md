@@ -553,14 +553,14 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 
 > **Decision (2026-03-10):** Worker/chain path has 0% test coverage. Harden before writing real chain code so regressions are caught immediately when MockChainClient is swapped for bitcoinjs-lib.
 
-| Task | Detail |
-|------|--------|
-| Unit test `processAnchor()` | Test with mock chain client: success path, network timeout, malformed receipt, duplicate submission |
-| Test job claim/completion flow | Verify `processPendingAnchors()` claims, processes, and marks jobs done correctly |
-| Test chain client interface contract | Ensure MockChainClient exercises the same interface the real client will implement |
-| Wire webhook dispatch in `anchor.ts` | Connect status → SECURED lifecycle event to `delivery.ts`. Currently a dead end. |
-| Test webhook HMAC signing | Verify HMAC-SHA256 signing correctness in `delivery.ts` |
-| Anchor lifecycle integration test | PENDING → job claimed → chain submitted → SECURED → webhook fired → public verify works |
+| Task | Status | Detail |
+|------|--------|--------|
+| Unit test `processAnchor()` | ✅ HARDENING-1 | 27 tests, 100% coverage on anchor.ts |
+| Test job claim/completion flow | ✅ HARDENING-2 | processPendingAnchors query shape, failure isolation, completion logging |
+| Test chain client interface contract | ✅ HARDENING-2 | 23 tests (18 mock.ts + 5 client.ts), 100% coverage |
+| Wire webhook dispatch in `anchor.ts` | **NEXT** | Connect status → SECURED lifecycle event to `delivery.ts`. Currently a dead end. |
+| Test webhook HMAC signing | ✅ HARDENING-3 | 30 tests on delivery.ts (99% stmts), HMAC verified against crypto.createHmac |
+| Anchor lifecycle integration test | **NEXT** | PENDING → job claimed → chain submitted → SECURED → webhook fired → public verify works |
 
 ### Week 1-2: Payments + Proof
 

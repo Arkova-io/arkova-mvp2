@@ -1,5 +1,5 @@
 # P7 Go-Live — Story Documentation
-_Last updated: 2026-03-10 4:15 PM EDT | 3/10 stories COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED_
+_Last updated: 2026-03-10 4:30 PM EST | 3/10 stories COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED_
 
 ## Group Overview
 
@@ -21,7 +21,7 @@ Key deliverables:
 
 **Mock/Real Toggle Pattern:** The worker supports a `useMocks` configuration flag. When true (or in test), mock implementations are used for Stripe (`MockStripeClient`) and Bitcoin (`MockChainClient`). Real implementations are gated behind the `ENABLE_PROD_NETWORK_ANCHORING` switchboard flag.
 
-**Worker Hardening Progress (2026-03-10):** The worker/chain critical path started at 0% test coverage. HARDENING-1 added 27 tests for `processAnchor()` (100% coverage on `anchor.ts`). HARDENING-2 added 32 more tests covering `MockChainClient` (18 tests), `getChainClient()` factory (5 tests), and `processPendingAnchors()` job claim/completion flow (9 tests). Total: 59 worker tests, 100% coverage on `anchor.ts`, `mock.ts`, `client.ts`. Remaining hardening targets: `delivery.ts`, `stripe/handlers.ts`, `stripe/client.ts` (all at 0%).
+**Worker Hardening Progress (2026-03-10):** The worker/chain critical path started at 0% test coverage. HARDENING-1 added 27 tests for `processAnchor()` (100% coverage on `anchor.ts`). HARDENING-2 added 32 more tests covering `MockChainClient` (18 tests), `getChainClient()` factory (5 tests), and `processPendingAnchors()` job claim/completion flow (9 tests). HARDENING-3 added 55 more tests covering `delivery.ts` (30 tests, 99% stmts), `stripe/handlers.ts` (18 tests, 98% stmts), and `stripe/client.ts` (7 tests, 100%). Total: 114 worker tests. All 6 critical path files pass 80% coverage thresholds. Remaining hardening work: wire webhook dispatch in `anchor.ts` (task 4), anchor lifecycle integration test (task 6).
 
 ---
 
