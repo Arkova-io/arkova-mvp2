@@ -123,19 +123,59 @@ docs/confluence/                   ← Architecture, data model, security, audit
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-10):** Story documentation Session 3 complete. Created `docs/stories/07_p6_verification.md`, `08_p7_go_live.md`, `09_p45_verification_api.md`. Updated CLAUDE.md Sections 3, 4, 6 with story doc maintenance rules. Exported all story docs to .docx in `docs/stories/docx/`. All 9 story group docs + index now exist. Previous session: Worker hardening sprint decision.
+**Last session (2026-03-10 ~4:15 PM EST):** HARDENING-3 complete. Wrote tests for delivery.ts (30 tests), stripe/client.ts (7 tests), stripe/handlers.ts (18 tests). All critical worker paths now have >80% coverage. Total worker tests: 114 (was 59 after HARDENING-2). No bugs found. See HARDENING-3 section below.
 
 **Worker hardening scope (6 tasks):**
-1. Unit test `processAnchor()` — success, timeout, malformed receipt, duplicate
-2. Test `processPendingAnchors()` job claim/completion flow
-3. Test ChainClient interface contract (MockChainClient exercises real interface)
-4. Wire webhook dispatch in `anchor.ts` (status → SECURED triggers delivery.ts)
-5. Test webhook HMAC signing correctness
-6. Anchor lifecycle integration test (PENDING → SECURED → webhook → public verify)
+1. ✅ Unit test `processAnchor()` — HARDENING-1 (27 tests)
+2. ✅ Test `processPendingAnchors()` job claim/completion flow — HARDENING-2
+3. ✅ Test ChainClient interface contract — HARDENING-2 (23 tests)
+4. Wire webhook dispatch in `anchor.ts` (status → SECURED triggers delivery.ts) — **NEXT**
+5. ✅ Test webhook HMAC signing correctness — HARDENING-3
+6. Anchor lifecycle integration test (PENDING → SECURED → webhook → public verify) — **NEXT**
 
-**Coverage infrastructure (2026-03-10):** `@vitest/coverage-v8` installed in both root and worker. Per-file 80% thresholds on critical paths: `fileHasher.ts` (passes at 100%), `validators.ts` (needs function coverage bump), `proofPackage.ts` (needs tests), and 7 worker files (all at 0% — blocked on hardening sprint). CI enforces via `npm run test:coverage`. Config in `vitest.config.ts` and `services/worker/vitest.config.ts`.
+**Coverage infrastructure (2026-03-10):** `@vitest/coverage-v8` installed in both root and worker. Per-file 80% thresholds on critical paths. All 6 critical worker files now pass thresholds. Remaining coverage gaps: `stripe/mock.ts` (0% — unused in tests, only used as a factory singleton), `jobs/report.ts` (0%), `jobs/webhook.ts` (0%), `utils/*` (0%).
 
-**Next session should:** Start hardening work — begin with task 1 (unit test processAnchor).
+**Next session should:** Wire webhook dispatch in `anchor.ts` (task 4), then write the anchor lifecycle integration test (task 6).
+
+---
+
+## HARDENING-3 (2026-03-10 4:15 PM EST) — COMPLETE
+
+**Scope:** Webhook delivery engine tests + Stripe client/handlers tests — all three files had 0% coverage with 80% thresholds enforced.
+
+**New test files:**
+- `services/worker/src/webhooks/delivery.test.ts` — 30 tests, 99%/85%/100%/99% (stmts/branch/funcs/lines) on delivery.ts
+  - HMAC-SHA256 signing: correctness verification against crypto.createHmac, determinism, different secrets
+  - Exponential backoff: delay doubles per attempt via next_retry_at
+  - dispatchWebhookEvent: feature flag off, flag null, no endpoints, null endpoints, DB error, parallel delivery, payload structure, endpoint query filters
+  - deliverToEndpoint: idempotency (already delivered), log insert failure, HTTP 200 success, HTTP 500 retry, response body truncation, network error (ECONNREFUSED), timeout (AbortError), AbortSignal presence, success logging, delivery log fields
+  - processWebhookRetries: empty queue, null data, DB error, inactive endpoint skip, null endpoint skip, retry with incremented attempt, query shape (status=retrying, limit=50)
+- `services/worker/src/stripe/client.test.ts` — 7 tests, 100% coverage on client.ts
+  - Mock mode: uses mockStripeClient, passes string payload, converts Buffer to string
+  - Production mode: uses stripe.webhooks.constructEvent, passes payload/sig/secret, propagates errors, passes Buffer directly
+- `services/worker/src/stripe/handlers.test.ts` — 18 tests, 98%/94%/100%/98% on handlers.ts
+  - handleStripeWebhook routing: all 4 event types + unhandled type + event recording
+  - handleCheckoutComplete: profile update with user_id, audit event, missing user_id (2 cases), DB error throws, no audit on failure, logging
+  - handleSubscriptionUpdated/Deleted/PaymentFailed: smoke tests
+
+**Coverage after HARDENING-3 (all critical paths):**
+
+| File | Stmts | Branch | Funcs | Lines | Threshold |
+|------|-------|--------|-------|-------|-----------|
+| chain/client.ts | 100% | 100% | 100% | 100% | 80% ✅ |
+| chain/mock.ts | 100% | 100% | 100% | 100% | 80% ✅ |
+| jobs/anchor.ts | 100% | 100% | 100% | 100% | 80% ✅ |
+| stripe/client.ts | 100% | 100% | 100% | 100% | 80% ✅ |
+| stripe/handlers.ts | 98% | 94% | 100% | 98% | 80% ✅ |
+| webhooks/delivery.ts | 99% | 85% | 100% | 99% | 80% ✅ |
+
+**Uncovered lines (acceptable):**
+- `handlers.ts:132-134` — `isEventProcessed` early return (hardcoded `false`, unreachable until real idempotency implementation)
+- `delivery.ts:135,164` — `next_retry_at: null` branch when `attempt >= MAX_RETRIES` (only reachable through retry at attempt 5)
+
+**Total worker tests:** 114 (was 59 after HARDENING-2)
+**Bugs found:** None. All three modules are clean.
+**Pre-existing coverage gaps (non-threshold):** `stripe/mock.ts` (0%), `jobs/report.ts` (0%), `jobs/webhook.ts` (0%), `utils/*` (0%), `config.ts` (0%), `index.ts` (0%).
 
 ---
 
