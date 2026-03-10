@@ -5,14 +5,15 @@
  * For INDIVIDUAL users, shows a prompt to join an organization.
  */
 
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Users } from 'lucide-react';
+import { Building2, Users, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useOrgMembers } from '@/hooks/useOrgMembers';
 import { AppShell } from '@/components/layout';
-import { OrgRegistryTable, MembersTable } from '@/components/organization';
+import { OrgRegistryTable, MembersTable, IssueCredentialForm } from '@/components/organization';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +27,7 @@ export function OrganizationPage() {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { members, loading: membersLoading } = useOrgMembers(profile?.org_id);
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -87,8 +89,12 @@ export function OrganizationPage() {
 
       {/* Org records section */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Organization Records</CardTitle>
+          <Button onClick={() => setIssueDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Issue Credential
+          </Button>
         </CardHeader>
         <Separator />
         <CardContent className="pt-4">
@@ -100,6 +106,12 @@ export function OrganizationPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      {/* Issue Credential Dialog */}
+      <IssueCredentialForm
+        open={issueDialogOpen}
+        onOpenChange={setIssueDialogOpen}
+      />
     </AppShell>
   );
 }

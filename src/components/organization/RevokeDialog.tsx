@@ -2,6 +2,7 @@
  * Revoke Record Dialog
  *
  * Confirmation dialog for revoking a secured record.
+ * Includes an optional reason field (persisted to DB).
  */
 
 import { useState, useCallback } from 'react';
@@ -17,13 +18,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { FORM_LABELS } from '@/lib/copy';
 
 interface RevokeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recordName: string;
-  onConfirm: () => Promise<void>;
+  onConfirm: (reason: string) => Promise<void>;
 }
 
 export function RevokeDialog({
@@ -33,6 +36,7 @@ export function RevokeDialog({
   onConfirm,
 }: RevokeDialogProps) {
   const [confirmation, setConfirmation] = useState('');
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
   const isConfirmed = confirmation.toLowerCase() === 'revoke';
@@ -42,19 +46,21 @@ export function RevokeDialog({
 
     setLoading(true);
     try {
-      await onConfirm();
+      await onConfirm(reason.trim());
       onOpenChange(false);
     } finally {
       setLoading(false);
       setConfirmation('');
+      setReason('');
     }
-  }, [isConfirmed, onConfirm, onOpenChange]);
+  }, [isConfirmed, onConfirm, onOpenChange, reason]);
 
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!loading) {
       onOpenChange(newOpen);
       if (!newOpen) {
         setConfirmation('');
+        setReason('');
       }
     }
   }, [loading, onOpenChange]);
@@ -81,17 +87,34 @@ export function RevokeDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-2 py-2">
-          <Label htmlFor="revoke-confirm">
-            Type <span className="font-mono font-semibold">revoke</span> to confirm
-          </Label>
-          <Input
-            id="revoke-confirm"
-            value={confirmation}
-            onChange={(e) => setConfirmation(e.target.value)}
-            placeholder="revoke"
-            disabled={loading}
-          />
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="revoke-reason">
+              {FORM_LABELS.REVOCATION_REASON}
+            </Label>
+            <Textarea
+              id="revoke-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={FORM_LABELS.REVOCATION_REASON_PLACEHOLDER}
+              disabled={loading}
+              maxLength={2000}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="revoke-confirm">
+              Type <span className="font-mono font-semibold">revoke</span> to confirm
+            </Label>
+            <Input
+              id="revoke-confirm"
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+              placeholder="revoke"
+              disabled={loading}
+            />
+          </div>
         </div>
 
         <AlertDialogFooter>

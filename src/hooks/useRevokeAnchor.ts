@@ -2,13 +2,14 @@
  * useRevokeAnchor Hook
  *
  * Hook for revoking anchors via the revoke_anchor RPC function.
+ * Supports an optional reason parameter (persisted to DB).
  */
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface UseRevokeAnchorReturn {
-  revokeAnchor: (anchorId: string) => Promise<boolean>;
+  revokeAnchor: (anchorId: string, reason?: string) => Promise<boolean>;
   loading: boolean;
   error: string | null;
   clearError: () => void;
@@ -22,7 +23,7 @@ export function useRevokeAnchor(): UseRevokeAnchorReturn {
     setError(null);
   }, []);
 
-  const revokeAnchor = useCallback(async (anchorId: string): Promise<boolean> => {
+  const revokeAnchor = useCallback(async (anchorId: string, reason?: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
@@ -31,6 +32,7 @@ export function useRevokeAnchor(): UseRevokeAnchorReturn {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: rpcError } = await (supabase.rpc as any)('revoke_anchor', {
         anchor_id: anchorId,
+        reason: reason || null,
       });
 
       if (rpcError) {

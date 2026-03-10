@@ -35,6 +35,7 @@ describe('useRevokeAnchor', () => {
     expect(success!).toBe(true);
     expect(mockRpc).toHaveBeenCalledWith('revoke_anchor', {
       anchor_id: 'test-anchor-id',
+      reason: null,
     });
     expect(result.current.error).toBeNull();
   });

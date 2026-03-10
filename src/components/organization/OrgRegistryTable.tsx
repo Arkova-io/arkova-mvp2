@@ -2,6 +2,8 @@
  * Organization Registry Table
  *
  * Server-side paginated table of org anchors with filtering.
+ * Features: status filter, search (filename + fingerprint),
+ * date range filter, bulk selection, CSV export.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -20,11 +22,14 @@ import {
   Download,
   Loader2,
   FileDown,
+  CalendarIcon,
+  X,
 } from 'lucide-react';
 import { useExportAnchors } from '@/hooks/useExportAnchors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -98,6 +103,9 @@ export function OrgRegistryTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<AnchorStatus | 'ALL'>('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const { exportAnchors, loading: exporting } = useExportAnchors();
@@ -122,9 +130,18 @@ export function OrgRegistryTable({
       query = query.eq('status', statusFilter);
     }
 
-    // Apply search filter (filename)
+    // Apply search filter (filename OR fingerprint)
     if (searchQuery.trim()) {
-      query = query.ilike('filename', `%${searchQuery.trim()}%`);
+      const q = searchQuery.trim();
+      query = query.or(`filename.ilike.%${q}%,fingerprint.ilike.%${q}%`);
+    }
+
+    // Apply date range filter
+    if (dateFrom) {
+      query = query.gte('created_at', `${dateFrom}T00:00:00Z`);
+    }
+    if (dateTo) {
+      query = query.lte('created_at', `${dateTo}T23:59:59Z`);
     }
 
     const { data, error, count } = await query;
@@ -137,7 +154,7 @@ export function OrgRegistryTable({
     }
 
     setLoading(false);
-  }, [orgId, currentPage, statusFilter, searchQuery]);
+  }, [orgId, currentPage, statusFilter, searchQuery, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchAnchors();
@@ -146,7 +163,55 @@ export function OrgRegistryTable({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchQuery]);
+    setSelectedIds(new Set());
+  }, [statusFilter, searchQuery, dateFrom, dateTo]);
+
+  // Bulk selection handlers
+  const allOnPageSelected = anchors.length > 0 && anchors.every((a) => selectedIds.has(a.id));
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        anchors.forEach((a) => next.delete(a.id));
+      } else {
+        anchors.forEach((a) => next.add(a.id));
+      }
+      return next;
+    });
+  }, [anchors, allOnPageSelected]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkRevoke = useCallback(() => {
+    const selected = anchors.filter((a) => selectedIds.has(a.id) && a.status !== 'REVOKED');
+    if (selected.length > 0 && onRevokeAnchor) {
+      selected.forEach((a) => onRevokeAnchor(a));
+    }
+  }, [anchors, selectedIds, onRevokeAnchor]);
+
+  const clearDateRange = useCallback(() => {
+    setDateFrom('');
+    setDateTo('');
+  }, []);
+
+  const revocableSelected = anchors.filter(
+    (a) => selectedIds.has(a.id) && a.status !== 'REVOKED'
+  ).length;
 
   const formatFileSize = (bytes: number | null): string => {
     if (!bytes) return '-';
@@ -168,10 +233,10 @@ export function OrgRegistryTable({
       {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 gap-2">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by filename..."
+              placeholder="Search by filename or fingerprint..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -213,11 +278,64 @@ export function OrgRegistryTable({
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Date range:</span>
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="w-[160px] h-9"
+        />
+        <span className="text-sm text-muted-foreground">to</span>
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="w-[160px] h-9"
+        />
+        {(dateFrom || dateTo) && (
+          <Button variant="ghost" size="sm" onClick={clearDateRange} className="h-9 px-2">
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-2">
+          <span className="text-sm font-medium">
+            {selectedIds.size} selected
+          </span>
+          {revocableSelected > 0 && onRevokeAnchor && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkRevoke}
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Revoke ({revocableSelected})
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={allOnPageSelected && anchors.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all on page"
+                />
+              </TableHead>
               <TableHead>Document</TableHead>
               <TableHead className="hidden md:table-cell">Fingerprint</TableHead>
               <TableHead>Status</TableHead>
@@ -229,13 +347,13 @@ export function OrgRegistryTable({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : anchors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No records found
                 </TableCell>
               </TableRow>
@@ -245,7 +363,14 @@ export function OrgRegistryTable({
                 const StatusIcon = status.icon;
 
                 return (
-                  <TableRow key={anchor.id}>
+                  <TableRow key={anchor.id} data-state={selectedIds.has(anchor.id) ? 'selected' : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(anchor.id)}
+                        onCheckedChange={() => toggleSelect(anchor.id)}
+                        aria-label={`Select ${anchor.filename}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
