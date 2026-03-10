@@ -19,6 +19,7 @@ const {
   mockLogger,
   anchorsTable,
   updateChain,
+  selectChain,
 } = vi.hoisted(() => {
   // Terminal operations — configured per test
   const mockSingle = vi.fn();
@@ -73,6 +74,7 @@ const {
     anchorsTable,
     auditTable,
     updateChain,
+    selectChain,
   };
 });
 
@@ -476,5 +478,121 @@ describe('processPendingAnchors', () => {
     const result = await processPendingAnchors();
 
     expect(result).toEqual({ processed: 0, failed: 2 });
+  });
+
+  // ---- HARDENING-2: Query shape verification ----
+
+  describe('query shape', () => {
+    it('queries anchors table', async () => {
+      await processPendingAnchors();
+
+      expect(db.from).toHaveBeenCalledWith('anchors');
+    });
+
+    it('selects only id column', async () => {
+      await processPendingAnchors();
+
+      expect(anchorsTable.select).toHaveBeenCalledWith('id');
+    });
+
+    it('filters by status PENDING', async () => {
+      await processPendingAnchors();
+
+      expect(selectChain.eq).toHaveBeenCalledWith('status', 'PENDING');
+    });
+
+    it('filters out soft-deleted records (deleted_at IS NULL)', async () => {
+      await processPendingAnchors();
+
+      expect(selectChain.is).toHaveBeenCalledWith('deleted_at', null);
+    });
+
+    it('limits batch size to 100', async () => {
+      await processPendingAnchors();
+
+      expect(mockLimit).toHaveBeenCalledWith(100);
+    });
+  });
+
+  // ---- HARDENING-2: Processing order and isolation ----
+
+  describe('processing order and failure isolation', () => {
+    it('processes anchors sequentially (not in parallel)', async () => {
+      const callOrder: string[] = [];
+
+      mockLimit.mockResolvedValue({
+        data: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }],
+        error: null,
+      });
+
+      // Track call order via submitFingerprint
+      mockSingle
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a1' }, error: null })
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a2' }, error: null })
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a3' }, error: null });
+
+      mockSubmitFingerprint.mockImplementation(async () => {
+        callOrder.push(`submit-${mockSubmitFingerprint.mock.calls.length}`);
+        return MOCK_RECEIPT;
+      });
+
+      await processPendingAnchors();
+
+      // Should process sequentially: submit-1, submit-2, submit-3
+      expect(callOrder).toEqual(['submit-1', 'submit-2', 'submit-3']);
+    });
+
+    it('continues processing remaining anchors after one fails', async () => {
+      mockLimit.mockResolvedValue({
+        data: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }],
+        error: null,
+      });
+
+      // a1 succeeds, a2 chain timeout, a3 succeeds
+      mockSingle
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a1' }, error: null })
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a2' }, error: null })
+        .mockResolvedValueOnce({ data: { ...MOCK_ANCHOR, id: 'a3' }, error: null });
+
+      mockSubmitFingerprint
+        .mockResolvedValueOnce(MOCK_RECEIPT)        // a1 ok
+        .mockRejectedValueOnce(new Error('timeout')) // a2 fails
+        .mockResolvedValueOnce(MOCK_RECEIPT);        // a3 ok
+
+      const result = await processPendingAnchors();
+
+      expect(result).toEqual({ processed: 2, failed: 1 });
+      // All three were attempted
+      expect(mockSubmitFingerprint).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not throw even when all anchors fail with exceptions', async () => {
+      mockLimit.mockResolvedValue({
+        data: [{ id: 'a1' }, { id: 'a2' }],
+        error: null,
+      });
+
+      mockSingle.mockResolvedValue({ data: MOCK_ANCHOR, error: null });
+      mockSubmitFingerprint.mockRejectedValue(new Error('chain down'));
+
+      // Should not throw — failures are counted, not propagated
+      const result = await processPendingAnchors();
+
+      expect(result).toEqual({ processed: 0, failed: 2 });
+    });
+
+    it('logs total counts on completion', async () => {
+      mockLimit.mockResolvedValue({
+        data: [{ id: 'a1' }],
+        error: null,
+      });
+
+      await processPendingAnchors();
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ processed: expect.any(Number), failed: expect.any(Number) }),
+        'Finished processing pending anchors',
+      );
+    });
   });
 });

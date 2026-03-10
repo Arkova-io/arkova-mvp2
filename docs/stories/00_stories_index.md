@@ -1,5 +1,5 @@
 # Arkova Story Documentation Index
-_Last updated: 2026-03-10_
+_Last updated: 2026-03-10 4:15 PM EDT_
 
 ## Overview
 
@@ -92,7 +92,9 @@ For a new developer joining the project, read in this order:
 
 ## Bug Cross-Reference
 
-See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs.
+See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs (including layman's summaries).
+
+### Active Bugs
 
 | Bug ID | Severity | Affects Stories | Summary |
 |--------|----------|-----------------|---------|
@@ -102,7 +104,15 @@ See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs.
 | CRIT-4 | MEDIUM | P2-TS-03, P2-TS-04, P2-TS-0X | Onboarding routes render DashboardPage placeholder |
 | CRIT-5 | MEDIUM | P7-TS-07 | JSON proof download is no-op (PDF works) |
 | CRIT-6 | MEDIUM | P5-TS-06 | CSVUploadWizard uses simulated processing |
-| CRIT-7 | LOW | — | Browser tab says "Ralph" instead of "Arkova" |
+
+### Resolved Bugs
+
+| Bug ID | Severity | Resolution | Summary |
+|--------|----------|------------|---------|
+| CRIT-7 | LOW | FIXED 2026-03-10 | Browser tab says "Ralph" instead of "Arkova" |
+| BUG-H1-01 | MEDIUM | FIXED 2026-03-10 | Silent audit event failure in processAnchor() |
+| BUG-H1-02 | HIGH | REMOVED 2026-03-10 | Dead code (anchorWithClaim.ts) with nonexistent schema refs |
+| BUG-H1-03 | HIGH | REMOVED 2026-03-10 | Batch loop bug in same dead code file |
 
 ## Related Documentation
 
@@ -125,3 +135,4 @@ Each story doc follows a consistent template:
 | Date | Change |
 |------|--------|
 | 2026-03-10 | Initial index created. P1 and P2 story docs written (Session 1 of 3). |
+| 2026-03-10 4:15 PM EDT | Added resolved bugs (BUG-H1-01, BUG-H1-02, BUG-H1-03) to cross-reference. Split bug table into Active/Resolved sections. |

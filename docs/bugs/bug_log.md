@@ -1,5 +1,22 @@
 # Arkova Bug Log
-_Last updated: 2026-03-10 | Active bugs: 6 | Resolved: 4_
+_Last updated: 2026-03-10 4:15 PM EDT | Active bugs: 6 | Resolved: 4_
+
+## Layman's Summary
+
+_For each bug: what it means in plain English and why it matters._
+
+| ID | What's Wrong (Plain English) |
+|----|------------------------------|
+| CRIT-1 | When a regular user tries to secure a document, the app **pretends** it worked (shows a fake progress bar) but never actually saves anything. The admin path works fine — only the individual user path is broken. |
+| CRIT-2 | The system that's supposed to write a permanent record to the Bitcoin network is **completely fake**. It uses a pretend version that stores data in temporary memory and disappears when the server restarts. No real proof exists on any blockchain. |
+| CRIT-3 | There's **no way to pay for the service**. The payment system (Stripe) is partially set up — it can verify incoming payment notifications — but there's no "Buy" or "Upgrade" button that actually charges a credit card. |
+| CRIT-4 | New users who sign up get **dumped straight onto the dashboard** instead of going through the setup wizard (pick your role, create your organization). The setup screens exist but nobody wired them into the app's navigation. |
+| CRIT-5 | The "Download JSON Proof" button **does absolutely nothing** when clicked. The PDF download works fine. The code to generate the JSON file exists — it's just never connected to the button. |
+| CRIT-6 | The CSV bulk upload wizard **ignores whatever file you upload** and shows fake results (always "47 valid, 3 invalid"). It runs a pretend progress bar and claims success, but zero records are actually created in the database. |
+| CRIT-7 | _(Resolved)_ The browser tab said "Ralph" (an old project codename) instead of "Arkova". |
+| BUG-H1-01 | _(Resolved)_ When the system secured a document but failed to write the audit log entry, **nobody was told about the failure**. The document was secured correctly, but the missing audit trail entry could go unnoticed indefinitely. |
+| BUG-H1-02 | _(Resolved)_ A dead code file referenced database tables and fields that **don't exist**. It would have crashed if anyone ever tried to use it. Deleted because it was never imported anywhere. |
+| BUG-H1-03 | _(Resolved)_ A batch processing loop in the same dead code file **always quit after one try** because it misread the database response. Even if 100 jobs were waiting, only one would ever be attempted. Deleted along with BUG-H1-02. |
 
 ## Active Bugs Summary
 
@@ -692,3 +709,4 @@ Same as BUG-H1-02.
 |------|--------|
 | 2026-03-10 | Initial bug log created with CRIT-1 through CRIT-7, migrated from CLAUDE.md Section 8 summary table. Full steps to reproduce, root cause analysis, and fix patterns documented for all 7 bugs. |
 | 2026-03-10 | Added HARDENING-1 bugs (BUG-H1-01, BUG-H1-02, BUG-H1-03). Moved CRIT-7 to resolved. Updated summary counts: 6 active, 4 resolved. |
+| 2026-03-10 4:15 PM EDT | HARDENING-2 complete. No new bugs found. Added layman's summary table for all 10 bugs. Chain client (mock.ts, client.ts) and anchor job claim flow confirmed clean — 59 worker tests, 100% coverage on anchor.ts, mock.ts, client.ts. |

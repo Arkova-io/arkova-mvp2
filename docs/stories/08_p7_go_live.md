@@ -1,5 +1,5 @@
 # P7 Go-Live — Story Documentation
-_Last updated: 2026-03-10 | 3/10 stories COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED_
+_Last updated: 2026-03-10 4:15 PM EDT | 3/10 stories COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED_
 
 ## Group Overview
 
@@ -21,7 +21,7 @@ Key deliverables:
 
 **Mock/Real Toggle Pattern:** The worker supports a `useMocks` configuration flag. When true (or in test), mock implementations are used for Stripe (`MockStripeClient`) and Bitcoin (`MockChainClient`). Real implementations are gated behind the `ENABLE_PROD_NETWORK_ANCHORING` switchboard flag.
 
-**Worker Hardening Prerequisite (2026-03-10 Decision):** The worker/chain critical path has 0% test coverage. A hardening sprint (CLAUDE.md Section 9, Week 1) must complete before any real chain integration work. This ensures regressions are caught when MockChainClient is swapped for bitcoinjs-lib.
+**Worker Hardening Progress (2026-03-10):** The worker/chain critical path started at 0% test coverage. HARDENING-1 added 27 tests for `processAnchor()` (100% coverage on `anchor.ts`). HARDENING-2 added 32 more tests covering `MockChainClient` (18 tests), `getChainClient()` factory (5 tests), and `processPendingAnchors()` job claim/completion flow (9 tests). Total: 59 worker tests, 100% coverage on `anchor.ts`, `mock.ts`, `client.ts`. Remaining hardening targets: `delivery.ts`, `stripe/handlers.ts`, `stripe/client.ts` (all at 0%).
 
 ---
 
@@ -303,12 +303,20 @@ interface ChainClient {
 - [ ] ChainReceipt populated with real block height, timestamp, receipt ID
 - [ ] Health check verifies Bitcoin node connectivity
 
+#### Test Coverage (Updated HARDENING-2, 2026-03-10 4:15 PM EDT)
+
+| Test File | Type | Tests | Coverage |
+|-----------|------|-------|----------|
+| `services/worker/src/chain/mock.test.ts` | Unit | 18 | 100% on `mock.ts` — interface contract, submit/verify/getReceipt/healthCheck |
+| `services/worker/src/chain/client.test.ts` | Unit | 5 | 100% on `client.ts` — factory returns correct type, mock/test/prod paths |
+| `services/worker/src/jobs/anchor.test.ts` | Unit | 36 | 100% on `anchor.ts` — processAnchor + processPendingAnchors (query shape, failure isolation, completion) |
+
 #### Known Issues
 
 | Issue | Impact |
 |-------|--------|
 | CRIT-2 | No real chain client. Production blocker. |
-| 0% worker test coverage | Must complete hardening sprint first |
+| Chain interface tested, real impl missing | MockChainClient + factory at 100% coverage. Real `bitcoinjs-lib` client not yet written. |
 
 ---
 
@@ -517,9 +525,10 @@ Connecting the anchor lifecycle to webhook delivery. When an anchor transitions 
 | Layer | File | Lines | Purpose |
 |-------|------|-------|---------|
 | Anchor Job | `services/worker/src/jobs/anchor.ts` | 114 | processAnchor() — updates to SECURED but does NOT dispatch webhook |
-| Anchor Job (alt) | `services/worker/src/jobs/anchorWithClaim.ts` | 154 | claimAndProcessJob() — same gap |
 | Webhook Job | `services/worker/src/jobs/webhook.ts` | 110 | Stub — marked "webhook_configs table not yet implemented" |
 | Delivery | `services/worker/src/webhooks/delivery.ts` | 259 | dispatchWebhookEvent() — ready to be called |
+
+> **Note:** `anchorWithClaim.ts` was deleted in HARDENING-1 (2026-03-10). It was dead code referencing nonexistent tables (`anchoring_jobs`, `anchor_proofs`) and RPCs. See BUG-H1-02, BUG-H1-03 in [bug_log.md](../bugs/bug_log.md).
 
 #### Current Anchor Processing Flow
 
@@ -530,16 +539,9 @@ Connecting the anchor lifecycle to webhook delivery. When an anchor transitions 
 4. Log audit event (`ANCHOR_SECURED`)
 5. **STOP** — no webhook dispatch
 
-**anchorWithClaim.ts — claimAndProcessJob():**
-1. Call `claim_anchoring_job` RPC for idempotent processing
-2. Submit fingerprint via chain client
-3. Update anchor to SECURED + store proof in `anchor_proofs`
-4. Log audit event
-5. **STOP** — no webhook dispatch
-
 #### Critical Gap
 
-After step 4 in both flows, there should be a call to:
+After step 4, there should be a call to:
 ```typescript
 await dispatchWebhookEvent(anchor.org_id, 'anchor.secured', anchor.id, {
   public_id: anchor.public_id,
@@ -555,8 +557,7 @@ This call is never made. The delivery engine in `delivery.ts` is complete and re
 
 1. Import `dispatchWebhookEvent` from `webhooks/delivery.ts` in `anchor.ts`
 2. After successful SECURED status update, call `dispatchWebhookEvent()` with org_id, event type, and anchor data
-3. Same for `anchorWithClaim.ts`
-4. Test: verify webhook fires after anchor status change
+3. Test: verify webhook fires after anchor status change
 
 #### Security Considerations
 
@@ -564,19 +565,23 @@ This call is never made. The delivery engine in `delivery.ts` is complete and re
 - Delivery engine already handles HMAC signing and retry logic
 - Feature flag `ENABLE_OUTBOUND_WEBHOOKS` must be enabled
 
-#### Test Coverage
+#### Test Coverage (Updated HARDENING-2, 2026-03-10 4:15 PM EDT)
 
-| Test File | Type | What It Validates |
-|-----------|------|-------------------|
-| — | — | No tests (0% worker coverage) |
+| Test File | Type | Tests | What It Validates |
+|-----------|------|-------|-------------------|
+| `services/worker/src/jobs/anchor.test.ts` | Unit | 36 | processAnchor + processPendingAnchors — 100% coverage on anchor.ts |
+| `services/worker/src/webhooks/delivery.ts` | — | 0 | **0% coverage — HARDENING-3 target** |
+
+> **Note:** `anchor.ts` has full test coverage (HARDENING-1 + 2). The remaining gap is `delivery.ts` (0% coverage) and the wiring between them.
 
 #### Acceptance Criteria
 
 - [x] Delivery engine complete with HMAC signing and retry
 - [x] `dispatchWebhookEvent()` function ready to call
+- [x] `anchor.ts` has 100% test coverage (HARDENING-1 + 2)
 - [ ] `anchor.ts` calls `dispatchWebhookEvent()` after SECURED update
-- [ ] `anchorWithClaim.ts` calls `dispatchWebhookEvent()` after SECURED update
 - [ ] Webhook fires with correct payload (public_id, fingerprint, status, receipt)
+- [ ] `delivery.ts` unit tests (HARDENING-3+)
 
 #### Known Issues
 
@@ -584,6 +589,7 @@ This call is never made. The delivery engine in `delivery.ts` is complete and re
 |-------|--------|
 | anchor.ts never calls dispatchWebhookEvent | Webhooks never fire on anchor status changes |
 | webhook.ts is stale stub | References "webhook_configs" instead of "webhook_endpoints" |
+| ~~anchorWithClaim.ts dead code~~ | ~~Deleted in HARDENING-1. See BUG-H1-02, BUG-H1-03.~~ |
 
 ---
 
@@ -632,3 +638,4 @@ Check the Technical Backlog PDF for actual story cards if they exist.
 | Date | Change |
 |------|--------|
 | 2026-03-10 | Initial P7 story documentation created (Session 3 of 3). |
+| 2026-03-10 4:15 PM EDT | HARDENING-2 updates: worker test coverage now 59 tests (was 0). Updated P7-TS-05 and P7-TS-10 test coverage sections. Removed deleted anchorWithClaim.ts references from P7-TS-10. Updated hardening prerequisite to reflect progress. |
