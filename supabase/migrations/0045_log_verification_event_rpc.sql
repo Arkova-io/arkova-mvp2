@@ -70,8 +70,16 @@ $$;
 
 COMMENT ON FUNCTION log_verification_event IS 'Logs a public verification event. SECURITY DEFINER allows unauthenticated callers.';
 
+-- Grant execute to anon (public verification page is unauthenticated)
+-- and authenticated (logged-in users viewing verification pages).
+-- Migration 0007 revokes all function execute from public, so explicit grants are required.
+GRANT EXECUTE ON FUNCTION log_verification_event(text, text, text, boolean, text, text) TO anon;
+GRANT EXECUTE ON FUNCTION log_verification_event(text, text, text, boolean, text, text) TO authenticated;
+
 
 -- ---------------------------------------------------------------------------
 -- ROLLBACK
 -- ---------------------------------------------------------------------------
+-- REVOKE EXECUTE ON FUNCTION log_verification_event(text, text, text, boolean, text, text) FROM anon;
+-- REVOKE EXECUTE ON FUNCTION log_verification_event(text, text, text, boolean, text, text) FROM authenticated;
 -- DROP FUNCTION IF EXISTS log_verification_event;
