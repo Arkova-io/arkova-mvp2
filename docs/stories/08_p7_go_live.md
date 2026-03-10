@@ -1,5 +1,5 @@
 # P7 Go-Live — Story Documentation
-_Last updated: 2026-03-10 4:30 PM EST | 3/10 stories COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED_
+_Last updated: 2026-03-10 5:20 PM EST | 4/10 stories COMPLETE, 2/10 PARTIAL, 4/10 NOT STARTED_
 
 ## Group Overview
 
@@ -10,8 +10,8 @@ Key deliverables:
 - Stripe webhook verification + checkout session (checkout NOT STARTED — CRIT-3)
 - Real Bitcoin chain client replacing MockChainClient (NOT STARTED — CRIT-2)
 - Proof package export (PDF complete, JSON no-op — CRIT-5)
-- Webhook endpoint management + delivery engine (partially wired)
-- Anchoring worker with job processing (needs hardening before chain work)
+- Webhook endpoint management + delivery engine (fully wired to anchor lifecycle — HARDENING-4)
+- Anchoring worker with job processing (hardening sprint COMPLETE — 132 tests, all 80%+ thresholds)
 
 > **Note:** P7-TS-04 and P7-TS-06 are not listed in CLAUDE.md Section 8. They may be skipped, renumbered, or part of another phase. This document covers the 8 stories explicitly tracked.
 
@@ -21,7 +21,7 @@ Key deliverables:
 
 **Mock/Real Toggle Pattern:** The worker supports a `useMocks` configuration flag. When true (or in test), mock implementations are used for Stripe (`MockStripeClient`) and Bitcoin (`MockChainClient`). Real implementations are gated behind the `ENABLE_PROD_NETWORK_ANCHORING` switchboard flag.
 
-**Worker Hardening Progress (2026-03-10):** The worker/chain critical path started at 0% test coverage. HARDENING-1 added 27 tests for `processAnchor()` (100% coverage on `anchor.ts`). HARDENING-2 added 32 more tests covering `MockChainClient` (18 tests), `getChainClient()` factory (5 tests), and `processPendingAnchors()` job claim/completion flow (9 tests). HARDENING-3 added 55 more tests covering `delivery.ts` (30 tests, 99% stmts), `stripe/handlers.ts` (18 tests, 98% stmts), and `stripe/client.ts` (7 tests, 100%). Total: 114 worker tests. All 6 critical path files pass 80% coverage thresholds. Remaining hardening work: wire webhook dispatch in `anchor.ts` (task 4), anchor lifecycle integration test (task 6).
+**Worker Hardening Sprint (2026-03-10) — COMPLETE:** The worker/chain critical path started at 0% test coverage. HARDENING-1 added 27 tests for `processAnchor()` (100% coverage on `anchor.ts`). HARDENING-2 added 32 more tests covering `MockChainClient` (18 tests), `getChainClient()` factory (5 tests), and `processPendingAnchors()` job claim/completion flow (9 tests). HARDENING-3 added 55 more tests covering `delivery.ts` (30 tests, 99% stmts), `stripe/handlers.ts` (18 tests, 98% stmts), and `stripe/client.ts` (7 tests, 100%). HARDENING-4 wired webhook dispatch in `anchor.ts`, added `processWebhookRetries` to cron, created lifecycle integration test (8 tests), expanded anchor.test.ts with 10 webhook dispatch tests. Total: 132 worker tests. All 6 critical path files pass 80% coverage thresholds. Sprint complete — ready for Bitcoin chain integration.
 
 ---
 
@@ -512,84 +512,79 @@ Webhook endpoint management: database schema for endpoints and delivery logs, a 
 
 ### P7-TS-10: Webhook Dispatch on Anchor Secure
 
-**Status:** PARTIAL
+**Status:** COMPLETE
 **Dependencies:** P7-TS-09 (webhook infrastructure), P7-TS-05 (chain client for SECURED status)
-**Blocked by:** None (delivery engine complete, just needs wiring)
+**Blocked by:** None
 
 #### What This Story Delivers
 
-Connecting the anchor lifecycle to webhook delivery. When an anchor transitions to SECURED status, the worker should dispatch a webhook event to all matching endpoints for the anchor's organization.
+Connecting the anchor lifecycle to webhook delivery. When an anchor transitions to SECURED status, the worker dispatches a webhook event to all matching endpoints for the anchor's organization. Completed in HARDENING-4.
 
 #### Implementation Files
 
 | Layer | File | Lines | Purpose |
 |-------|------|-------|---------|
-| Anchor Job | `services/worker/src/jobs/anchor.ts` | 114 | processAnchor() — updates to SECURED but does NOT dispatch webhook |
-| Webhook Job | `services/worker/src/jobs/webhook.ts` | 110 | Stub — marked "webhook_configs table not yet implemented" |
-| Delivery | `services/worker/src/webhooks/delivery.ts` | 259 | dispatchWebhookEvent() — ready to be called |
+| Anchor Job | `services/worker/src/jobs/anchor.ts` | 136 | processAnchor() — chain → SECURED → audit → webhook dispatch |
+| Delivery | `services/worker/src/webhooks/delivery.ts` | 259 | dispatchWebhookEvent() + processWebhookRetries() |
+| Cron | `services/worker/src/index.ts` | 143 | processWebhookRetries scheduled every 2 minutes |
+| Webhook Job | `services/worker/src/jobs/webhook.ts` | 110 | Legacy stub (superseded by delivery.ts) |
 
-> **Note:** `anchorWithClaim.ts` was deleted in HARDENING-1 (2026-03-10). It was dead code referencing nonexistent tables (`anchoring_jobs`, `anchor_proofs`) and RPCs. See BUG-H1-02, BUG-H1-03 in [bug_log.md](../bugs/bug_log.md).
-
-#### Current Anchor Processing Flow
+#### Anchor Processing Flow (Complete)
 
 **anchor.ts — processAnchor(anchorId):**
 1. Fetch PENDING anchor from Supabase
 2. Call `chainClient.submitFingerprint()` (currently MockChainClient)
 3. Update anchor status to SECURED with chain receipt data
-4. Log audit event (`ANCHOR_SECURED`)
-5. **STOP** — no webhook dispatch
+4. Log audit event (`anchor.secured`) — non-fatal
+5. Dispatch webhook via `dispatchWebhookEvent()` — non-fatal, skipped if no `org_id`
 
-#### Critical Gap
+Webhook dispatch is wrapped in try/catch. If it fails, the anchor remains SECURED and a warning is logged. Individual users without an organization skip webhook dispatch entirely.
 
-After step 4, there should be a call to:
+#### Webhook Payload
+
 ```typescript
-await dispatchWebhookEvent(anchor.org_id, 'anchor.secured', anchor.id, {
-  public_id: anchor.public_id,
+{
+  anchor_id: anchorId,
+  public_id: anchor.public_id ?? null,
   fingerprint: anchor.fingerprint,
   status: 'SECURED',
-  chain_receipt: receipt,
-});
+  chain_tx_id: receipt.receiptId,
+  chain_block_height: receipt.blockHeight,
+  secured_at: receipt.blockTimestamp,
+}
 ```
-
-This call is never made. The delivery engine in `delivery.ts` is complete and ready — it just needs to be invoked from the anchor processing flow.
-
-#### What's Needed to Complete
-
-1. Import `dispatchWebhookEvent` from `webhooks/delivery.ts` in `anchor.ts`
-2. After successful SECURED status update, call `dispatchWebhookEvent()` with org_id, event type, and anchor data
-3. Test: verify webhook fires after anchor status change
 
 #### Security Considerations
 
 - Webhook dispatch runs with service_role privileges (worker context)
-- Delivery engine already handles HMAC signing and retry logic
+- Delivery engine handles HMAC-SHA256 signing and retry logic
 - Feature flag `ENABLE_OUTBOUND_WEBHOOKS` must be enabled
+- Failed retries processed every 2 minutes via cron
 
-#### Test Coverage (Updated HARDENING-2, 2026-03-10 4:15 PM EDT)
+#### Test Coverage (Updated HARDENING-4, 2026-03-10 5:20 PM EST)
 
 | Test File | Type | Tests | What It Validates |
 |-----------|------|-------|-------------------|
-| `services/worker/src/jobs/anchor.test.ts` | Unit | 36 | processAnchor + processPendingAnchors — 100% coverage on anchor.ts |
-| `services/worker/src/webhooks/delivery.ts` | — | 0 | **0% coverage — HARDENING-3 target** |
-
-> **Note:** `anchor.ts` has full test coverage (HARDENING-1 + 2). The remaining gap is `delivery.ts` (0% coverage) and the wiring between them.
+| `services/worker/src/jobs/anchor.test.ts` | Unit | 46 | processAnchor + processPendingAnchors + webhook dispatch — 100% coverage |
+| `services/worker/src/jobs/anchor-lifecycle.test.ts` | Integration | 8 | Full lifecycle: PENDING → SECURED → audit → webhook (stateful DB mock) |
+| `services/worker/src/webhooks/delivery.test.ts` | Unit | 30 | HMAC signing, backoff, feature flag, idempotency, HTTP success/error |
 
 #### Acceptance Criteria
 
 - [x] Delivery engine complete with HMAC signing and retry
 - [x] `dispatchWebhookEvent()` function ready to call
 - [x] `anchor.ts` has 100% test coverage (HARDENING-1 + 2)
-- [ ] `anchor.ts` calls `dispatchWebhookEvent()` after SECURED update
-- [ ] Webhook fires with correct payload (public_id, fingerprint, status, receipt)
-- [ ] `delivery.ts` unit tests (HARDENING-3+)
+- [x] `anchor.ts` calls `dispatchWebhookEvent()` after SECURED update (HARDENING-4)
+- [x] Webhook fires with correct payload (public_id, fingerprint, status, receipt) (HARDENING-4)
+- [x] `delivery.ts` unit tests — 30 tests, 99% coverage (HARDENING-3)
+- [x] Lifecycle integration test — 8 tests (HARDENING-4)
+- [x] `processWebhookRetries()` wired to cron schedule (HARDENING-4)
 
 #### Known Issues
 
 | Issue | Impact |
 |-------|--------|
-| anchor.ts never calls dispatchWebhookEvent | Webhooks never fire on anchor status changes |
-| webhook.ts is stale stub | References "webhook_configs" instead of "webhook_endpoints" |
-| ~~anchorWithClaim.ts dead code~~ | ~~Deleted in HARDENING-1. See BUG-H1-02, BUG-H1-03.~~ |
+| webhook.ts is stale stub | Legacy file — references "webhook_configs" instead of "webhook_endpoints". Superseded by delivery.ts. |
 
 ---
 
@@ -639,3 +634,4 @@ Check the Technical Backlog PDF for actual story cards if they exist.
 |------|--------|
 | 2026-03-10 | Initial P7 story documentation created (Session 3 of 3). |
 | 2026-03-10 4:15 PM EDT | HARDENING-2 updates: worker test coverage now 59 tests (was 0). Updated P7-TS-05 and P7-TS-10 test coverage sections. Removed deleted anchorWithClaim.ts references from P7-TS-10. Updated hardening prerequisite to reflect progress. |
+| 2026-03-10 5:20 PM EST | HARDENING-4: P7-TS-10 PARTIAL → COMPLETE. Webhook dispatch wired in anchor.ts, processWebhookRetries added to cron. 132 worker tests. Worker hardening sprint COMPLETE. |

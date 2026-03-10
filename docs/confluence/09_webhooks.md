@@ -1,5 +1,5 @@
 # Webhooks
-_Last updated: 2026-03-10 | Story: P7-TS-09, P7-TS-10_
+_Last updated: 2026-03-10 5:20 PM EST | Story: P7-TS-09, P7-TS-10_
 
 ## Overview
 
@@ -220,11 +220,11 @@ Key columns: `stripe_event_id` (UNIQUE), `event_type`, `payload`, `idempotency_k
 | Stripe inbound webhook verification | Complete | P7-TS-03 |
 | Stripe mock mode for tests | Complete | P7-TS-03 |
 | WebhookSettings UI | Partial | P7-TS-09 — routed at `/settings/webhooks`, secret HMAC hashing not implemented |
-| Delivery engine | Partial | P7-TS-10 — `delivery.ts` has exponential backoff + HMAC signing, but `anchor.ts` never triggers dispatch |
+| Delivery engine | Complete | P7-TS-10 — `delivery.ts` has exponential backoff + HMAC signing, wired to anchor lifecycle (HARDENING-4) |
+| Webhook dispatch from anchor lifecycle | Complete | HARDENING-4 — `anchor.ts` calls `dispatchWebhookEvent()` after SECURED status |
+| Webhook retry scheduling | Complete | HARDENING-4 — `processWebhookRetries()` runs every 2 minutes via cron in `index.ts` |
 | webhook_endpoints / webhook_delivery_logs tables | Complete | Migration 0018 |
 | billing_events table | Complete | Migration 0016 |
-
-**Known gap:** Anchor lifecycle events (SECURED, REVOKED) do not trigger outbound webhook dispatch. The delivery engine exists but is not wired to the anchor processing pipeline.
 
 ## Security
 
@@ -270,3 +270,4 @@ All webhook activity is logged:
 | Date | Story | Change |
 |------|-------|--------|
 | 2026-03-10 | Audit | Rewrote: fixed "Ralph" branding, corrected table names (webhook_endpoints, webhook_delivery_logs), removed nonexistent stripe_webhook_events, added billing_events for idempotency, documented implementation status and known gaps |
+| 2026-03-10 5:20 PM EST | HARDENING-4 | Delivery engine status → Complete. Webhook dispatch wired in anchor.ts. processWebhookRetries added to cron schedule. Removed "Known gap" about unconnected lifecycle. |

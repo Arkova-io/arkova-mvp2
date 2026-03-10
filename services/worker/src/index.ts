@@ -15,6 +15,7 @@ import { logger } from './utils/logger.js';
 import { processPendingAnchors } from './jobs/anchor.js';
 import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature } from './stripe/client.js';
+import { processWebhookRetries } from './webhooks/delivery.js';
 
 const app = express();
 
@@ -77,6 +78,19 @@ function setupScheduledJobs(): void {
       await processPendingAnchors();
     } catch (error) {
       logger.error({ error }, 'Scheduled anchor processing failed');
+    }
+  });
+
+  // Process webhook retries every 2 minutes
+  cron.schedule('*/2 * * * *', async () => {
+    logger.debug('Running scheduled webhook retry processing');
+    try {
+      const retried = await processWebhookRetries();
+      if (retried > 0) {
+        logger.info({ retried }, 'Processed webhook retries');
+      }
+    } catch (error) {
+      logger.error({ error }, 'Scheduled webhook retry processing failed');
     }
   });
 

@@ -1,5 +1,5 @@
 # Anchoring Worker
-_Last updated: 2026-03-10 | Story: P7-TS-05, P7-TS-10_
+_Last updated: 2026-03-10 5:20 PM EST | Story: P7-TS-05, P7-TS-10_
 
 ## Overview
 
@@ -29,10 +29,9 @@ services/
     │   ├── index.ts              # Express server + cron + graceful shutdown
     │   ├── config.ts             # Environment config
     │   ├── jobs/
-    │   │   ├── anchor.ts         # Process pending anchors
-    │   │   ├── anchorWithClaim.ts # Anchor with claim processing
+    │   │   ├── anchor.ts         # Process pending anchors + dispatch webhooks
     │   │   ├── report.ts         # Report generation job
-    │   │   └── webhook.ts        # Webhook delivery job (stub)
+    │   │   └── webhook.ts        # Webhook delivery job (legacy stub)
     │   ├── chain/
     │   │   ├── client.ts         # ChainClient factory (returns MockChainClient)
     │   │   ├── mock.ts           # Mock implementation
@@ -57,7 +56,7 @@ services/
 
 ### 1. Anchor Processing
 
-Process PENDING anchors and submit to chain (`jobs/anchor.ts`, `jobs/anchorWithClaim.ts`):
+Process PENDING anchors, submit to chain, log audit events, and dispatch webhooks (`jobs/anchor.ts`):
 
 ```typescript
 async function processAnchor(anchorId: string): Promise<void> {
@@ -85,18 +84,31 @@ async function processAnchor(anchorId: string): Promise<void> {
     })
     .eq('id', anchorId);
 
-  // Log audit event
+  // Log audit event (non-fatal)
   await db.from('audit_events').insert({
     event_type: 'anchor.secured',
     event_category: 'ANCHOR',
     target_type: 'anchor',
     target_id: anchorId,
-    details: `Secured on chain: ${receipt.txId}`,
+    details: `Secured on chain: ${receipt.receiptId}`,
   });
+
+  // Dispatch webhook (non-fatal, skipped if no org_id)
+  if (anchor.data.org_id) {
+    await dispatchWebhookEvent(anchor.data.org_id, 'anchor.secured', anchorId, {
+      anchor_id: anchorId,
+      public_id: anchor.data.public_id,
+      fingerprint: anchor.data.fingerprint,
+      status: 'SECURED',
+      chain_tx_id: receipt.receiptId,
+      chain_block_height: receipt.blockHeight,
+      secured_at: receipt.blockTimestamp,
+    });
+  }
 }
 ```
 
-The `anchoring_jobs` table (migration 0017) provides a safe claim mechanism with `FOR UPDATE SKIP LOCKED` to prevent duplicate processing.
+Webhook dispatch is non-fatal — if it fails, the anchor remains SECURED and a warning is logged. Individual users without `org_id` skip webhook dispatch entirely.
 
 ### 2. Webhook Processing
 
@@ -113,8 +125,8 @@ Report processing job (`jobs/report.ts`) generates reports requested via the `re
 
 | Job | Schedule | Purpose |
 |-----|----------|---------|
-| `processAnchors` | Every minute | Claim and process PENDING anchoring jobs |
-| `deliverWebhooks` | Every minute | Retry failed webhook deliveries |
+| `processPendingAnchors` | Every minute | Process PENDING anchors → chain → SECURED → audit → webhook |
+| `processWebhookRetries` | Every 2 minutes | Retry failed webhook deliveries with exponential backoff |
 | `resetMonthlyCounts` | 1st of month | Reset anchor quotas |
 
 ## Configuration
@@ -205,13 +217,14 @@ Available regardless of feature flag state (Constitution 1.9).
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Express server + cron | Complete | `index.ts` with graceful shutdown |
-| Anchor processing jobs | Complete | `anchor.ts` (anchorWithClaim.ts removed — dead code, HARDENING-1) |
+| Anchor processing jobs | Complete | `anchor.ts` — full lifecycle including webhook dispatch |
 | Chain client interface | Complete | MockChainClient only (CRIT-2) |
 | Stripe webhook handlers | Complete | P7-TS-03 |
-| Outbound webhook delivery | Partial | Engine exists, not wired to anchor lifecycle |
+| Outbound webhook delivery | Complete | Wired to anchor lifecycle (HARDENING-4). Dispatches on SECURED. |
+| Webhook retry scheduling | Complete | `processWebhookRetries()` runs every 2 minutes via cron |
 | Report generation | Complete | `report.ts` |
 | Rate limiter | Complete | `utils/rateLimit.ts` |
-| Worker test coverage | 114 tests, 80%+ on all critical paths | HARDENING-1/2/3 complete (2026-03-10) |
+| Worker test coverage | 132 tests, 80%+ on all critical paths | HARDENING-1/2/3/4 complete (2026-03-10) |
 
 ## Testing
 
@@ -222,7 +235,7 @@ cd services/worker
 npm test
 ```
 
-**Current coverage (2026-03-10):** 114 tests across 6 test files. All 6 critical path files (`anchor.ts`, `chain/client.ts`, `chain/mock.ts`, `webhooks/delivery.ts`, `stripe/client.ts`, `stripe/handlers.ts`) pass 80% per-file thresholds. Non-critical files (`stripe/mock.ts`, `jobs/report.ts`, `jobs/webhook.ts`, `utils/*`, `config.ts`, `index.ts`) remain untested.
+**Current coverage (2026-03-10 5:20 PM EST):** 132 tests across 7 test files. All 6 critical path files (`anchor.ts`, `chain/client.ts`, `chain/mock.ts`, `webhooks/delivery.ts`, `stripe/client.ts`, `stripe/handlers.ts`) pass 80% per-file thresholds. Lifecycle integration test (`anchor-lifecycle.test.ts`) verifies end-to-end flow. Non-critical files (`stripe/mock.ts`, `jobs/report.ts`, `jobs/webhook.ts`, `utils/*`, `config.ts`, `index.ts`) remain untested.
 
 ### Mock Mode
 
@@ -246,3 +259,4 @@ const mockChain: IAnchorPublisher = {
 |------|-------|--------|
 | 2026-03-10 | Audit | Rewrote: fixed "Next.js" to "Vite" framing, updated directory structure to match actual files (added webhooks/delivery.ts, anchorWithClaim.ts, report.ts, utils/correlationId.ts, utils/rateLimit.ts; removed nonexistent cleanup.ts, Dockerfile), documented implementation status and known gaps |
 | 2026-03-10 | HARDENING-1/2/3 | Updated coverage status: 114 tests, 80%+ thresholds on all 6 critical paths. Removed anchorWithClaim.ts reference (deleted as dead code in HARDENING-1). |
+| 2026-03-10 5:20 PM EST | HARDENING-4 | Webhook dispatch wired in anchor.ts. processWebhookRetries added to cron. 132 tests. P7-TS-10 COMPLETE. Removed stale anchorWithClaim.ts from directory listing. |

@@ -8,6 +8,7 @@ import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 import { chainClient } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
+import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 
 /**
  * Process a single anchor
@@ -64,6 +65,23 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
 
     if (auditError) {
       logger.warn({ anchorId, error: auditError }, 'Failed to log audit event for secured anchor');
+    }
+
+    // Dispatch webhook — non-fatal if it fails (anchor is already secured)
+    if (anchor.org_id) {
+      try {
+        await dispatchWebhookEvent(anchor.org_id, 'anchor.secured', anchorId, {
+          anchor_id: anchorId,
+          public_id: anchor.public_id ?? null,
+          fingerprint: anchor.fingerprint,
+          status: 'SECURED',
+          chain_tx_id: receipt.receiptId,
+          chain_block_height: receipt.blockHeight,
+          secured_at: receipt.blockTimestamp,
+        });
+      } catch (webhookError) {
+        logger.warn({ anchorId, error: webhookError }, 'Failed to dispatch webhook for secured anchor');
+      }
     }
 
     logger.info({ anchorId, receiptId: receipt.receiptId }, 'Anchor secured successfully');

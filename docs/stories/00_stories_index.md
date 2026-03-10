@@ -1,5 +1,5 @@
 # Arkova Story Documentation Index
-_Last updated: 2026-03-10 4:15 PM EDT_
+_Last updated: 2026-03-10 5:20 PM EST_
 
 ## Overview
 
@@ -28,9 +28,9 @@ For a new developer joining the project, read in this order:
 | P4-E2 | Credential Metadata | 3 | 3 | 0 | 0 | [05_p4e2_credential_metadata.md](./05_p4e2_credential_metadata.md) |
 | P5 | Org Admin | 6 | 6 | 0 | 0 | [06_p5_org_admin.md](./06_p5_org_admin.md) |
 | P6 | Verification | 6 | 4 | 2 | 0 | [07_p6_verification.md](./07_p6_verification.md) |
-| P7 | Go-Live | 10 | 3 | 3 | 4 | [08_p7_go_live.md](./08_p7_go_live.md) |
+| P7 | Go-Live | 10 | 4 | 2 | 4 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 0 | 0 | 13 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
-| **Total** | | **55** | **33** | **5** | **17** | |
+| **Total** | | **55** | **34** | **4** | **17** | |
 
 ### All Stories by ID
 
@@ -75,7 +75,7 @@ For a new developer joining the project, read in this order:
 | P7-TS-07 | Proof Package Download | PARTIAL | [P7](./08_p7_go_live.md) | CRIT-5 |
 | P7-TS-08 | PDF Certificate (generateAuditReport) | COMPLETE | [P7](./08_p7_go_live.md) | — |
 | P7-TS-09 | Webhook Settings UI | PARTIAL | [P7](./08_p7_go_live.md) | — |
-| P7-TS-10 | Webhook Delivery Engine | PARTIAL | [P7](./08_p7_go_live.md) | — |
+| P7-TS-10 | Webhook Delivery Engine | COMPLETE | [P7](./08_p7_go_live.md) | — |
 | P4.5-TS-01 | GET /api/v1/verify/:publicId | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-02 | POST /api/v1/verify/batch | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-03 | API Keys Table + HMAC + Rate Limiting | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |

@@ -441,9 +441,9 @@ npx supabase db reset
 | P4-E2 Credential Metadata | 3/3 | 0 | 0 | 100% |
 | P5 Org Admin | 6/6 | 0 | 0 | 100% |
 | P6 Verification | 4/6 | 2/6 | 0 | 75% |
-| P7 Go-Live | 3/10 | 3/10 | 4/10 | 35% |
+| P7 Go-Live | 4/10 | 2/10 | 4/10 | 40% |
 | P4.5 Verification API | 0/13 | 0 | 13/13 | 0% |
-| **Total** | **33/55** | **5/55** | **17/55** | **~65%** |
+| **Total** | **34/55** | **4/55** | **17/55** | **~66%** |
 
 ### Critical Blockers (resolve before production)
 
@@ -509,7 +509,7 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P6-TS-05: ✅ `generateAuditReport.ts` (jsPDF, 201 lines). Called from RecordDetailPage.
 - P6-TS-06: ✅ `verification_events` table (migration 0042), SECURITY DEFINER RPC (migration 0045), wired into PublicVerification.tsx.
 
-### P7 Go-Live — 3/10 COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED
+### P7 Go-Live — 4/10 COMPLETE, 2/10 PARTIAL, 4/10 NOT STARTED
 
 - P7-TS-01: ✅ Billing schema (migration 0016). BillingOverview.tsx exists (not routed with real data).
 - P7-TS-02: ❌ NOT STARTED — No Stripe checkout session endpoint. No pricing UI.
@@ -518,7 +518,7 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P7-TS-07: ⚠️ PARTIAL — PDF download works. JSON proof package download is no-op.
 - P7-TS-08: ✅ `generateAuditReport.ts` — full PDF certificate with jsPDF.
 - P7-TS-09: ⚠️ PARTIAL — WebhookSettings.tsx routed at `/settings/webhooks`. Secret hashing (HMAC) not implemented.
-- P7-TS-10: ⚠️ PARTIAL — Delivery engine exists with exponential backoff + HMAC signing. But `anchor.ts` never triggers webhook dispatch.
+- P7-TS-10: ✅ COMPLETE — Delivery engine with exponential backoff + HMAC signing. `anchor.ts` dispatches `anchor.secured` webhook after SECURED status set. Webhook retries scheduled in worker cron.
 
 ### P4.5 Verification API — 0/13 NOT STARTED
 
@@ -557,9 +557,9 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 | Unit test `processAnchor()` | ✅ HARDENING-1 | 27 tests, 100% coverage on anchor.ts |
 | Test job claim/completion flow | ✅ HARDENING-2 | processPendingAnchors query shape, failure isolation, completion logging |
 | Test chain client interface contract | ✅ HARDENING-2 | 23 tests (18 mock.ts + 5 client.ts), 100% coverage |
-| Wire webhook dispatch in `anchor.ts` | **NEXT** | Connect status → SECURED lifecycle event to `delivery.ts`. Currently a dead end. |
+| Wire webhook dispatch in `anchor.ts` | ✅ HARDENING-4 | `processAnchor()` calls `dispatchWebhookEvent()` after SECURED. Non-fatal. Webhook retries in cron. |
 | Test webhook HMAC signing | ✅ HARDENING-3 | 30 tests on delivery.ts (99% stmts), HMAC verified against crypto.createHmac |
-| Anchor lifecycle integration test | **NEXT** | PENDING → job claimed → chain submitted → SECURED → webhook fired → public verify works |
+| Anchor lifecycle integration test | ✅ HARDENING-4 | 8 tests: full flow PENDING → chain → SECURED → audit → webhook. Failure isolation, ordering. |
 
 ### Week 1-2: Payments + Proof
 

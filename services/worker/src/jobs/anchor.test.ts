@@ -16,6 +16,7 @@ const {
   mockLimit,
   mockUpdateEq,
   mockAuditInsert,
+  mockDispatchWebhookEvent,
   mockLogger,
   anchorsTable,
   updateChain,
@@ -27,6 +28,7 @@ const {
   const mockUpdateEq = vi.fn();
   const mockAuditInsert = vi.fn();
   const mockSubmitFingerprint = vi.fn();
+  const mockDispatchWebhookEvent = vi.fn();
 
   const mockLogger = {
     info: vi.fn(),
@@ -69,6 +71,7 @@ const {
     mockLimit,
     mockUpdateEq,
     mockAuditInsert,
+    mockDispatchWebhookEvent,
     mockLogger,
     mockFrom,
     anchorsTable,
@@ -93,6 +96,10 @@ vi.mock('../config.js', () => ({
 
 vi.mock('../chain/client.js', () => ({
   chainClient: { submitFingerprint: mockSubmitFingerprint },
+}));
+
+vi.mock('../webhooks/delivery.js', () => ({
+  dispatchWebhookEvent: mockDispatchWebhookEvent,
 }));
 
 vi.mock('../utils/db.js', () => ({
@@ -150,6 +157,7 @@ describe('processAnchor', () => {
     mockSubmitFingerprint.mockResolvedValue(MOCK_RECEIPT);
     mockUpdateEq.mockResolvedValue({ error: null });
     mockAuditInsert.mockResolvedValue({ error: null });
+    mockDispatchWebhookEvent.mockResolvedValue(undefined);
   });
 
   // ---- Success path ----
@@ -387,6 +395,132 @@ describe('processAnchor', () => {
         expect.objectContaining({ anchorId: 'anchor-001' }),
         expect.stringContaining('audit'),
       );
+    });
+  });
+
+  // ---- HARDENING-4: Webhook dispatch ----
+
+  describe('webhook dispatch', () => {
+    it('dispatches anchor.secured webhook event after successful processing', async () => {
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).toHaveBeenCalledOnce();
+      expect(mockDispatchWebhookEvent).toHaveBeenCalledWith(
+        MOCK_ANCHOR.org_id,
+        'anchor.secured',
+        'anchor-001',
+        expect.objectContaining({
+          anchor_id: 'anchor-001',
+          fingerprint: MOCK_ANCHOR.fingerprint,
+          status: 'SECURED',
+          chain_tx_id: MOCK_RECEIPT.receiptId,
+          chain_block_height: MOCK_RECEIPT.blockHeight,
+          secured_at: MOCK_RECEIPT.blockTimestamp,
+        }),
+      );
+    });
+
+    it('includes public_id in webhook payload', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, public_id: 'pub-abc-123' },
+        error: null,
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).toHaveBeenCalledWith(
+        MOCK_ANCHOR.org_id,
+        'anchor.secured',
+        'anchor-001',
+        expect.objectContaining({
+          public_id: 'pub-abc-123',
+        }),
+      );
+    });
+
+    it('sends null public_id when anchor has no public_id', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, public_id: undefined },
+        error: null,
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).toHaveBeenCalledWith(
+        MOCK_ANCHOR.org_id,
+        'anchor.secured',
+        'anchor-001',
+        expect.objectContaining({
+          public_id: null,
+        }),
+      );
+    });
+
+    it('still returns true when webhook dispatch fails (non-fatal)', async () => {
+      mockDispatchWebhookEvent.mockRejectedValue(new Error('webhook delivery failed'));
+
+      const result = await processAnchor('anchor-001');
+
+      expect(result).toBe(true);
+    });
+
+    it('logs a warning when webhook dispatch throws', async () => {
+      mockDispatchWebhookEvent.mockRejectedValue(new Error('webhook delivery failed'));
+
+      await processAnchor('anchor-001');
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ anchorId: 'anchor-001' }),
+        expect.stringContaining('webhook'),
+      );
+    });
+
+    it('skips webhook dispatch when anchor has no org_id', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, org_id: null },
+        error: null,
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch webhook when anchor is not found', async () => {
+      mockSingle.mockResolvedValue({ data: null, error: null });
+
+      await processAnchor('nonexistent');
+
+      expect(mockDispatchWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch webhook when chain submission fails', async () => {
+      mockSubmitFingerprint.mockRejectedValue(new Error('timeout'));
+
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch webhook when DB update fails', async () => {
+      mockUpdateEq.mockResolvedValue({
+        error: { message: 'constraint violation' },
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockDispatchWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('dispatches webhook even when audit event fails', async () => {
+      mockAuditInsert.mockResolvedValue({
+        error: { message: 'audit table full' },
+      });
+
+      await processAnchor('anchor-001');
+
+      // Audit failure is non-fatal — webhook should still fire
+      expect(mockDispatchWebhookEvent).toHaveBeenCalledOnce();
     });
   });
 });
