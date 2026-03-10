@@ -125,7 +125,13 @@ BEGIN
   INTO v_result
   FROM anchors a
   WHERE a.public_id = p_public_id
+    AND a.status IN ('SECURED', 'REVOKED', 'EXPIRED')
     AND a.deleted_at IS NULL;
+
+  -- Guard against concurrent status change between the two queries
+  IF v_result IS NULL THEN
+    RETURN jsonb_build_object('error', 'Record not found or not yet verified');
+  END IF;
 
   RETURN v_result;
 END;
