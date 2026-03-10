@@ -155,6 +155,7 @@ See Section 5.
 
 ### Before writing code
 - [ ] Read the story card fully
+- [ ] Read the story doc in `docs/stories/` for your story's priority group
 - [ ] Confirm dependencies are met (check Section 8)
 - [ ] Read `agents.md` in any folder you will touch
 - [ ] State your plan (files to change, files to leave alone, tests to run)
@@ -177,7 +178,7 @@ npm run lint:copy         # no banned terms
 npm run gen:types         # if schema changed
 ```
 
-Update `docs/confluence/` page if schema/security/API changed. Update `agents.md` in modified folders. Update MEMORY.md "Session Handoff Notes" section.
+Update `docs/confluence/` page if schema/security/API changed. Update the story doc in `docs/stories/` if story status changed (e.g., PARTIAL → COMPLETE). Update `agents.md` in modified folders. Update MEMORY.md "Session Handoff Notes" section.
 
 ### Bug Documentation (Mandatory)
 
@@ -271,6 +272,8 @@ supabase/
   seed.sql                                   ← Demo data
   config.toml                                ← Local Supabase config
 docs/confluence/                             ← Architecture, data model, security, audit, etc.
+docs/stories/                                ← Story documentation (one file per priority group)
+docs/bugs/                                   ← Bug log (CRIT-1 through CRIT-N)
 e2e/                                         ← Playwright E2E specs
 tests/rls/                                   ← RLS integration tests
 scripts/check-copy-terms.ts                  ← Copy lint (banned term enforcement)
@@ -320,6 +323,7 @@ Any task that changes schema, security posture, or API contracts must update doc
 | Worker (P7+) | `docs/confluence/10_anchoring_worker.md` |
 | Proof packages (P7+) | `docs/confluence/11_proof_packages.md` |
 | Verification API (P4.5+) | `docs/confluence/12_verification_api.md` |
+| Story status change | `docs/stories/` (the group doc for that story's priority) |
 
 If a page doesn't exist yet, create it using this template:
 
@@ -356,6 +360,30 @@ Every doc must include:
 - Cross-references use relative markdown links (e.g., `[02_data_model.md](./02_data_model.md)`)
 
 When a doc describes something that is partially implemented or a known gap exists, document it explicitly — never imply that something works if it doesn't.
+
+### Story Documentation (`docs/stories/`)
+
+Story docs live in `docs/stories/` and are grouped by priority level (one file per group). The index (`00_stories_index.md`) lists all 55 stories with status, group doc reference, and bug cross-references.
+
+| File | Group | Stories |
+|------|-------|---------|
+| `01_p1_bedrock.md` | P1 Bedrock | 6 |
+| `02_p2_identity.md` | P2 Identity & Access | 5 |
+| `03_p3_vault.md` | P3 Vault & Dashboard | 3 |
+| `04_p4e1_anchor_engine.md` | P4-E1 Anchor Engine | 3 |
+| `05_p4e2_credential_metadata.md` | P4-E2 Credential Metadata | 3 |
+| `06_p5_org_admin.md` | P5 Org Admin | 6 |
+| `07_p6_verification.md` | P6 Verification | 6 |
+| `08_p7_go_live.md` | P7 Go-Live | 10 |
+| `09_p45_verification_api.md` | P4.5 Verification API | 13 |
+
+When a story's status changes:
+1. Update the story's section in its group doc (Status field, Completion Gaps, Remaining Work)
+2. Update the group overview counts at the top of the group doc
+3. Update `00_stories_index.md` Completion Summary table
+4. Update CLAUDE.md Section 8 story status table
+
+PARTIAL stories must include "Completion Gaps" and "Remaining Work" subsections. When a PARTIAL story becomes COMPLETE, remove those subsections and update all status fields.
 
 ### agents.md Updates
 

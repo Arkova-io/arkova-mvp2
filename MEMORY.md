@@ -123,7 +123,7 @@ docs/confluence/                   ← Architecture, data model, security, audit
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-10):** Test coverage assessment revealed worker/chain critical path has 0% coverage. Decision made to do a ~1 week hardening sprint before starting Bitcoin chain integration (CRIT-2). CLAUDE.md Section 9 updated to add "Week 1: Worker Hardening" phase. Bitcoin Signet work shifted to Week 2-3.
+**Last session (2026-03-10):** Story documentation Session 3 complete. Created `docs/stories/07_p6_verification.md`, `08_p7_go_live.md`, `09_p45_verification_api.md`. Updated CLAUDE.md Sections 3, 4, 6 with story doc maintenance rules. Exported all story docs to .docx in `docs/stories/docx/`. All 9 story group docs + index now exist. Previous session: Worker hardening sprint decision.
 
 **Worker hardening scope (6 tasks):**
 1. Unit test `processAnchor()` — success, timeout, malformed receipt, duplicate
