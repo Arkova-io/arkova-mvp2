@@ -25,11 +25,11 @@ CREATE TABLE credential_templates (
 CREATE INDEX idx_credential_templates_org_id ON credential_templates(org_id);
 CREATE INDEX idx_credential_templates_credential_type ON credential_templates(credential_type);
 
--- Updated_at trigger
+-- Updated_at trigger (uses moddatetime extension from 0016_billing_schema.sql)
 CREATE TRIGGER set_credential_templates_updated_at
   BEFORE UPDATE ON credential_templates
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at();
+  EXECUTE FUNCTION moddatetime(updated_at);
 
 -- RLS
 ALTER TABLE credential_templates ENABLE ROW LEVEL SECURITY;
