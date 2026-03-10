@@ -1,5 +1,5 @@
 # agents.md — services/worker
-_Last updated: 2026-03-10 4:15 PM EDT_
+_Last updated: 2026-03-10 8:00 PM EST_
 
 ## What This Folder Contains
 
@@ -9,19 +9,32 @@ Express-based worker service handling privileged server-side operations: anchor 
 
 | Date | Sprint | Change |
 |------|--------|--------|
-| 2026-03-10 | HARDENING-1 | 27 unit tests for `processAnchor()` + `processPendingAnchors()` (100% coverage on `anchor.ts`). Fixed silent audit event failure (BUG-H1-01). Deleted dead `anchorWithClaim.ts` (BUG-H1-02, BUG-H1-03). |
-| 2026-03-10 | HARDENING-2 | 32 new tests: MockChainClient contract (18), getChainClient factory (5), job claim/completion flow (9). Total: 59 worker tests. 100% coverage on `anchor.ts`, `chain/mock.ts`, `chain/client.ts`. |
+| 2026-03-10 ~12 PM | HARDENING-1 | 27 unit tests for `processAnchor()` + `processPendingAnchors()` (100% coverage on `anchor.ts`). Fixed silent audit event failure (BUG-H1-01). Deleted dead `anchorWithClaim.ts` (BUG-H1-02, BUG-H1-03). |
+| 2026-03-10 ~2 PM | HARDENING-2 | 32 new tests: MockChainClient contract (18), getChainClient factory (5), job claim/completion flow (9). Total: 59 worker tests. 100% coverage on `anchor.ts`, `chain/mock.ts`, `chain/client.ts`. |
+| 2026-03-10 ~4 PM | HARDENING-3 | 55 new tests: webhook delivery (30), Stripe client (7), Stripe handlers (18). Total: 114 worker tests. HMAC signature verification confirmed against `crypto.createHmac`. |
+| 2026-03-10 ~5:20 PM | HARDENING-4 | 18 new tests: lifecycle integration (8), webhook dispatch wiring (10). Wired `dispatchWebhookEvent()` into `processAnchor()`. Added `processWebhookRetries` cron. Total: 132 worker tests. P7-TS-10 COMPLETE. |
+| 2026-03-10 ~8 PM | HARDENING-5 | 96 new tests across 7 new test files: config (9), index (17), stripe/mock (9), jobs/report (19), jobs/webhook (12), utils/correlationId (12), utils/rateLimit (18). 80% thresholds on all. Total: 228 worker tests. Sprint COMPLETE. |
 
-## Test Coverage Status
+## Test Coverage Status (Final — HARDENING-5)
 
-| File | Tests | Coverage | Sprint |
-|------|-------|----------|--------|
-| `src/jobs/anchor.ts` | 36 | 100% | HARDENING-1 + 2 |
-| `src/chain/mock.ts` | 18 | 100% | HARDENING-2 |
-| `src/chain/client.ts` | 5 | 100% | HARDENING-2 |
-| `src/webhooks/delivery.ts` | 0 | 0% | **HARDENING-3 target** |
-| `src/stripe/handlers.ts` | 0 | 0% | **HARDENING-3+ target** |
-| `src/stripe/client.ts` | 0 | 0% | **HARDENING-3+ target** |
+**228 worker tests across 14 test files. All pass 80%+ per-file thresholds.**
+
+| File | Test File | Tests | Coverage | Sprint |
+|------|-----------|-------|----------|--------|
+| `src/jobs/anchor.ts` | `anchor.test.ts` | 46 | 100% | H1+H2+H4 |
+| `src/chain/mock.ts` | `mock.test.ts` | 18 | 100% | H2 |
+| `src/chain/client.ts` | `client.test.ts` | 5 | 100% | H2 |
+| `src/webhooks/delivery.ts` | `delivery.test.ts` | 30 | 99% stmts | H3 |
+| `src/stripe/client.ts` | `client.test.ts` | 7 | 100% | H3 |
+| `src/stripe/handlers.ts` | `handlers.test.ts` | 18 | 98% | H3 |
+| `src/jobs/anchor-lifecycle` | `anchor-lifecycle.test.ts` | 8 | integration | H4 |
+| `src/config.ts` | `config.test.ts` | 9 | 80%+ | H5 |
+| `src/index.ts` | `index.test.ts` | 17 | 80%+ | H5 |
+| `src/stripe/mock.ts` | `mock.test.ts` | 9 | 80%+ | H5 |
+| `src/jobs/report.ts` | `report.test.ts` | 19 | 80%+ | H5 |
+| `src/jobs/webhook.ts` | `webhook.test.ts` | 12 | 80%+ | H5 |
+| `src/utils/correlationId.ts` | `correlationId.test.ts` | 12 | 80%+ | H5 |
+| `src/utils/rateLimit.ts` | `rateLimit.test.ts` | 18 | 80%+ | H5 |
 
 ## Do / Don't Rules
 

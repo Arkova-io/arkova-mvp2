@@ -551,6 +551,8 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 ### Week 1: Worker Hardening (pre-chain prerequisite)
 
 > **Decision (2026-03-10):** Worker/chain path has 0% test coverage. Harden before writing real chain code so regressions are caught immediately when MockChainClient is swapped for bitcoinjs-lib.
+>
+> **SPRINT COMPLETE (2026-03-10 ~8 PM EST).** 6 sessions, 5 bugs found/fixed, 228 worker tests + 253 frontend tests = 481 total. All 80%+ thresholds pass.
 
 | Task | Status | Detail |
 |------|--------|--------|

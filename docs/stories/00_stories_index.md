@@ -1,5 +1,5 @@
 # Arkova Story Documentation Index
-_Last updated: 2026-03-10 5:20 PM EST_
+_Last updated: 2026-03-10 8:00 PM EST_
 
 ## Overview
 
@@ -113,6 +113,8 @@ See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs (inc
 | BUG-H1-01 | MEDIUM | FIXED 2026-03-10 | Silent audit event failure in processAnchor() |
 | BUG-H1-02 | HIGH | REMOVED 2026-03-10 | Dead code (anchorWithClaim.ts) with nonexistent schema refs |
 | BUG-H1-03 | HIGH | REMOVED 2026-03-10 | Batch loop bug in same dead code file |
+| BUG-PRH1-01 | LOW | FIXED 2026-03-10 | validators.ts functions coverage below 80% threshold |
+| BUG-PRH1-02 | MEDIUM | FIXED 2026-03-10 | proofPackage.ts had 0% test coverage against 80% threshold |
 
 ## Related Documentation
 
@@ -136,3 +138,5 @@ Each story doc follows a consistent template:
 |------|--------|
 | 2026-03-10 | Initial index created. P1 and P2 story docs written (Session 1 of 3). |
 | 2026-03-10 4:15 PM EDT | Added resolved bugs (BUG-H1-01, BUG-H1-02, BUG-H1-03) to cross-reference. Split bug table into Active/Resolved sections. |
+| 2026-03-10 ~7:15 PM EST | PR-HARDENING-1: Added BUG-PRH1-01 and BUG-PRH1-02 to resolved bugs (validators.ts + proofPackage.ts coverage fixes). 385 total tests. |
+| 2026-03-10 ~8:00 PM EST | HARDENING-5: 7 new worker test files (96 tests). Final count: 481 total tests (228 worker + 253 frontend). All 80% thresholds pass. Worker hardening sprint COMPLETE. |

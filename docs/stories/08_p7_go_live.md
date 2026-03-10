@@ -634,4 +634,6 @@ Check the Technical Backlog PDF for actual story cards if they exist.
 |------|--------|
 | 2026-03-10 | Initial P7 story documentation created (Session 3 of 3). |
 | 2026-03-10 4:15 PM EDT | HARDENING-2 updates: worker test coverage now 59 tests (was 0). Updated P7-TS-05 and P7-TS-10 test coverage sections. Removed deleted anchorWithClaim.ts references from P7-TS-10. Updated hardening prerequisite to reflect progress. |
-| 2026-03-10 5:20 PM EST | HARDENING-4: P7-TS-10 PARTIAL → COMPLETE. Webhook dispatch wired in anchor.ts, processWebhookRetries added to cron. 132 worker tests. Worker hardening sprint COMPLETE. |
+| 2026-03-10 5:20 PM EST | HARDENING-4: P7-TS-10 PARTIAL → COMPLETE. Webhook dispatch wired in anchor.ts, processWebhookRetries added to cron. 132 worker tests. |
+| 2026-03-10 ~7:15 PM EST | PR-HARDENING-1: Fixed validators.ts (71% → 100% functions) and proofPackage.ts (0% → 100%) coverage failures. 44 new frontend tests. 385 total. |
+| 2026-03-10 ~8:00 PM EST | HARDENING-5: 7 new worker test files (96 tests). All remaining worker files now covered: config, index, stripe/mock, jobs/report, jobs/webhook, utils/correlationId, utils/rateLimit. 228 worker tests. 481 total. Worker hardening sprint COMPLETE. |

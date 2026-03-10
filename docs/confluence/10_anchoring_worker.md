@@ -1,5 +1,5 @@
 # Anchoring Worker
-_Last updated: 2026-03-10 5:20 PM EST | Story: P7-TS-05, P7-TS-10_
+_Last updated: 2026-03-10 8:00 PM EST | Story: P7-TS-05, P7-TS-10_
 
 ## Overview
 
@@ -224,7 +224,7 @@ Available regardless of feature flag state (Constitution 1.9).
 | Webhook retry scheduling | Complete | `processWebhookRetries()` runs every 2 minutes via cron |
 | Report generation | Complete | `report.ts` |
 | Rate limiter | Complete | `utils/rateLimit.ts` |
-| Worker test coverage | 132 tests, 80%+ on all critical paths | HARDENING-1/2/3/4 complete (2026-03-10) |
+| Worker test coverage | 228 tests across 14 files, 80%+ on all paths | HARDENING-1/2/3/4/5 complete (2026-03-10) |
 
 ## Testing
 
@@ -235,7 +235,7 @@ cd services/worker
 npm test
 ```
 
-**Current coverage (2026-03-10 5:20 PM EST):** 132 tests across 7 test files. All 6 critical path files (`anchor.ts`, `chain/client.ts`, `chain/mock.ts`, `webhooks/delivery.ts`, `stripe/client.ts`, `stripe/handlers.ts`) pass 80% per-file thresholds. Lifecycle integration test (`anchor-lifecycle.test.ts`) verifies end-to-end flow. Non-critical files (`stripe/mock.ts`, `jobs/report.ts`, `jobs/webhook.ts`, `utils/*`, `config.ts`, `index.ts`) remain untested.
+**Current coverage (2026-03-10 8:00 PM EST):** 228 tests across 14 test files. All worker source files pass 80% per-file thresholds. Critical path files (`anchor.ts`, `chain/client.ts`, `chain/mock.ts`, `webhooks/delivery.ts`, `stripe/client.ts`, `stripe/handlers.ts`) at 98-100%. Lifecycle integration test (`anchor-lifecycle.test.ts`) verifies end-to-end flow. HARDENING-5 added coverage for all remaining files: `config.ts`, `index.ts`, `stripe/mock.ts`, `jobs/report.ts`, `jobs/webhook.ts`, `utils/correlationId.ts`, `utils/rateLimit.ts`.
 
 ### Mock Mode
 
@@ -260,3 +260,4 @@ const mockChain: IAnchorPublisher = {
 | 2026-03-10 | Audit | Rewrote: fixed "Next.js" to "Vite" framing, updated directory structure to match actual files (added webhooks/delivery.ts, anchorWithClaim.ts, report.ts, utils/correlationId.ts, utils/rateLimit.ts; removed nonexistent cleanup.ts, Dockerfile), documented implementation status and known gaps |
 | 2026-03-10 | HARDENING-1/2/3 | Updated coverage status: 114 tests, 80%+ thresholds on all 6 critical paths. Removed anchorWithClaim.ts reference (deleted as dead code in HARDENING-1). |
 | 2026-03-10 5:20 PM EST | HARDENING-4 | Webhook dispatch wired in anchor.ts. processWebhookRetries added to cron. 132 tests. P7-TS-10 COMPLETE. Removed stale anchorWithClaim.ts from directory listing. |
+| 2026-03-10 8:00 PM EST | HARDENING-5 | 96 new tests across 7 new test files covering all remaining worker source files (config, index, stripe/mock, jobs/report, jobs/webhook, utils/correlationId, utils/rateLimit). Exported `cleanupExpiredEntries()` from rateLimit.ts for testability. Total: 228 worker tests, 14 test files. 80%+ thresholds on all files. Worker hardening sprint COMPLETE. |
