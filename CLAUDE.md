@@ -621,11 +621,11 @@ CORS_ALLOWED_ORIGINS=*              # Comma-separated allowed origins for verifi
 | P4-E2 Credential Metadata | 3/3 | 0 | 0 |
 | P5 Org Admin | 5/6 | 1/6 | 0 |
 | P6 Verification | 3/6 | 3/6 | 0 |
-| P7 Go-Live | 2/10 | 4/10 | 4/10 |
+| P7 Go-Live | 3/10 | 3/10 | 4/10 |
 | P4.5 Verification API | 0/13 | 0 | 13/13 |
-| **Total** | **30/55** | **8/55** | **17/55** |
+| **Total** | **31/55** | **7/55** | **17/55** |
 
-**Overall: 55% complete. 15% partial. 31% not started.**
+**Overall: 56% complete. 13% partial. 31% not started.**
 
 ### Per-Story Detail
 
@@ -670,10 +670,10 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P6-TS-05: COMPLETE — jsPDF installed, generateAuditReport.ts (201 lines, proper disclaimers) now called from RecordDetailPage via `onDownloadProof` prop.
 - P6-TS-06: PARTIAL — verification_events table exists (migration 0042) with correct schema (method, result, fingerprint_provided, ip_hash, etc.) and RLS. But **no code anywhere logs events** into this table. No insert calls, no service function, no worker endpoint.
 
-**P7 Go-Live — 2/10 COMPLETE, 4/10 PARTIAL, 4/10 NOT STARTED**
+**P7 Go-Live — 3/10 COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED**
 - P7-TS-01: COMPLETE — Billing schema migration (0016) with plans, subscriptions, entitlements, billing_events tables. BillingOverview.tsx displays plan info.
 - P7-TS-02: NOT STARTED — No Stripe checkout session endpoint in worker. Only mock client exists.
-- P7-TS-03: PARTIAL — Webhook endpoint `/webhooks/stripe` exists in worker but **signature verification is commented out** (`// In production, we'd verify the signature here`). Uses JSON.parse instead of `stripe.webhooks.constructEvent()`. SECURITY GAP.
+- P7-TS-03: COMPLETE — Webhook endpoint `/webhooks/stripe` uses `stripe.webhooks.constructEvent()` for cryptographic signature verification. Stripe SDK initialized in `services/worker/src/stripe/client.ts`. Mock mode (`USE_MOCKS=true`) bypasses verification for tests.
 - P7-TS-05: NOT STARTED — `getChainClient()` always returns MockChainClient. Real Bitcoin OP_RETURN client is a TODO comment.
 - P7-TS-07: PARTIAL — ProofDownload.tsx exists with PDF/JSON download buttons. **PDF download now works** via generateAuditReport wired in RecordDetailPage. **JSON proof package download still not implemented.**
 - P7-TS-08: COMPLETE — generateAuditReport.ts generates full PDF certificate with jsPDF (header, status, document info, issuer, cryptographic proof, lifecycle, disclaimer). Now wired to RecordDetailPage `onDownloadProof`.
@@ -704,5 +704,5 @@ These files exist and are functional in isolation but are never imported, routed
 
 ---
 
-_Document version: March 2026 (2026-03-10 post-commit update) | Repo: arkova-mvpcopy-main | ~18,750 source lines | 43 migrations_
+_Document version: March 2026 (2026-03-10 P7-TS-03 update) | Repo: arkova-mvpcopy-main | ~18,800 source lines | 43 migrations_
 _Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Phase 1.5 Technical Backlog March 2026 | Arkova Business Backlog P1-P7 March 2026_

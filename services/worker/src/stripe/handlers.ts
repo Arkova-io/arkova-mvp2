@@ -2,18 +2,16 @@
  * Stripe Webhook Handlers
  *
  * Handlers for Stripe webhook events.
+ * Accepts Stripe.Event from the SDK after signature verification.
+ *
+ * @see P7-TS-03
  */
 
+import type Stripe from 'stripe';
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
-interface StripeEvent {
-  id: string;
-  type: string;
-  data: {
-    object: Record<string, unknown>;
-  };
-}
+type StripeEvent = Stripe.Event;
 
 /**
  * Check if event was already processed (idempotency)

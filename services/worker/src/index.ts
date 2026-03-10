@@ -14,6 +14,7 @@ import { config } from './config.js';
 import { logger } from './utils/logger.js';
 import { processPendingAnchors } from './jobs/anchor.js';
 import { handleStripeWebhook } from './stripe/handlers.js';
+import { verifyWebhookSignature } from './stripe/client.js';
 
 const app = express();
 
@@ -27,23 +28,27 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// Stripe webhook endpoint
+// Stripe webhook endpoint — signature verified via constructEvent()
 app.post(
   '/webhooks/stripe',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     const sig = req.headers['stripe-signature'] as string;
 
+    if (!sig) {
+      logger.warn('Missing stripe-signature header');
+      res.status(400).json({ error: 'Missing stripe-signature header' });
+      return;
+    }
+
     try {
-      // In production, we'd verify the signature here
-      // For now, just parse the body
-      const event = JSON.parse(req.body.toString());
+      const event = verifyWebhookSignature(req.body, sig);
 
       await handleStripeWebhook(event);
 
       res.json({ received: true });
     } catch (error) {
-      logger.error({ error }, 'Webhook processing failed');
+      logger.error({ error }, 'Webhook signature verification or processing failed');
       res.status(400).json({ error: 'Webhook processing failed' });
     }
   }
