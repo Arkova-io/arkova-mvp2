@@ -619,13 +619,13 @@ CORS_ALLOWED_ORIGINS=*              # Comma-separated allowed origins for verifi
 | P3 Vault | 3/3 | 0 | 0 |
 | P4-E1 Anchor Engine | 3/3 | 0 | 0 |
 | P4-E2 Credential Metadata | 3/3 | 0 | 0 |
-| P5 Org Admin | 5/6 | 1/6 | 0 |
-| P6 Verification | 3/6 | 3/6 | 0 |
-| P7 Go-Live | 2/10 | 4/10 | 4/10 |
+| P5 Org Admin | 6/6 | 0 | 0 |
+| P6 Verification | 4/6 | 2/6 | 0 |
+| P7 Go-Live | 3/10 | 3/10 | 4/10 |
 | P4.5 Verification API | 0/13 | 0 | 13/13 |
-| **Total** | **30/55** | **8/55** | **17/55** |
+| **Total** | **33/55** | **5/55** | **17/55** |
 
-**Overall: 55% complete. 15% partial. 31% not started.**
+**Overall: 60% complete. 9% partial. 31% not started.**
 
 ### Per-Story Detail
 
@@ -654,26 +654,26 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P4-TS-05: metadata JSONB + editability trigger blocks edits after PENDING (migration 0030)
 - P4-TS-06: parent_anchor_id + version_number with auto-version trigger (migration 0031)
 
-**P5 Org Admin — 5/6 COMPLETE, 1 PARTIAL**
+**P5 Org Admin — 6/6 COMPLETE**
 - P5-TS-01: COMPLETE — OrgRegistryTable with status filter, search, date range, bulk select, CSV export
 - P5-TS-02: COMPLETE — RevokeDialog with reason field, persisted to DB (migration 0036)
 - P5-TS-03: COMPLETE — MembersTable wired to useOrgMembers() real Supabase query
 - P5-TS-05: COMPLETE — public_id auto-generated on INSERT (migration 0037)
 - P5-TS-06: COMPLETE — BulkUploadWizard supports credential_type + metadata columns in CSV
-- P5-TS-07: PARTIAL — Migration 0040 exists, useCredentialTemplates CRUD hook exists, but **no UI page for template management** (hook is orphaned — never imported)
+- P5-TS-07: COMPLETE — Migration 0040, useCredentialTemplates CRUD hook, CredentialTemplatesManager UI component, CredentialTemplatesPage routed at `/settings/credential-templates`.
 
-**P6 Verification — 3/6 COMPLETE, 3/6 PARTIAL**
+**P6 Verification — 4/6 COMPLETE, 2/6 PARTIAL**
 - P6-TS-01: COMPLETE — get_public_anchor RPC rebuilt (migration 0044) with Phase 1.5 frozen schema (14 fields, SECURED→ACTIVE mapping, hashed recipient, conditional jurisdiction). PublicVerification.tsx renders 5 sections. Wired to `/verify/:publicId` route.
 - P6-TS-02: COMPLETE — QRCodeSVG in AssetDetailView for SECURED anchors with public_id. Links to `/verify/{publicId}`.
 - P6-TS-03: PARTIAL — VerificationWidget.tsx exists (compact + full modes, self-contained Supabase queries) but is **never imported or routed** anywhere. Not bundled as standalone embed script.
 - P6-TS-04: PARTIAL — useCredentialLifecycle.ts exists (events, isActive, isTerminal, isExpiringSoon, progressPercent). AnchorLifecycleTimeline.tsx exists. Both are **imported in AssetDetailView** and working. **However**, the hook is not used on the public verification page, and the story's full integration scope (timeline on public page) is incomplete. Upgrading to COMPLETE pending public page integration check.
 - P6-TS-05: COMPLETE — jsPDF installed, generateAuditReport.ts (201 lines, proper disclaimers) now called from RecordDetailPage via `onDownloadProof` prop.
-- P6-TS-06: PARTIAL — verification_events table exists (migration 0042) with correct schema (method, result, fingerprint_provided, ip_hash, etc.) and RLS. But **no code anywhere logs events** into this table. No insert calls, no service function, no worker endpoint.
+- P6-TS-06: COMPLETE — verification_events table (migration 0042), SECURITY DEFINER RPC `log_verification_event` (migration 0045), `logVerificationEvent.ts` fire-and-forget helper, wired into PublicVerification.tsx (logs verified/revoked/not_found/error events).
 
-**P7 Go-Live — 2/10 COMPLETE, 4/10 PARTIAL, 4/10 NOT STARTED**
+**P7 Go-Live — 3/10 COMPLETE, 3/10 PARTIAL, 4/10 NOT STARTED**
 - P7-TS-01: COMPLETE — Billing schema migration (0016) with plans, subscriptions, entitlements, billing_events tables. BillingOverview.tsx displays plan info.
 - P7-TS-02: NOT STARTED — No Stripe checkout session endpoint in worker. Only mock client exists.
-- P7-TS-03: PARTIAL — Webhook endpoint `/webhooks/stripe` exists in worker but **signature verification is commented out** (`// In production, we'd verify the signature here`). Uses JSON.parse instead of `stripe.webhooks.constructEvent()`. SECURITY GAP.
+- P7-TS-03: COMPLETE — Webhook endpoint `/webhooks/stripe` uses `stripe.webhooks.constructEvent()` for cryptographic signature verification. Stripe SDK initialized in `services/worker/src/stripe/client.ts`. Mock mode (`USE_MOCKS=true`) bypasses verification for tests.
 - P7-TS-05: NOT STARTED — `getChainClient()` always returns MockChainClient. Real Bitcoin OP_RETURN client is a TODO comment.
 - P7-TS-07: PARTIAL — ProofDownload.tsx exists with PDF/JSON download buttons. **PDF download now works** via generateAuditReport wired in RecordDetailPage. **JSON proof package download still not implemented.**
 - P7-TS-08: COMPLETE — generateAuditReport.ts generates full PDF certificate with jsPDF (header, status, document info, issuer, cryptographic proof, lifecycle, disclaimer). Now wired to RecordDetailPage `onDownloadProof`.
@@ -695,14 +695,12 @@ These files exist and are functional in isolation but are never imported, routed
 
 ### Known Display Gaps
 
-| Gap | Story | Fix |
-|-----|-------|-----|
-| verification_events never logged | P6-TS-06 | Add insert call in PublicVerification or get_public_anchor RPC |
+No known display gaps at this time.
 
 ### Migration Inventory
-43 migration files, versions 0001–0044 (0033 intentionally skipped). Last migration: `0044_restore_get_public_anchor_phase15.sql`.
+44 migration files, versions 0001–0045 (0033 intentionally skipped). Last migration: `0045_log_verification_event_rpc.sql`.
 
 ---
 
-_Document version: March 2026 (2026-03-10 post-commit update) | Repo: arkova-mvpcopy-main | ~18,750 source lines | 43 migrations_
+_Document version: March 2026 (2026-03-10 combined P5-P7 update) | Repo: arkova-mvpcopy-main | ~18,900 source lines | 44 migrations_
 _Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Phase 1.5 Technical Backlog March 2026 | Arkova Business Backlog P1-P7 March 2026_
