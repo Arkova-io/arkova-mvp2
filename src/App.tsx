@@ -22,6 +22,7 @@ import { RecordDetailPage } from '@/pages/RecordDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { HelpPage } from '@/pages/HelpPage';
 import { PublicVerifyPage } from '@/components/public/PublicVerifyPage';
+import { WebhookSettingsPage } from '@/pages/WebhookSettingsPage';
 import { ROUTES, MAIN_APP_DESTINATIONS, destinationToRoute } from '@/lib/routes';
 
 /**
@@ -184,6 +185,16 @@ export function App() {
             <AuthGuard>
               <RouteGuard allow={MAIN_APP_DESTINATIONS}>
                 <DashboardPage />
+              </RouteGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path={ROUTES.SETTINGS_WEBHOOKS}
+          element={
+            <AuthGuard>
+              <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                <WebhookSettingsPage />
               </RouteGuard>
             </AuthGuard>
           }

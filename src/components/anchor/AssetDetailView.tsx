@@ -30,7 +30,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from './FileUpload';
 import { AnchorLifecycleTimeline } from './AnchorLifecycleTimeline';
 import { formatFingerprint } from '@/lib/fileHasher';
-import { LIFECYCLE_LABELS } from '@/lib/copy';
+import { LIFECYCLE_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
 import { verifyPath } from '@/lib/routes';
 
 interface AnchorRecord {
@@ -47,6 +47,7 @@ interface AnchorRecord {
   expiresAt?: string;
   fileSize: number;
   fileMime?: string;
+  credentialType?: string;
 }
 
 interface AssetDetailViewProps {
@@ -183,6 +184,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof }: AssetDetail
               <p className="text-sm text-muted-foreground">
                 {formatFileSize(anchor.fileSize)}
                 {anchor.fileMime && ` • ${anchor.fileMime}`}
+                {anchor.credentialType && ` • ${CREDENTIAL_TYPE_LABELS[anchor.credentialType as keyof typeof CREDENTIAL_TYPE_LABELS] ?? anchor.credentialType}`}
               </p>
             </div>
           </div>

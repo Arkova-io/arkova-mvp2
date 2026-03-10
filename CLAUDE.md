@@ -615,35 +615,97 @@ CORS_ALLOWED_ORIGINS=*              # Comma-separated allowed origins for verifi
 | Priority | Complete | Partial | Not Started |
 |----------|----------|---------|-------------|
 | P1 Bedrock | 6/6 | 0 | 0 |
-| P2 Identity | 5/5 (router, guards, hooks, profile page, org settings) | 0 | 0 |
-| P3 Vault | 3/3 (data wiring, privacy toggle, nav links) | 0 | 0 |
-| P4-E1 Anchor Engine | 3/3 (creation flow, record detail, lifecycle UI) | 0 | 0 |
-| P4-E2 Credential Metadata | 3/3 (credential_type, metadata JSONB, lineage) | 0 | 0 |
-| P5 Org Admin | 5/6 (registry, revoke, members, public_id, bulk upload) | 1/6 (P5-TS-07 credential templates — migration exists, CRUD hook pending) | 0 |
-| P6 Verification | 2/6 (P6-TS-01 public anchor RPC + UI, P6-TS-02 QR code) | 0 | 4/6 (P6-TS-03 widget, P6-TS-04 lifecycle hook, P6-TS-05 jsPDF, P6-TS-06 analytics) |
-| P7 Go-Live | 0/8 | 4/8 (billing schema, proof download, webhooks settings, delivery engine) | 4/8 |
-| P4.5 Verification API | 0/13 | 0/13 | 13/13 |
-| **Total** | **27/53** | **5/53** | **21/53** |
+| P2 Identity | 5/5 | 0 | 0 |
+| P3 Vault | 3/3 | 0 | 0 |
+| P4-E1 Anchor Engine | 3/3 | 0 | 0 |
+| P4-E2 Credential Metadata | 3/3 | 0 | 0 |
+| P5 Org Admin | 5/6 | 1/6 | 0 |
+| P6 Verification | 2/6 | 4/6 | 0 |
+| P7 Go-Live | 2/10 | 4/10 | 4/10 |
+| P4.5 Verification API | 0/13 | 0 | 13/13 |
+| **Total** | **29/55** | **9/55** | **17/55** |
 
-**Overall: 51% complete. 9% partial. 40% not started.**
+**Overall: 53% complete. 16% partial. 31% not started.**
 
-_Audited against codebase on 2026-03-10. Major sprint 2026-03-09 to 2026-03-10 completed 15 stories across 6 PRs. Key changes:_
-- _P1-TS-06 audit event logging completed_
-- _P2-TS-05 (identity section) and P2-TS-06 (org settings page) completed_
-- _P3-TS-03 nav links wired with react-router-dom_
-- _P4-E2 all 3 stories completed (credential_type, metadata JSONB, lineage columns)_
-- _P5-TS-01 (registry filters), P5-TS-02 (revoke reason), P5-TS-05 (public_id on insert), P5-TS-06 (bulk upload metadata) completed_
-- _P6-TS-01 rebuilt get_public_anchor RPC with Phase 1.5 frozen schema (14 fields, status mapping SECURED→ACTIVE)_
-- _P6-TS-02 QR code verification link in AssetDetailView_
-- _Race condition fix in get_public_anchor second SELECT (status filter added)_
-- _useProfile/useOrganization hooks now return boolean from update methods for proper UI feedback_
-- _Migration numbering: 42 migration files, versions 0001–0043 (0033 intentionally skipped, 0039 used by rebuild_get_public_anchor)_
+### Per-Story Detail
 
-The remaining 5 partial stories need targeted fixes (CRUD hooks, download handlers). The 13 Phase 1.5 API stories are all new and should be built during Phase I weeks 6-7 behind the `ENABLE_VERIFICATION_API` feature flag.
+**P1 Bedrock — 6/6 COMPLETE**
+All foundational work done: schema (enums, tables, RLS), validators (Zod), audit trail (append-only + triggers), validation-on-insert wired in ConfirmAnchorModal.
 
-Phase 1.5 stories added: P4.5-TS-06 (async job polling), P4.5-TS-07 (key CRUD endpoints), P4.5-TS-08 (usage endpoint), P4.5-TS-09 (API key management UI), P4.5-TS-10 (usage dashboard widget), P4.5-TS-11 (key scope UI), P4.5-TS-12 (feature flag), P4.5-TS-13 (load test suite). Full story cards in Arkova_Phase15_Technical_Backlog.docx.
+**P2 Identity — 5/5 COMPLETE**
+- P2-TS-03: BrowserRouter + Routes in App.tsx with named routes
+- P2-TS-04: AuthGuard + RouteGuard wired into router
+- P2-TS-05: useProfile hook with DB persistence, returns boolean from update
+- P2-TS-06: useOrganization hook, OrgSettingsPage wired
+- P2-TS-0X: LoginForm, SignUpForm, ProfilePage, SettingsPage all routed
+
+**P3 Vault — 3/3 COMPLETE**
+- P3-TS-01: DashboardPage + VaultDashboard use useAnchors() — no mock data
+- P3-TS-02: is_public_profile migration + RLS + toggle wired to DB via updateProfile()
+- P3-TS-03: Sidebar uses `<Link>` with active route highlighting, no `href="#"`
+
+**P4-E1 Anchor Engine — 3/3 COMPLETE**
+- P4-TS-01: ConfirmAnchorModal — upload, fingerprint, validateAnchorCreate(), insert, audit log
+- P4-TS-02: AssetDetailView — displays record fields, QR code, lifecycle timeline
+- P4-TS-03: RecordDetailPage at `/records/:id` with useAnchor() real query
+
+**P4-E2 Credential Metadata — 3/3 COMPLETE**
+- P4-TS-04: credential_type enum + column (migration 0029)
+- P4-TS-05: metadata JSONB + editability trigger blocks edits after PENDING (migration 0030)
+- P4-TS-06: parent_anchor_id + version_number with auto-version trigger (migration 0031)
+
+**P5 Org Admin — 5/6 COMPLETE, 1 PARTIAL**
+- P5-TS-01: COMPLETE — OrgRegistryTable with status filter, search, date range, bulk select, CSV export
+- P5-TS-02: COMPLETE — RevokeDialog with reason field, persisted to DB (migration 0036)
+- P5-TS-03: COMPLETE — MembersTable wired to useOrgMembers() real Supabase query
+- P5-TS-05: COMPLETE — public_id auto-generated on INSERT (migration 0037)
+- P5-TS-06: COMPLETE — BulkUploadWizard supports credential_type + metadata columns in CSV
+- P5-TS-07: PARTIAL — Migration 0040 exists, useCredentialTemplates CRUD hook exists, but **no UI page for template management** (hook is orphaned — never imported)
+
+**P6 Verification — 2/6 COMPLETE, 4/6 PARTIAL**
+- P6-TS-01: COMPLETE — get_public_anchor RPC rebuilt (migration 0044) with Phase 1.5 frozen schema (14 fields, SECURED→ACTIVE mapping, hashed recipient, conditional jurisdiction). PublicVerification.tsx renders 5 sections. Wired to `/verify/:publicId` route.
+- P6-TS-02: COMPLETE — QRCodeSVG in AssetDetailView for SECURED anchors with public_id. Links to `/verify/{publicId}`.
+- P6-TS-03: PARTIAL — VerificationWidget.tsx exists (compact + full modes, self-contained Supabase queries) but is **never imported or routed** anywhere. Not bundled as standalone embed script.
+- P6-TS-04: PARTIAL — useCredentialLifecycle.ts exists (events, isActive, isTerminal, isExpiringSoon, progressPercent). AnchorLifecycleTimeline.tsx exists. Both are **imported in AssetDetailView** and working. **However**, the hook is not used on the public verification page, and the story's full integration scope (timeline on public page) is incomplete. Upgrading to COMPLETE pending public page integration check.
+- P6-TS-05: PARTIAL — jsPDF installed, generateAuditReport.ts exists (201 lines, proper disclaimers) but is **never imported or called** from any component. The function is orphaned.
+- P6-TS-06: PARTIAL — verification_events table exists (migration 0042) with correct schema (method, result, fingerprint_provided, ip_hash, etc.) and RLS. But **no code anywhere logs events** into this table. No insert calls, no service function, no worker endpoint.
+
+**P7 Go-Live — 2/10 COMPLETE, 4/10 PARTIAL, 4/10 NOT STARTED**
+- P7-TS-01: COMPLETE — Billing schema migration (0016) with plans, subscriptions, entitlements, billing_events tables. BillingOverview.tsx displays plan info.
+- P7-TS-02: NOT STARTED — No Stripe checkout session endpoint in worker. Only mock client exists.
+- P7-TS-03: PARTIAL — Webhook endpoint `/webhooks/stripe` exists in worker but **signature verification is commented out** (`// In production, we'd verify the signature here`). Uses JSON.parse instead of `stripe.webhooks.constructEvent()`. SECURITY GAP.
+- P7-TS-05: NOT STARTED — `getChainClient()` always returns MockChainClient. Real Bitcoin OP_RETURN client is a TODO comment.
+- P7-TS-07: PARTIAL — ProofDownload.tsx exists with PDF/JSON download buttons but **onDownloadPDF and onDownloadJSON are optional callback props with no implementation**. Buttons do nothing.
+- P7-TS-08: COMPLETE — generateAuditReport.ts generates full PDF certificate with jsPDF (header, status, document info, issuer, cryptographic proof, lifecycle, disclaimer). Note: this is the same file as P6-TS-05 — the function exists but isn't wired to any UI button.
+- P7-TS-09: PARTIAL — WebhookSettings.tsx exists with add/toggle/delete UI but is **not in the router** (no route to navigate to it). Secret hashing (HMAC-SHA256) not implemented in handler — raw secret passed through.
+- P7-TS-10: PARTIAL — Delivery engine exists (`services/worker/src/webhooks/delivery.ts` with dispatchWebhookEvent, exponential backoff, HMAC signing). But **anchor lifecycle does not call it** — anchor.ts logs audit events but never triggers webhook dispatch. webhook.ts job is a stub with TODO comments.
+
+**P4.5 Verification API — 0/13 NOT STARTED**
+All 13 stories are behind `ENABLE_VERIFICATION_API=false` feature flag. No API routes, middleware, or key management implemented. This is intentional — scheduled for Phase I weeks 6-7.
+
+### Known Orphaned Code (built but never wired)
+
+These files exist and are functional in isolation but are never imported, routed, or called:
+
+| File | Story | What's missing |
+|------|-------|---------------|
+| `src/components/embed/VerificationWidget.tsx` | P6-TS-03 | Never imported. Needs route or standalone bundle. |
+| `src/lib/generateAuditReport.ts` | P6-TS-05 / P7-TS-08 | Never imported. Needs to be called from ProofDownload or AssetDetailView. |
+| `src/components/webhooks/WebhookSettings.tsx` | P7-TS-09 | Not in router. Needs `/settings/webhooks` route. |
+| `src/components/public/ProofDownload.tsx` | P7-TS-07 | Download handlers are no-op optional callbacks. |
+| `src/components/billing/BillingOverview.tsx` | P7-TS-01 | Component exists and displays plan info but is not wired to a route with real billing data. |
+
+### Known Display Gaps
+
+| Gap | Story | Fix |
+|-----|-------|-----|
+| credential_type not shown in AssetDetailView | P4-TS-02 | Add credential_type to AnchorRecord interface + render in UI |
+| verification_events never logged | P6-TS-06 | Add insert call in PublicVerification or get_public_anchor RPC |
+
+### Migration Inventory
+43 migration files, versions 0001–0044 (0033 intentionally skipped). Last migration: `0044_restore_get_public_anchor_phase15.sql`.
 
 ---
 
-_Document version: March 2026 (2026-03-10 sprint update) | Repo: arkova-mvpcopy-main | ~18,700 source lines | 42 migrations_
+_Document version: March 2026 (2026-03-10 audit) | Repo: arkova-mvpcopy-main | ~18,670 source lines | 43 migrations_
 _Companion documents: Arkova Technical Backlog P1-P7 March 2026 | Arkova Phase 1.5 Technical Backlog March 2026 | Arkova Business Backlog P1-P7 March 2026_

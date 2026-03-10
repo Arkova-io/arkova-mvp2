@@ -98,8 +98,29 @@ export function RecordDetailPage() {
           expiresAt: anchor.expires_at ?? undefined,
           fileSize: anchor.file_size ?? 0,
           fileMime: anchor.file_mime ?? undefined,
+          credentialType: anchor.credential_type ?? undefined,
         }}
         onBack={handleBack}
+        onDownloadProof={() => {
+          import('@/lib/generateAuditReport').then(({ generateAuditReport }) => {
+            generateAuditReport({
+              publicId: anchor.public_id ?? anchor.id,
+              filename: anchor.filename,
+              fingerprint: anchor.fingerprint,
+              status: anchor.status,
+              fileSize: anchor.file_size ?? undefined,
+              credentialType: anchor.credential_type ?? undefined,
+              createdAt: anchor.created_at,
+              issuedAt: anchor.issued_at ?? undefined,
+              securedAt: anchor.chain_timestamp ?? undefined,
+              revokedAt: anchor.revoked_at ?? undefined,
+              revocationReason: anchor.revocation_reason ?? undefined,
+              expiresAt: anchor.expires_at ?? undefined,
+              networkReceipt: anchor.chain_tx_id ?? undefined,
+              blockHeight: anchor.chain_block_height ?? undefined,
+            });
+          });
+        }}
       />
     </AppShell>
   );
