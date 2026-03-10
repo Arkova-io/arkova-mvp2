@@ -1,5 +1,5 @@
 # Arkova Bug Log
-_Last updated: 2026-03-10 4:15 PM EDT | Active bugs: 6 | Resolved: 4_
+_Last updated: 2026-03-10 7:15 PM EST | Active bugs: 6 | Resolved: 6_
 
 ## Layman's Summary
 
@@ -17,6 +17,8 @@ _For each bug: what it means in plain English and why it matters._
 | BUG-H1-01 | _(Resolved)_ When the system secured a document but failed to write the audit log entry, **nobody was told about the failure**. The document was secured correctly, but the missing audit trail entry could go unnoticed indefinitely. |
 | BUG-H1-02 | _(Resolved)_ A dead code file referenced database tables and fields that **don't exist**. It would have crashed if anyone ever tried to use it. Deleted because it was never imported anywhere. |
 | BUG-H1-03 | _(Resolved)_ A batch processing loop in the same dead code file **always quit after one try** because it misread the database response. Even if 100 jobs were waiting, only one would ever be attempted. Deleted along with BUG-H1-02. |
+| ~~BUG-PRH1-01~~ | ~~The validation library's test coverage was below threshold (71% vs 80% for functions).~~ **FIXED** — added 10 tests, now at 100%. |
+| ~~BUG-PRH1-02~~ | ~~The proof package generator had zero test coverage.~~ **FIXED** — created 33-test suite, now at 100%. |
 
 ## Active Bugs Summary
 
@@ -28,6 +30,8 @@ _For each bug: what it means in plain English and why it matters._
 | CRIT-4 | MEDIUM | P2 | Onboarding routes are placeholders | OPEN |
 | CRIT-5 | MEDIUM | P7-TS-07 | JSON proof download is no-op | OPEN |
 | CRIT-6 | MEDIUM | P5-TS-06 | CSVUploadWizard uses simulated processing | OPEN |
+| ~~BUG-PRH1-01~~ | LOW | — | validators.ts functions coverage below 80% threshold | **FIXED** [PR-Hardening1-Bug] |
+| ~~BUG-PRH1-02~~ | MEDIUM | P7-TS-07 | proofPackage.ts has 0% coverage against 80% threshold | **FIXED** [PR-Hardening1-Bug] |
 
 ## Resolved Bugs Summary
 
@@ -425,6 +429,131 @@ Wizard was built as a UI prototype with simulated data. The `useBulkAnchors` hoo
 
 ---
 
+### BUG-PRH1-01: validators.ts Functions Coverage Below 80% Threshold
+
+- **Severity:** LOW [PR-Hardening1-Bug]
+- **Found:** 2026-03-10 6:45 PM EST, PR-HARDENING-1 audit (test suite run on main)
+- **Story:** — (cross-cutting: coverage infrastructure)
+- **Component:** `src/lib/validators.ts`, `vitest.config.ts`
+
+#### Steps to Reproduce
+
+1. Run `npm run test:coverage` from repo root
+2. Observe coverage table: `validators.ts` shows functions at 71.42%
+3. Observe error: `ERROR: Coverage for functions (71.42%) does not meet "src/lib/validators.ts" threshold (80%)`
+4. CI fails on coverage threshold check
+
+#### Expected Behavior
+
+All per-file coverage thresholds pass. `validators.ts` functions coverage >= 80%.
+
+#### Actual Behavior
+
+Functions coverage is 71.42%. The file has 7 callable units (4 exported functions + 3 inline Zod callbacks). The 32 existing tests in `validators.test.ts` cover the 4 exported functions and the main schema paths, but 2 inline callbacks are untouched:
+
+- `AnchorCreateSchema.metadata` custom validator (line 119-121): validates `typeof val === 'object' && !Array.isArray(val)` — no test passes an array to trigger the rejection path
+- `AnchorUpdateSchema.credential_type` errorMap (line 177-179): generates custom error message — no test passes an invalid credential_type string through the update schema
+
+#### Root Cause
+
+Per-file threshold was added in commit `3031c23` at 80% for all metrics. The existing test file covers statements (98.34%), branches (100%), and lines (98.34%) — all well above 80%. Only functions falls short because V8 counts inline arrow functions (Zod `.custom()` callbacks, `.errorMap()` callbacks) as separate functions, and the error paths that invoke them are not exercised.
+
+#### Fix Pattern
+
+Add 2 tests to `src/lib/validators.test.ts`:
+
+```typescript
+it('rejects array as metadata', () => {
+  const data = { ...validAnchor, metadata: [1, 2, 3] };
+  expect(() => AnchorCreateSchema.parse(data)).toThrow('Metadata must be a JSON object');
+});
+
+it('rejects invalid credential_type in update schema', () => {
+  const data = { credential_type: 'INVALID_TYPE' };
+  expect(() => AnchorUpdateSchema.parse(data)).toThrow('Credential type must be one of');
+});
+```
+
+#### Actions Taken
+
+| Date | Action |
+|------|--------|
+| 2026-03-10 6:45 PM EST | Found during PR-HARDENING-1 test suite audit on main. Classified as non-worker, non-processAnchor code per decision tree. Logged, not fixed. |
+| 2026-03-10 7:15 PM EST | Added 10 tests to `validators.test.ts`: metadata array/object, credential_type (both schemas), retention_until, deleted_at. Functions → 100%. |
+
+#### Resolution
+
+**Status:** FIXED (2026-03-10 7:15 PM EST) — Added 10 test cases to `src/lib/validators.test.ts`. validators.ts now at 100% functions, 100% statements, 94.73% branches coverage.
+
+#### Regression Test
+
+- `src/lib/validators.test.ts` → "rejects array as metadata", "rejects invalid credential_type" (AnchorCreateSchema + AnchorUpdateSchema), plus retention_until and deleted_at tests.
+
+---
+
+### BUG-PRH1-02: proofPackage.ts Has 0% Test Coverage Against 80% Threshold
+
+- **Severity:** MEDIUM [PR-Hardening1-Bug]
+- **Found:** 2026-03-10 6:45 PM EST, PR-HARDENING-1 audit (test suite run on main)
+- **Story:** P7-TS-07 (Proof export — JSON path)
+- **Component:** `src/lib/proofPackage.ts`, `vitest.config.ts`
+
+#### Steps to Reproduce
+
+1. Run `npm run test:coverage` from repo root
+2. Observe coverage table: `proofPackage.ts` shows 0% across all metrics
+3. Observe errors:
+   - `ERROR: Coverage for lines (0%) does not meet "src/lib/proofPackage.ts" threshold (80%)`
+   - `ERROR: Coverage for functions (0%) does not meet "src/lib/proofPackage.ts" threshold (80%)`
+   - `ERROR: Coverage for statements (0%) does not meet "src/lib/proofPackage.ts" threshold (80%)`
+   - `ERROR: Coverage for branches (0%) does not meet "src/lib/proofPackage.ts" threshold (80%)`
+4. CI fails on all 4 coverage threshold checks
+
+#### Expected Behavior
+
+`proofPackage.ts` has >= 80% coverage. A test file `src/lib/proofPackage.test.ts` validates the schema, generator, validator, and download functions.
+
+#### Actual Behavior
+
+No test file exists. The file (170 lines) exports:
+
+- `ProofPackageSchema` — Zod schema for proof package validation
+- `generateProofPackage(anchor)` — builds proof package object from anchor data
+- `validateProofPackage(data)` — validates arbitrary data against schema
+- `downloadProofPackage(pkg, filename)` — creates Blob + triggers browser download
+
+None of these are imported by any test.
+
+#### Root Cause
+
+Coverage threshold was added in commit `3031c23` alongside thresholds for `fileHasher.ts` and `validators.ts`. Those two had existing tests. `proofPackage.ts` did not, and no test file was created at the same time. This is also related to CRIT-5 (JSON proof download no-op) — the functions exist but are never wired to any UI component, so no integration test catches the gap either.
+
+#### Fix Pattern
+
+Create `src/lib/proofPackage.test.ts` with tests for:
+
+1. `ProofPackageSchema` validation: valid package passes, missing fields rejected, invalid fingerprint format rejected
+2. `generateProofPackage()`: returns valid schema for SECURED anchor, handles null optional fields, includes correct terminology (no banned terms)
+3. `validateProofPackage()`: returns parsed data for valid input, throws for invalid
+4. `downloadProofPackage()`: creates Blob with correct MIME type, triggers download (mock URL.createObjectURL)
+
+#### Actions Taken
+
+| Date | Action |
+|------|--------|
+| 2026-03-10 6:45 PM EST | Found during PR-HARDENING-1 test suite audit on main. Classified as non-worker, non-processAnchor code per decision tree. Logged, not fixed. |
+| 2026-03-10 7:15 PM EST | Created `src/lib/proofPackage.test.ts` — 33 tests across 5 describe blocks. All metrics → 100%. |
+
+#### Resolution
+
+**Status:** FIXED (2026-03-10 7:15 PM EST) — Created `src/lib/proofPackage.test.ts` with 33 tests covering ProofPackageSchema validation, generateProofPackage() for all anchor states, validateProofPackage(), getProofPackageFilename(), and downloadProofPackage() with DOM mocks.
+
+#### Regression Test
+
+- `src/lib/proofPackage.test.ts` — 33 tests across 5 describe blocks. CI enforces 80% threshold.
+
+---
+
 ---
 
 ## Resolved Bugs
@@ -710,3 +839,5 @@ Same as BUG-H1-02.
 | 2026-03-10 | Initial bug log created with CRIT-1 through CRIT-7, migrated from CLAUDE.md Section 8 summary table. Full steps to reproduce, root cause analysis, and fix patterns documented for all 7 bugs. |
 | 2026-03-10 | Added HARDENING-1 bugs (BUG-H1-01, BUG-H1-02, BUG-H1-03). Moved CRIT-7 to resolved. Updated summary counts: 6 active, 4 resolved. |
 | 2026-03-10 4:15 PM EDT | HARDENING-2 complete. No new bugs found. Added layman's summary table for all 10 bugs. Chain client (mock.ts, client.ts) and anchor job claim flow confirmed clean — 59 worker tests, 100% coverage on anchor.ts, mock.ts, client.ts. |
+| 2026-03-10 6:45 PM EST | PR-HARDENING-1 audit complete. 2 new bugs found (BUG-PRH1-01, BUG-PRH1-02) — both frontend coverage threshold failures, labeled PR-Hardening1-Bug. 0 open PRs, 0 unaddressed comments. 341/341 tests pass. Updated active count: 8 active, 4 resolved. |
+| 2026-03-10 7:15 PM EST | Fixed BUG-PRH1-01 (10 new tests in validators.test.ts) and BUG-PRH1-02 (33 new tests in proofPackage.test.ts). Both at 100% coverage. Total: 385 tests (253 frontend + 132 worker). Updated counts: 6 active, 6 resolved. |

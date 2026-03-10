@@ -105,6 +105,38 @@ describe('AnchorCreateSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('rejects array as metadata', () => {
+    const result = AnchorCreateSchema.safeParse({
+      ...validData,
+      metadata: [1, 2, 3],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid object as metadata', () => {
+    const result = AnchorCreateSchema.safeParse({
+      ...validData,
+      metadata: { key: 'value', nested: { a: 1 } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid credential_type', () => {
+    const result = AnchorCreateSchema.safeParse({
+      ...validData,
+      credential_type: 'INVALID_TYPE',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid credential_type', () => {
+    const result = AnchorCreateSchema.safeParse({
+      ...validData,
+      credential_type: 'DEGREE',
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('AnchorUpdateSchema', () => {
@@ -125,6 +157,41 @@ describe('AnchorUpdateSchema', () => {
       filename: 'file\x1Fname.pdf',
     });
     expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid credential_type', () => {
+    const result = AnchorUpdateSchema.safeParse({
+      credential_type: 'INVALID_TYPE',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid credential_type', () => {
+    const result = AnchorUpdateSchema.safeParse({
+      credential_type: 'LICENSE',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts valid retention_until datetime', () => {
+    const result = AnchorUpdateSchema.safeParse({
+      retention_until: '2027-01-01T00:00:00Z',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid retention_until', () => {
+    const result = AnchorUpdateSchema.safeParse({
+      retention_until: 'not-a-date',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts deleted_at datetime', () => {
+    const result = AnchorUpdateSchema.safeParse({
+      deleted_at: '2026-03-10T12:00:00Z',
+    });
+    expect(result.success).toBe(true);
   });
 });
 

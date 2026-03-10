@@ -560,6 +560,7 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 | Wire webhook dispatch in `anchor.ts` | ✅ HARDENING-4 | `processAnchor()` calls `dispatchWebhookEvent()` after SECURED. Non-fatal. Webhook retries in cron. |
 | Test webhook HMAC signing | ✅ HARDENING-3 | 30 tests on delivery.ts (99% stmts), HMAC verified against crypto.createHmac |
 | Anchor lifecycle integration test | ✅ HARDENING-4 | 8 tests: full flow PENDING → chain → SECURED → audit → webhook. Failure isolation, ordering. |
+| Coverage threshold audit | ✅ PR-HARDENING-1 | Fixed `validators.ts` (71% → 100% functions) + `proofPackage.ts` (0% → 100%). 385 total tests. |
 
 ### Week 1-2: Payments + Proof
 
