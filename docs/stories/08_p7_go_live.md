@@ -7,7 +7,7 @@ P7 Go-Live delivers the production infrastructure for launching the credentialin
 
 Key deliverables:
 - Billing schema (migration 0016) with plans, subscriptions, entitlements, billing events
-- Stripe webhook verification + checkout session (checkout NOT STARTED — CRIT-3)
+- Stripe webhook verification + checkout session (checkout PARTIAL — CRIT-3)
 - Real Bitcoin chain client replacing MockChainClient (NOT STARTED — CRIT-2)
 - Proof package export (PDF + JSON both complete — ~~CRIT-5~~ FIXED commit a38b485)
 - Webhook endpoint management + delivery engine (fully wired to anchor lifecycle — HARDENING-4)

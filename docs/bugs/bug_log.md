@@ -1,5 +1,5 @@
 # Arkova Bug Log
-_Last updated: 2026-03-11 | Active bugs: 2 | Resolved: 15_
+_Last updated: 2026-03-11 ~6:00 PM EST | Active bugs: 2 | Resolved: 15_
 
 ## Layman's Summary
 
@@ -9,7 +9,7 @@ _For each bug: what it means in plain English and why it matters._
 |----|------------------------------|
 | ~~CRIT-1~~ | ~~When a regular user tries to secure a document, the app **pretends** it worked (shows a fake progress bar) but never actually saves anything.~~ **FIXED** — real Supabase insert replacing setTimeout simulation. |
 | CRIT-2 | The system that's supposed to write a permanent record to the Bitcoin network is **completely fake**. It uses a pretend version that stores data in temporary memory and disappears when the server restarts. No real proof exists on any blockchain. |
-| CRIT-3 | There's **no way to pay for the service**. The payment system (Stripe) is partially set up — it can verify incoming payment notifications — but there's no "Buy" or "Upgrade" button that actually charges a credit card. |
+| CRIT-3 | The payment system is **partially built**. Pricing UI, checkout pages, billing hooks, and webhook handlers are implemented with 91+ tests. **Remaining:** the worker endpoint that actually calls Stripe to create a checkout session, billing portal endpoint, and entitlement enforcement. |
 | ~~CRIT-4~~ | ~~New users who sign up get **dumped straight onto the dashboard** instead of going through the setup wizard.~~ **FIXED** — OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. |
 | ~~CRIT-5~~ | ~~The "Download JSON Proof" button **does absolutely nothing** when clicked.~~ **FIXED** — onDownloadProofJson wired in RecordDetailPage with generateProofPackage + downloadProofPackage. |
 | ~~CRIT-6~~ | ~~The CSV bulk upload wizard **ignores whatever file you upload** and shows fake results.~~ **FIXED** — CSVUploadWizard connected to csvParser functions + useBulkAnchors hook. |
@@ -27,7 +27,7 @@ _For each bug: what it means in plain English and why it matters._
 | ID | Severity | Story | Summary | Status |
 |----|----------|-------|---------|--------|
 | CRIT-2 | HIGH | P7-TS-05 | No real Bitcoin chain client | OPEN |
-| CRIT-3 | HIGH | P7-TS-02 | No Stripe checkout flow | OPEN |
+| CRIT-3 | HIGH | P7-TS-02 | Stripe checkout flow incomplete | PARTIAL — UI + tests done, portal/entitlements remain |
 
 ## Resolved Bugs Summary
 
@@ -230,15 +230,18 @@ Billing was scaffolded (schema in migration 0016, SDK initialized, webhook verif
 | Date | Action |
 |------|--------|
 | 2026-03-10 | Identified during codebase audit. |
+| 2026-03-11 | PricingPage, CheckoutSuccessPage, CheckoutCancelPage, useBilling hook implemented. 91+ frontend tests + 38 worker handler tests. Status → PARTIAL. |
 
 #### Resolution
 
-**Status:** OPEN — Scheduled for Weeks 1-2.
+**Status:** PARTIAL — UI + tests complete, worker endpoint + entitlements remaining. Scheduled for completion before launch.
 
 #### Regression Test
 
-- Needed: Stripe webhook handler unit tests with mock Stripe events
-- Needed: Checkout session creation test with mock Stripe SDK
+- Done: `handlers.test.ts` — 38 tests covering webhook routing, idempotency, checkout, subscription CRUD
+- Done: `useBilling.test.ts` — 14 tests covering plans fetch, checkout, billing portal, errors
+- Done: `PricingPage.test.tsx` — 12 tests, `CheckoutSuccessPage.test.tsx` — 7 tests, `CheckoutCancelPage.test.tsx` — 5 tests
+- Needed: Integration test for `POST /api/checkout/session` endpoint once wired
 
 ---
 

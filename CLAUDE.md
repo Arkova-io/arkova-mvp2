@@ -283,7 +283,7 @@ services/worker/
     webhooks/delivery.ts                     ← Outbound webhook delivery engine
     utils/                                   ← DB client, logger, rate limiter, correlation ID
 supabase/
-  migrations/                                ← 45 files (0001–0045, 0033 skipped)
+  migrations/                                ← 46 files (0001–0046, 0033 skipped)
   seed.sql                                   ← Demo data
   config.toml                                ← Local Supabase config
 docs/confluence/                             ← Architecture, data model, security, audit, etc.
@@ -440,7 +440,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 45 files, versions 0001–0045 (0033 intentionally skipped). Last: `0045_log_verification_event_rpc.sql`.
+**Current migration inventory:** 46 files, versions 0001–0046 (0033 intentionally skipped). Last: `0046_webhook_server_side_secret.sql`.
 
 ---
 
