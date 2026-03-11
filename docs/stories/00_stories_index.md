@@ -28,9 +28,9 @@ For a new developer joining the project, read in this order:
 | P4-E2 | Credential Metadata | 3 | 3 | 0 | 0 | [05_p4e2_credential_metadata.md](./05_p4e2_credential_metadata.md) |
 | P5 | Org Admin | 6 | 6 | 0 | 0 | [06_p5_org_admin.md](./06_p5_org_admin.md) |
 | P6 | Verification | 6 | 5 | 1 | 0 | [07_p6_verification.md](./07_p6_verification.md) |
-| P7 | Go-Live | 10 | 6 | 2 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
+| P7 | Go-Live | 11 | 7 | 2 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 0 | 0 | 13 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
-| **Total** | | **55** | **37** | **3** | **15** | |
+| **Total** | | **56** | **38** | **3** | **15** | |
 
 ### All Stories by ID
 
@@ -76,6 +76,7 @@ For a new developer joining the project, read in this order:
 | P7-TS-08 | PDF Certificate (generateAuditReport) | COMPLETE | [P7](./08_p7_go_live.md) | — |
 | P7-TS-09 | Webhook Settings UI | COMPLETE | [P7](./08_p7_go_live.md) | — |
 | P7-TS-10 | Webhook Delivery Engine | COMPLETE | [P7](./08_p7_go_live.md) | — |
+| P7-TS-11 | Signet Treasury Wallet Setup | COMPLETE | [P7](./08_p7_go_live.md) | — |
 | P4.5-TS-01 | GET /api/v1/verify/:publicId | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-02 | POST /api/v1/verify/batch | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-03 | API Keys Table + HMAC + Rate Limiting | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
@@ -147,3 +148,4 @@ Each story doc follows a consistent template:
 | 2026-03-11 ~7:00 PM EST | P7-TS-05 promoted NOT STARTED → PARTIAL. SignetChainClient implemented (~300 lines) with bitcoinjs-lib OP_RETURN (ARKV prefix). Factory updated. 40 new worker tests (signet.test.ts ~15, client.test.ts 8 updated, anchor.test.ts integration). 268 worker tests total. CRIT-2 now PARTIAL. P7 totals: 6 complete, 2 partial, 2 not started. Overall: 36 complete, 4 partial, 15 not started. |
 | 2026-03-11 ~8:00 PM EST | Checkout + billing portal worker endpoints wired with JWT auth (b1f798a). IDOR fix. CRIT-3 narrowed to entitlements + downgrade only. |
 | 2026-03-11 ~11:00 PM EST | P6-TS-04 promoted PARTIAL → COMPLETE. AnchorLifecycleTimeline wired into PublicVerification.tsx. P6 now 5/6 complete. Overall: 37 complete, 3 partial. |
+| 2026-03-11 ~11:30 PM EST | P7-TS-11 created and marked COMPLETE. Signet wallet utilities (wallet.ts, 13 tests) + CLI scripts (generate-keypair, check-balance). P7 now 7/11. Overall: 38 complete. |

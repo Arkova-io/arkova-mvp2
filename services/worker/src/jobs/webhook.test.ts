@@ -165,6 +165,32 @@ describe('deliverWebhook', () => {
     expect(callArgs.signal).toBeDefined();
     expect(callArgs.signal).toBeInstanceOf(AbortSignal);
   });
+
+  it('aborts fetch when timeout fires', async () => {
+    vi.useFakeTimers();
+
+    // Mock fetch that hangs until the AbortSignal fires
+    const mockFetch = vi.fn().mockImplementation((_url: string, opts: any) => {
+      return new Promise((_resolve, reject) => {
+        if (opts?.signal) {
+          opts.signal.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        }
+      });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const promise = deliverWebhook(makeConfig(), makePayload());
+
+    // Advance past the 30 s timeout to trigger () => controller.abort()
+    await vi.advanceTimersByTimeAsync(30_001);
+
+    const result = await promise;
+    expect(result).toBe(false);
+
+    vi.useRealTimers();
+  });
 });
 
 describe('queueWebhook', () => {

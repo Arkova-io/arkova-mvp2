@@ -18,14 +18,20 @@ const {
   mockProcessPendingAnchors,
   mockHandleStripeWebhook,
   mockVerifyWebhookSignature,
+  mockCreateCheckoutSession,
+  mockCreateBillingPortalSession,
   mockProcessWebhookRetries,
   mockLogger,
   mockCronSchedule,
   mockConfig,
+  mockDbFrom,
+  mockSupabaseGetUser,
 } = vi.hoisted(() => {
   const mockProcessPendingAnchors = vi.fn().mockResolvedValue({ processed: 0, failed: 0 });
   const mockHandleStripeWebhook = vi.fn().mockResolvedValue(undefined);
   const mockVerifyWebhookSignature = vi.fn().mockReturnValue({ id: 'evt_test', type: 'test' });
+  const mockCreateCheckoutSession = vi.fn();
+  const mockCreateBillingPortalSession = vi.fn();
   const mockProcessWebhookRetries = vi.fn().mockResolvedValue(0);
   const mockLogger = {
     info: vi.fn(),
@@ -48,16 +54,23 @@ const {
     bitcoinNetwork: 'signet',
     enableProdNetworkAnchoring: false,
     useMocks: true,
+    frontendUrl: 'http://localhost:5173',
   };
+  const mockDbFrom = vi.fn();
+  const mockSupabaseGetUser = vi.fn();
 
   return {
     mockProcessPendingAnchors,
     mockHandleStripeWebhook,
     mockVerifyWebhookSignature,
+    mockCreateCheckoutSession,
+    mockCreateBillingPortalSession,
     mockProcessWebhookRetries,
     mockLogger,
     mockCronSchedule,
     mockConfig,
+    mockDbFrom,
+    mockSupabaseGetUser,
   };
 });
 
@@ -79,6 +92,8 @@ vi.mock('./stripe/handlers.js', () => ({
 
 vi.mock('./stripe/client.js', () => ({
   verifyWebhookSignature: mockVerifyWebhookSignature,
+  createCheckoutSession: mockCreateCheckoutSession,
+  createBillingPortalSession: mockCreateBillingPortalSession,
 }));
 
 vi.mock('./webhooks/delivery.js', () => ({
@@ -89,7 +104,28 @@ vi.mock('node-cron', () => ({
   default: { schedule: mockCronSchedule },
 }));
 
+vi.mock('./utils/db.js', () => ({
+  db: { from: mockDbFrom },
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: { getUser: mockSupabaseGetUser },
+  }),
+}));
+
 vi.mock('dotenv/config', () => ({}));
+
+// Bypass rate limiters in tests so requests aren't 429'd
+vi.mock('./utils/rateLimit.js', () => {
+  const passthrough = (_req: any, _res: any, next: any) => next();
+  return {
+    rateLimiters: {
+      stripeWebhook: passthrough,
+      checkout: passthrough,
+    },
+  };
+});
 
 // Preserve express static methods (raw, json, etc.) while overriding listen
 vi.mock('express', async () => {
@@ -378,6 +414,349 @@ describe('worker server', () => {
     it('exports app and server', () => {
       expect(app).toBeDefined();
       expect(server).toBeDefined();
+    });
+  });
+
+  // ================================================================
+  // CORS preflight
+  // ================================================================
+
+  describe('OPTIONS /api/checkout/session (CORS preflight)', () => {
+    it('returns 204 with CORS headers for allowed origin', async () => {
+      const res = await request(app, 'OPTIONS', '/api/checkout/session', undefined, {
+        origin: 'http://localhost:5173',
+      });
+
+      expect(res.status).toBe(204);
+      expect(res.headers['Access-Control-Allow-Origin']).toBe('http://localhost:5173');
+      expect(res.headers['Access-Control-Allow-Methods']).toBe('POST, OPTIONS');
+      expect(res.headers['Access-Control-Allow-Headers']).toBe('Content-Type, Authorization');
+    });
+
+    it('does not set CORS headers for disallowed origin', async () => {
+      const res = await request(app, 'OPTIONS', '/api/checkout/session', undefined, {
+        origin: 'https://evil.example.com',
+      });
+
+      expect(res.status).toBe(204);
+      expect(res.headers['Access-Control-Allow-Origin']).toBeUndefined();
+    });
+  });
+
+  describe('OPTIONS /api/billing/portal (CORS preflight)', () => {
+    it('returns 204 with CORS headers for allowed origin', async () => {
+      const res = await request(app, 'OPTIONS', '/api/billing/portal', undefined, {
+        origin: 'http://localhost:5173',
+      });
+
+      expect(res.status).toBe(204);
+      expect(res.headers['Access-Control-Allow-Origin']).toBe('http://localhost:5173');
+    });
+  });
+
+  // ================================================================
+  // POST /api/checkout/session
+  // ================================================================
+
+  describe('POST /api/checkout/session', () => {
+    const validPlan = {
+      id: 'plan-uuid-1',
+      name: 'Pro',
+      stripe_price_id: 'price_test_abc',
+      price_cents: 2900,
+      anchor_limit: 1000,
+    };
+
+    function mockDbChain(result: { data: any; error: any }) {
+      const chain: any = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue(result),
+        maybeSingle: vi.fn().mockResolvedValue(result),
+      };
+      chain.select.mockReturnValue(chain);
+      chain.eq.mockReturnValue(chain);
+      chain.in.mockReturnValue(chain);
+      return chain;
+    }
+
+    beforeEach(() => {
+      mockDbFrom.mockClear();
+      mockSupabaseGetUser.mockClear();
+      mockCreateCheckoutSession.mockClear();
+    });
+
+    it('returns 401 without Authorization header', async () => {
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'plan-1' });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: 'Authentication required' });
+    });
+
+    it('returns 401 with invalid Bearer token', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: null }, error: new Error('Invalid') });
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'plan-1' }, {
+        authorization: 'Bearer bad-token',
+      });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: 'Authentication required' });
+    });
+
+    it('returns 400 when planId is missing', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      const res = await request(app, 'POST', '/api/checkout/session', {}, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: 'planId is required' });
+    });
+
+    it('returns 404 when plan not found', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      const planChain = mockDbChain({ data: null, error: { message: 'Not found' } });
+      mockDbFrom.mockReturnValue(planChain);
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'bad-plan' }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: 'Plan not found' });
+    });
+
+    it('returns 400 when plan has no stripe_price_id', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      const planChain = mockDbChain({ data: { ...validPlan, stripe_price_id: null }, error: null });
+      mockDbFrom.mockReturnValue(planChain);
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: validPlan.id }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: 'Plan is not available for online checkout' });
+    });
+
+    it('returns 404 when profile not found', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      let callCount = 0;
+      mockDbFrom.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // plans query
+          return mockDbChain({ data: validPlan, error: null });
+        }
+        // profiles query
+        return mockDbChain({ data: null, error: { message: 'Not found' } });
+      });
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: validPlan.id }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: 'User profile not found' });
+    });
+
+    it('returns 409 when user has active subscription', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      let callCount = 0;
+      mockDbFrom.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return mockDbChain({ data: validPlan, error: null });
+        if (callCount === 2) return mockDbChain({ data: { email: 'user@test.com' }, error: null });
+        // subscriptions check — active sub exists
+        return mockDbChain({ data: { id: 'sub-1', status: 'active' }, error: null });
+      });
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: validPlan.id }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toContain('already has an active subscription');
+    });
+
+    it('creates checkout session and returns URL on success', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      let callCount = 0;
+      mockDbFrom.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return mockDbChain({ data: validPlan, error: null });
+        if (callCount === 2) return mockDbChain({ data: { email: 'user@test.com' }, error: null });
+        // subscriptions check — no active sub
+        return mockDbChain({ data: null, error: null });
+      });
+
+      mockCreateCheckoutSession.mockResolvedValue({
+        sessionId: 'cs_test_123',
+        url: 'https://checkout.stripe.com/cs_test_123',
+      });
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: validPlan.id }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        sessionId: 'cs_test_123',
+        url: 'https://checkout.stripe.com/cs_test_123',
+      });
+      expect(mockCreateCheckoutSession).toHaveBeenCalledOnce();
+    });
+
+    it('returns 500 when createCheckoutSession throws', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      let callCount = 0;
+      mockDbFrom.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return mockDbChain({ data: validPlan, error: null });
+        if (callCount === 2) return mockDbChain({ data: { email: 'user@test.com' }, error: null });
+        return mockDbChain({ data: null, error: null });
+      });
+
+      mockCreateCheckoutSession.mockRejectedValue(new Error('Stripe boom'));
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: validPlan.id }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: 'Failed to create checkout session' });
+    });
+
+    it('sets CORS headers when origin is allowed', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+      const res = await request(app, 'POST', '/api/checkout/session', {}, {
+        authorization: 'Bearer valid-token',
+        origin: 'http://localhost:5173',
+      });
+
+      expect(res.headers['Access-Control-Allow-Origin']).toBe('http://localhost:5173');
+    });
+  });
+
+  // ================================================================
+  // POST /api/billing/portal
+  // ================================================================
+
+  describe('POST /api/billing/portal', () => {
+    function mockDbChain(result: { data: any; error: any }) {
+      const chain: any = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue(result),
+      };
+      chain.select.mockReturnValue(chain);
+      chain.eq.mockReturnValue(chain);
+      return chain;
+    }
+
+    beforeEach(() => {
+      mockDbFrom.mockClear();
+      mockSupabaseGetUser.mockClear();
+      mockCreateBillingPortalSession.mockClear();
+    });
+
+    it('returns 401 without auth', async () => {
+      const res = await request(app, 'POST', '/api/billing/portal', {});
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: 'Authentication required' });
+    });
+
+    it('returns 404 when no subscription found', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+      mockDbFrom.mockReturnValue(mockDbChain({ data: null, error: { message: 'Not found' } }));
+
+      const res = await request(app, 'POST', '/api/billing/portal', {}, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: 'No active subscription found' });
+    });
+
+    it('returns portal URL on success', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+      mockDbFrom.mockReturnValue(
+        mockDbChain({ data: { stripe_customer_id: 'cus_test_1' }, error: null })
+      );
+      mockCreateBillingPortalSession.mockResolvedValue({
+        url: 'https://billing.stripe.com/session/bps_test',
+      });
+
+      const res = await request(app, 'POST', '/api/billing/portal', {}, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ url: 'https://billing.stripe.com/session/bps_test' });
+      expect(mockCreateBillingPortalSession).toHaveBeenCalledOnce();
+    });
+
+    it('returns 500 when createBillingPortalSession throws', async () => {
+      mockSupabaseGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+      mockDbFrom.mockReturnValue(
+        mockDbChain({ data: { stripe_customer_id: 'cus_test_1' }, error: null })
+      );
+      mockCreateBillingPortalSession.mockRejectedValue(new Error('Portal boom'));
+
+      const res = await request(app, 'POST', '/api/billing/portal', {}, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: 'Failed to create billing portal session' });
+    });
+  });
+
+  // ================================================================
+  // extractAuthUserId edge cases
+  // ================================================================
+
+  describe('auth extraction edge cases', () => {
+    beforeEach(() => {
+      mockSupabaseGetUser.mockClear();
+      mockDbFrom.mockClear();
+    });
+
+    it('returns 401 for Bearer with empty token', async () => {
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'p1' }, {
+        authorization: 'Bearer ',
+      });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 401 for non-Bearer auth header', async () => {
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'p1' }, {
+        authorization: 'Basic dXNlcjpwYXNz',
+      });
+
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 401 when getUser throws', async () => {
+      mockSupabaseGetUser.mockRejectedValue(new Error('Network error'));
+
+      const res = await request(app, 'POST', '/api/checkout/session', { planId: 'p1' }, {
+        authorization: 'Bearer valid-token',
+      });
+
+      expect(res.status).toBe(401);
     });
   });
 });

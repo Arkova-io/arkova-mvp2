@@ -1,5 +1,5 @@
 # P7 Go-Live — Story Documentation
-_Last updated: 2026-03-11 ~7:00 PM EST | 6/10 stories COMPLETE, 2/10 PARTIAL, 2/10 NOT STARTED_
+_Last updated: 2026-03-11 ~11:30 PM EST | 7/10 stories COMPLETE, 2/10 PARTIAL, 1/10 NOT STARTED_
 
 ## Group Overview
 
@@ -643,6 +643,61 @@ Webhook dispatch is wrapped in try/catch. If it fails, the anchor remains SECURE
 
 ---
 
+### P7-TS-11 — Signet Treasury Wallet Setup
+
+**Status:** COMPLETE
+**Dependencies:** P7-TS-05 (SignetChainClient)
+**Story:** P7-TS-11
+
+#### What It Delivers
+
+Reusable wallet utility module and CLI scripts for Signet treasury wallet management. Enables operators to generate keypairs, derive addresses from WIF, validate WIF strings, and check treasury balance via Bitcoin RPC.
+
+#### Files
+
+| File | Purpose |
+|------|---------|
+| `services/worker/src/chain/wallet.ts` | Reusable wallet utilities: `generateSignetKeypair()`, `addressFromWif()`, `isValidSignetWif()`, `SIGNET_NETWORK` |
+| `services/worker/src/chain/wallet.test.ts` | 13 unit tests covering all wallet utilities |
+| `services/worker/scripts/generate-signet-keypair.ts` | CLI: generate new Signet keypair (WIF + P2PKH address) |
+| `services/worker/scripts/check-signet-balance.ts` | CLI: check treasury balance via Bitcoin RPC (`getblockchaininfo`, `listunspent`) |
+
+#### Implementation Details
+
+- **Keypair generation:** `ECPair.makeRandom()` with `SIGNET_NETWORK` (testnet params), P2PKH address derivation via `bitcoin.payments.p2pkh()`
+- **Address derivation:** `ECPair.fromWIF()` → P2PKH. Validates WIF is parseable for Signet network.
+- **Balance checker:** Connects to Signet RPC node, verifies chain info, lists UTXOs for treasury address, estimates anchoring capacity (~478 sats per OP_RETURN tx at 2 sat/vbyte)
+- **Security:** WIF printed once to stdout by generator script. Never logged or committed (Constitution 1.4). Scripts load from `.env` via dotenv.
+
+#### Test Coverage
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `wallet.test.ts` | 13 | Keypair generation, WIF round-trip, mainnet rejection, invalid input, uniqueness |
+
+#### Acceptance Criteria
+
+- [x] `generateSignetKeypair()` returns valid WIF + P2PKH address
+- [x] `addressFromWif()` derives correct address from WIF (round-trip verified)
+- [x] `isValidSignetWif()` rejects mainnet WIF, empty strings, and garbage input
+- [x] `generate-signet-keypair.ts` script runs via `npx tsx`
+- [x] `check-signet-balance.ts` script runs via `npx tsx` and queries RPC
+- [x] All 13 tests pass
+- [x] WIF never logged, committed, or persisted outside `.env`
+
+#### Usage
+
+```bash
+# Generate a new keypair
+cd services/worker
+npx tsx scripts/generate-signet-keypair.ts
+
+# Check treasury balance (requires .env with BITCOIN_TREASURY_WIF + BITCOIN_RPC_URL)
+npx tsx scripts/check-signet-balance.ts
+```
+
+---
+
 ## Not Started Stories (Stubs)
 
 ### P7-TS-04 & P7-TS-06
@@ -695,3 +750,4 @@ Check the Technical Backlog PDF for actual story cards if they exist.
 | 2026-03-10 ~9:30 PM EST | CRIT bug fix sprint: CRIT-5 resolved. P7-TS-07 promoted PARTIAL → COMPLETE. JSON proof download wired via onDownloadProofJson. proofPackage.ts has 33 tests (PR-HARDENING-1). |
 | 2026-03-11 ~12:30 AM EST | Documentation audit: Updated all CRIT-5 references as resolved. Updated header counts (5/10 complete, 1/10 partial). Added proofPackage.ts test coverage entry. |
 | 2026-03-11 ~7:00 PM EST | Bitcoin Signet: P7-TS-05 NOT STARTED → PARTIAL. SignetChainClient (~300 lines) implemented with OP_RETURN + ARKV prefix. Factory updated (26 → 63 lines). signet.test.ts (~15 tests) + client.test.ts (5 → 8 tests). 268 worker tests total. Header: 6 complete, 2 partial, 2 not started. |
+| 2026-03-11 ~11:30 PM EST | P7-TS-11 created and marked COMPLETE. wallet.ts (4 exports), wallet.test.ts (13 tests), generate-signet-keypair.ts + check-signet-balance.ts CLI scripts. Header: 7 complete, 2 partial, 1 not started (P7-TS-04/06 stubs excluded from count). |

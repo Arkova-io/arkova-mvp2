@@ -1,5 +1,5 @@
 # Anchoring Worker
-_Last updated: 2026-03-10 8:00 PM EST | Story: P7-TS-05, P7-TS-10_
+_Last updated: 2026-03-11 ~11:30 PM EST | Story: P7-TS-05, P7-TS-10, P7-TS-11_
 
 ## Overview
 
@@ -33,8 +33,10 @@ services/
     │   │   ├── report.ts         # Report generation job
     │   │   └── webhook.ts        # Webhook delivery job (legacy stub)
     │   ├── chain/
-    │   │   ├── client.ts         # ChainClient factory (returns MockChainClient)
+    │   │   ├── client.ts         # ChainClient factory (Mock or Signet based on config)
+    │   │   ├── signet.ts         # Real Signet implementation (bitcoinjs-lib, OP_RETURN)
     │   │   ├── mock.ts           # Mock implementation
+    │   │   ├── wallet.ts         # Wallet utilities (keypair gen, address derivation, WIF validation)
     │   │   └── types.ts          # ChainClient interface
     │   ├── stripe/
     │   │   ├── client.ts         # Stripe SDK + webhook signature verification

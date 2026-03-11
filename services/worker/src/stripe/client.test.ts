@@ -1,16 +1,29 @@
 /**
- * Unit tests for Stripe client (webhook signature verification)
+ * Unit tests for Stripe client
  *
  * HARDENING-3: Mock mode vs production mode, signature verification.
+ * Coverage: verifyWebhookSignature, createCheckoutSession, createBillingPortalSession.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---- Hoisted mocks ----
 
-const { mockConfig, mockConstructEvent, mockMockConstructEvent } = vi.hoisted(() => {
+const {
+  mockConfig,
+  mockConstructEvent,
+  mockMockConstructEvent,
+  mockMockCreateCheckoutSession,
+  mockMockCreateBillingPortalSession,
+  mockStripeCheckoutCreate,
+  mockStripeBillingPortalCreate,
+} = vi.hoisted(() => {
   const mockConstructEvent = vi.fn();
   const mockMockConstructEvent = vi.fn();
+  const mockMockCreateCheckoutSession = vi.fn();
+  const mockMockCreateBillingPortalSession = vi.fn();
+  const mockStripeCheckoutCreate = vi.fn();
+  const mockStripeBillingPortalCreate = vi.fn();
 
   const mockConfig = {
     stripeSecretKey: 'sk_test_mock_key',
@@ -19,7 +32,15 @@ const { mockConfig, mockConstructEvent, mockMockConstructEvent } = vi.hoisted(()
     nodeEnv: 'test',
   };
 
-  return { mockConfig, mockConstructEvent, mockMockConstructEvent };
+  return {
+    mockConfig,
+    mockConstructEvent,
+    mockMockConstructEvent,
+    mockMockCreateCheckoutSession,
+    mockMockCreateBillingPortalSession,
+    mockStripeCheckoutCreate,
+    mockStripeBillingPortalCreate,
+  };
 });
 
 // ---- Module mocks ----
@@ -31,6 +52,8 @@ vi.mock('../config.js', () => ({
 vi.mock('./mock.js', () => ({
   mockStripeClient: {
     constructEvent: mockMockConstructEvent,
+    createCheckoutSession: mockMockCreateCheckoutSession,
+    createBillingPortalSession: mockMockCreateBillingPortalSession,
   },
 }));
 
@@ -41,8 +64,8 @@ vi.mock('stripe', async () => {
       webhooks: {
         constructEvent: mockConstructEvent,
       },
-      checkout: { sessions: { create: vi.fn() } },
-      billingPortal: { sessions: { create: vi.fn() } },
+      checkout: { sessions: { create: mockStripeCheckoutCreate } },
+      billingPortal: { sessions: { create: mockStripeBillingPortalCreate } },
     };
   }
   return { default: MockStripe, Stripe: MockStripe };
@@ -50,7 +73,7 @@ vi.mock('stripe', async () => {
 
 // ---- System under test ----
 
-import { verifyWebhookSignature } from './client.js';
+import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './client.js';
 
 // ---- Test fixtures ----
 
@@ -172,6 +195,204 @@ describe('verifyWebhookSignature', () => {
         'sig',
         mockConfig.stripeWebhookSecret,
       );
+    });
+  });
+});
+
+// ================================================================
+// createCheckoutSession
+// ================================================================
+
+const CHECKOUT_PARAMS = {
+  priceId: 'price_test_123',
+  userId: 'user-uuid-001',
+  customerEmail: 'user@example.com',
+  successUrl: 'https://app.example.com/billing/success',
+  cancelUrl: 'https://app.example.com/billing/cancel',
+};
+
+describe('createCheckoutSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('mock mode (useMocks=true)', () => {
+    beforeEach(() => {
+      mockConfig.useMocks = true;
+    });
+
+    afterEach(() => {
+      mockConfig.useMocks = false;
+    });
+
+    it('uses mockStripeClient.createCheckoutSession in mock mode', async () => {
+      mockMockCreateCheckoutSession.mockResolvedValue({
+        id: 'cs_mock_123',
+        url: 'https://checkout.stripe.com/mock/cs_mock_123',
+      });
+
+      const result = await createCheckoutSession(CHECKOUT_PARAMS);
+
+      expect(mockMockCreateCheckoutSession).toHaveBeenCalledOnce();
+      expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        sessionId: 'cs_mock_123',
+        url: 'https://checkout.stripe.com/mock/cs_mock_123',
+      });
+    });
+
+    it('passes correct params to mock client', async () => {
+      mockMockCreateCheckoutSession.mockResolvedValue({ id: 'cs_1', url: 'https://x' });
+
+      await createCheckoutSession(CHECKOUT_PARAMS);
+
+      expect(mockMockCreateCheckoutSession).toHaveBeenCalledWith({
+        line_items: [{ price: 'price_test_123', quantity: 1 }],
+        success_url: CHECKOUT_PARAMS.successUrl,
+        cancel_url: CHECKOUT_PARAMS.cancelUrl,
+        metadata: { user_id: 'user-uuid-001', price_id: 'price_test_123' },
+      });
+    });
+  });
+
+  describe('production mode (useMocks=false)', () => {
+    beforeEach(() => {
+      mockConfig.useMocks = false;
+    });
+
+    it('uses stripe.checkout.sessions.create in production mode', async () => {
+      mockStripeCheckoutCreate.mockResolvedValue({
+        id: 'cs_live_456',
+        url: 'https://checkout.stripe.com/pay/cs_live_456',
+      });
+
+      const result = await createCheckoutSession(CHECKOUT_PARAMS);
+
+      expect(mockStripeCheckoutCreate).toHaveBeenCalledOnce();
+      expect(mockMockCreateCheckoutSession).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        sessionId: 'cs_live_456',
+        url: 'https://checkout.stripe.com/pay/cs_live_456',
+      });
+    });
+
+    it('passes subscription mode and metadata to Stripe SDK', async () => {
+      mockStripeCheckoutCreate.mockResolvedValue({ id: 'cs_1', url: 'https://x' });
+
+      await createCheckoutSession(CHECKOUT_PARAMS);
+
+      expect(mockStripeCheckoutCreate).toHaveBeenCalledWith({
+        mode: 'subscription',
+        line_items: [{ price: 'price_test_123', quantity: 1 }],
+        success_url: CHECKOUT_PARAMS.successUrl,
+        cancel_url: CHECKOUT_PARAMS.cancelUrl,
+        customer_email: 'user@example.com',
+        metadata: { user_id: 'user-uuid-001', price_id: 'price_test_123' },
+        subscription_data: {
+          metadata: { user_id: 'user-uuid-001', price_id: 'price_test_123' },
+        },
+      });
+    });
+
+    it('throws when Stripe returns no URL', async () => {
+      mockStripeCheckoutCreate.mockResolvedValue({ id: 'cs_no_url', url: null });
+
+      await expect(createCheckoutSession(CHECKOUT_PARAMS)).rejects.toThrow(
+        'Stripe did not return a checkout URL'
+      );
+    });
+
+    it('propagates Stripe SDK errors', async () => {
+      mockStripeCheckoutCreate.mockRejectedValue(new Error('Stripe API error'));
+
+      await expect(createCheckoutSession(CHECKOUT_PARAMS)).rejects.toThrow('Stripe API error');
+    });
+  });
+});
+
+// ================================================================
+// createBillingPortalSession
+// ================================================================
+
+const PORTAL_PARAMS = {
+  customerId: 'cus_test_789',
+  returnUrl: 'https://app.example.com/settings',
+};
+
+describe('createBillingPortalSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('mock mode (useMocks=true)', () => {
+    beforeEach(() => {
+      mockConfig.useMocks = true;
+    });
+
+    afterEach(() => {
+      mockConfig.useMocks = false;
+    });
+
+    it('uses mockStripeClient.createBillingPortalSession in mock mode', async () => {
+      mockMockCreateBillingPortalSession.mockResolvedValue({
+        url: 'https://billing.stripe.com/mock/cus_test_789',
+      });
+
+      const result = await createBillingPortalSession(PORTAL_PARAMS);
+
+      expect(mockMockCreateBillingPortalSession).toHaveBeenCalledOnce();
+      expect(mockStripeBillingPortalCreate).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        url: 'https://billing.stripe.com/mock/cus_test_789',
+      });
+    });
+
+    it('passes correct params to mock client', async () => {
+      mockMockCreateBillingPortalSession.mockResolvedValue({ url: 'https://x' });
+
+      await createBillingPortalSession(PORTAL_PARAMS);
+
+      expect(mockMockCreateBillingPortalSession).toHaveBeenCalledWith({
+        customer: 'cus_test_789',
+        return_url: 'https://app.example.com/settings',
+      });
+    });
+  });
+
+  describe('production mode (useMocks=false)', () => {
+    beforeEach(() => {
+      mockConfig.useMocks = false;
+    });
+
+    it('uses stripe.billingPortal.sessions.create in production mode', async () => {
+      mockStripeBillingPortalCreate.mockResolvedValue({
+        url: 'https://billing.stripe.com/session/bps_live_123',
+      });
+
+      const result = await createBillingPortalSession(PORTAL_PARAMS);
+
+      expect(mockStripeBillingPortalCreate).toHaveBeenCalledOnce();
+      expect(mockMockCreateBillingPortalSession).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        url: 'https://billing.stripe.com/session/bps_live_123',
+      });
+    });
+
+    it('passes customer and return_url to Stripe SDK', async () => {
+      mockStripeBillingPortalCreate.mockResolvedValue({ url: 'https://x' });
+
+      await createBillingPortalSession(PORTAL_PARAMS);
+
+      expect(mockStripeBillingPortalCreate).toHaveBeenCalledWith({
+        customer: 'cus_test_789',
+        return_url: 'https://app.example.com/settings',
+      });
+    });
+
+    it('propagates Stripe SDK errors', async () => {
+      mockStripeBillingPortalCreate.mockRejectedValue(new Error('Portal API error'));
+
+      await expect(createBillingPortalSession(PORTAL_PARAMS)).rejects.toThrow('Portal API error');
     });
   });
 });
