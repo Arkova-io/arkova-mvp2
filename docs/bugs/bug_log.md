@@ -9,7 +9,7 @@ _For each bug: what it means in plain English and why it matters._
 |----|------------------------------|
 | ~~CRIT-1~~ | ~~When a regular user tries to secure a document, the app **pretends** it worked (shows a fake progress bar) but never actually saves anything.~~ **FIXED** — real Supabase insert replacing setTimeout simulation. |
 | CRIT-2 | The system that's supposed to write a permanent record to the Bitcoin network is **completely fake**. It uses a pretend version that stores data in temporary memory and disappears when the server restarts. No real proof exists on any blockchain. |
-| CRIT-3 | The payment system is **partially built**. Pricing UI, checkout pages, billing hooks, and webhook handlers are implemented with 91+ tests. **Remaining:** the worker endpoint that actually calls Stripe to create a checkout session, billing portal endpoint, and entitlement enforcement. |
+| CRIT-3 | The payment system is **partially built**. Pricing UI, checkout pages, billing hooks, webhook handlers, and checkout/portal worker endpoints are implemented with 91+ tests. **Remaining:** entitlement enforcement and plan change/downgrade flows. |
 | ~~CRIT-4~~ | ~~New users who sign up get **dumped straight onto the dashboard** instead of going through the setup wizard.~~ **FIXED** — OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. |
 | ~~CRIT-5~~ | ~~The "Download JSON Proof" button **does absolutely nothing** when clicked.~~ **FIXED** — onDownloadProofJson wired in RecordDetailPage with generateProofPackage + downloadProofPackage. |
 | ~~CRIT-6~~ | ~~The CSV bulk upload wizard **ignores whatever file you upload** and shows fake results.~~ **FIXED** — CSVUploadWizard connected to csvParser functions + useBulkAnchors hook. |
@@ -27,7 +27,7 @@ _For each bug: what it means in plain English and why it matters._
 | ID | Severity | Story | Summary | Status |
 |----|----------|-------|---------|--------|
 | CRIT-2 | HIGH | P7-TS-05 | No real Bitcoin chain client | OPEN |
-| CRIT-3 | HIGH | P7-TS-02 | Stripe checkout flow incomplete | PARTIAL — UI + tests done, portal/entitlements remain |
+| CRIT-3 | HIGH | P7-TS-02 | Stripe checkout flow incomplete | PARTIAL — UI + tests + checkout/portal endpoints done (b1f798a), entitlements remain |
 
 ## Resolved Bugs Summary
 
@@ -216,7 +216,7 @@ Real Bitcoin integration was deferred. The interface contract exists (`ChainClie
 1. Login as any user
 2. Navigate to settings — no billing/upgrade option is available
 3. `BillingOverview.tsx` exists but is not routed to any page
-4. No `/api/stripe/checkout` endpoint exists in worker
+4. ~~No `/api/stripe/checkout` endpoint exists in worker~~ — NOW EXISTS (b1f798a): `POST /api/billing/checkout` and `POST /api/billing/portal` wired with JWT auth
 5. `handlers.ts` webhook handlers have database update logic commented out
 
 #### Expected Behavior
@@ -230,7 +230,7 @@ Users can view pricing, select a plan, enter payment via Stripe Checkout, and ha
 - Webhook handlers exist but database updates are commented out (lines 52-66)
 - `isEventProcessed()` always returns `false` (no idempotency)
 - `BillingOverview.tsx` renders but is orphaned (not routed, no data source)
-- No checkout session creation endpoint
+- ~~No checkout session creation endpoint~~ — NOW EXISTS (b1f798a): `POST /api/billing/checkout` + `POST /api/billing/portal`
 
 #### Root Cause
 
@@ -238,7 +238,7 @@ Billing was scaffolded (schema in migration 0016, SDK initialized, webhook verif
 
 #### Fix Pattern
 
-1. Create worker endpoint: `POST /api/stripe/checkout` calling `stripe.checkout.sessions.create()`
+1. ~~Create worker endpoint: `POST /api/stripe/checkout` calling `stripe.checkout.sessions.create()`~~ DONE (b1f798a)
 2. Define pricing plans in Stripe Dashboard
 3. Add `stripe_customer_id`, `stripe_subscription_id` columns to profiles (new migration)
 4. Uncomment database updates in `handlers.ts`
@@ -252,17 +252,18 @@ Billing was scaffolded (schema in migration 0016, SDK initialized, webhook verif
 |------|--------|
 | 2026-03-10 | Identified during codebase audit. |
 | 2026-03-11 | PricingPage, CheckoutSuccessPage, CheckoutCancelPage, useBilling hook implemented. 91+ frontend tests + 38 worker handler tests. Status → PARTIAL. |
+| 2026-03-11 | Checkout + billing portal worker endpoints wired with JWT auth (b1f798a). IDOR fix. CRIT-3 narrowed to entitlements only. |
 
 #### Resolution
 
-**Status:** PARTIAL — UI + tests complete, worker endpoint + entitlements remaining. Scheduled for completion before launch.
+**Status:** PARTIAL — UI + tests + checkout/portal worker endpoints complete (b1f798a). Entitlement enforcement + plan change/downgrade remaining. Scheduled for completion before launch.
 
 #### Regression Test
 
 - Done: `handlers.test.ts` — 38 tests covering webhook routing, idempotency, checkout, subscription CRUD
 - Done: `useBilling.test.ts` — 14 tests covering plans fetch, checkout, billing portal, errors
 - Done: `PricingPage.test.tsx` — 12 tests, `CheckoutSuccessPage.test.tsx` — 7 tests, `CheckoutCancelPage.test.tsx` — 5 tests
-- Needed: Integration test for `POST /api/checkout/session` endpoint once wired
+- Partial: Integration test for checkout/portal endpoints — endpoints exist (b1f798a), full E2E with Stripe test mode still needed
 
 ---
 

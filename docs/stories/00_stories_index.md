@@ -99,7 +99,7 @@ See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs (inc
 | Bug ID | Severity | Affects Stories | Summary |
 |--------|----------|-----------------|---------|
 | CRIT-2 | HIGH | P7-TS-05 | Bitcoin chain client PARTIAL — SignetChainClient implemented, AWS KMS + mainnet remaining |
-| CRIT-3 | HIGH | P7-TS-02 | No Stripe checkout flow (SDK initialized, no session endpoint) |
+| CRIT-3 | HIGH | P7-TS-02 | Stripe checkout PARTIAL — checkout/portal endpoints wired (b1f798a), entitlements + downgrade remaining |
 
 ### Resolved Bugs
 
@@ -145,3 +145,4 @@ Each story doc follows a consistent template:
 | 2026-03-11 ~2:00 PM EST / ~4:00 AM AEDT Mar 12 | P7-TS-09 promoted PARTIAL → COMPLETE. WebhookSettings + WebhookSettingsPage tests added (34 tests). Migration 0046 for server-side secret generation. P7 totals: 6 complete, 0 partial. Overall: 36 complete, 2 partial. |
 | 2026-03-11 ~3:00 PM EST / ~6:00 AM AEDT Mar 12 | P7-TS-02 promoted NOT STARTED → PARTIAL. Stripe checkout tests written: useBilling.test.ts (12), PricingPage.test.tsx (12), CheckoutSuccessPage.test.tsx (7), CheckoutCancelPage.test.tsx (5), handlers.test.ts (38). 74 new tests. Remaining: Stripe portal endpoint, entitlement enforcement, plan change/downgrade. P7 totals: 6 complete, 1 partial, 3 not started. Overall: 36 complete, 3 partial, 16 not started. |
 | 2026-03-11 ~7:00 PM EST | P7-TS-05 promoted NOT STARTED → PARTIAL. SignetChainClient implemented (~300 lines) with bitcoinjs-lib OP_RETURN (ARKV prefix). Factory updated. 40 new worker tests (signet.test.ts ~15, client.test.ts 8 updated, anchor.test.ts integration). 268 worker tests total. CRIT-2 now PARTIAL. P7 totals: 6 complete, 2 partial, 2 not started. Overall: 36 complete, 4 partial, 15 not started. |
+| 2026-03-11 ~8:00 PM EST | Checkout + billing portal worker endpoints wired with JWT auth (b1f798a). IDOR fix. CRIT-3 narrowed to entitlements + downgrade only. |

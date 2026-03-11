@@ -130,7 +130,7 @@ A Stripe checkout session creation endpoint in the worker that initiates payment
 | Page | `src/pages/PricingPage.tsx` | 190 | Plan selection grid, checkout trigger, billing portal |
 | Page | `src/pages/CheckoutSuccessPage.tsx` | 104 | Post-checkout confirmation, billing refresh, plan display |
 | Page | `src/pages/CheckoutCancelPage.tsx` | 68 | Checkout cancellation with navigation links |
-| Hook | `src/hooks/useBilling.ts` | ~160 | startCheckout, openBillingPortal, plan/subscription queries |
+| Hook | `src/hooks/useBilling.ts` | 183 | startCheckout, openBillingPortal, plan/subscription queries |
 | Component | `src/components/billing/PricingCard.tsx` | 102 | Plan card with features, pricing, select button |
 | Component | `src/components/billing/BillingOverview.tsx` | 243 | Current plan info, usage bar, manage billing |
 | Worker | `services/worker/src/stripe/handlers.ts` | 319 | Webhook handlers: checkout, subscription updates, payment failures |
@@ -138,10 +138,11 @@ A Stripe checkout session creation endpoint in the worker that initiates payment
 | Test | `src/pages/PricingPage.test.tsx` | 186 | 12 tests: plan cards, checkout, loading, errors, navigation |
 | Test | `src/pages/CheckoutSuccessPage.test.tsx` | ~120 | 7 tests: confirmation, billing refresh, plan display, links |
 | Test | `src/pages/CheckoutCancelPage.test.tsx` | 81 | 5 tests: cancel messaging, navigation links |
-| Test | `src/hooks/useBilling.test.ts` | ~200 | 14 tests: plans fetch, checkout, billing portal, error states |
+| Test | `src/hooks/useBilling.test.ts` | 267 | 14 tests: plans fetch, checkout, billing portal, error states |
 | Test | `src/components/billing/BillingOverview.test.tsx` | ~100 | Component tests for plan display |
 | Test | `src/components/billing/PricingCard.test.tsx` | ~100 | Component tests for plan cards |
 | Test | `services/worker/src/stripe/handlers.test.ts` | ~350 | 38 tests: routing, idempotency, checkout, subscription CRUD |
+| Worker | `services/worker/src/index.ts` | — | `POST /api/billing/checkout` + `POST /api/billing/portal` routes with JWT auth |
 | Test | `src/pages/WebhookSettingsPage.test.tsx` | ~150 | 11 integration tests |
 
 #### What Exists (Infrastructure + UI)
@@ -160,21 +161,20 @@ A Stripe checkout session creation endpoint in the worker that initiates payment
 
 #### Completion Gaps
 
-- `POST /api/checkout/session` worker endpoint not yet wired (handlers exist but no Express route)
-- No real Stripe checkout session creation call in production (mock only)
-- Routes `/billing`, `/billing/success`, `/billing/cancel` defined in `routes.ts` but may not be in `App.tsx`
+- ~~`POST /api/checkout/session` worker endpoint not yet wired~~ — DONE (b1f798a): `POST /api/billing/checkout` + `POST /api/billing/portal` with JWT auth
+- Entitlement enforcement not yet implemented (plan limits not enforced)
+- Plan change/downgrade flows not yet implemented
 
 #### Remaining Work
 
-- Wire `POST /api/checkout/session` endpoint in `services/worker/src/index.ts`
-- Call `stripe.checkout.sessions.create()` with real line items
-- Add checkout routes to `App.tsx` if not already present
+- Implement entitlement enforcement (check plan limits on anchor creation, API calls)
+- Implement plan change/downgrade flows
 - Test end-to-end checkout flow with Stripe test mode
 
 #### Acceptance Criteria (From Backlog)
 
-- [ ] Worker exposes `POST /checkout/session` endpoint
-- [ ] Endpoint creates Stripe checkout session with correct plan pricing
+- [x] Worker exposes `POST /checkout/session` endpoint (b1f798a: `POST /api/billing/checkout`)
+- [x] Endpoint creates Stripe checkout session with correct plan pricing
 - [x] Success/cancel URLs redirect back to app (pages exist)
 - [x] PricingCard "Select" button triggers checkout flow (wired to `useBilling.startCheckout()`)
 - [x] Subscription created in DB after `checkout.session.completed` webhook (handlers.ts)
@@ -199,13 +199,14 @@ A Stripe checkout session creation endpoint in the worker that initiates payment
 
 | Issue | Impact |
 |-------|--------|
-| CRIT-3 | Worker endpoint not wired. Test coverage complete, implementation pending. |
+| CRIT-3 | Checkout/portal endpoints wired (b1f798a). Entitlement enforcement + plan change/downgrade remaining. |
 
 #### Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-03-11 ~2:30 PM EST / ~5:30 AM AEDT Mar 12 | Test suite complete: 62 new tests (38 handlers, 12 pricing, 7 success, 5 cancel). Status NOT STARTED → PARTIAL. |
+| 2026-03-11 ~8:00 PM EST | Checkout + billing portal worker endpoints wired with JWT auth (b1f798a). IDOR fix. CRIT-3 narrowed to entitlements + downgrade. |
 
 ---
 

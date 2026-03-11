@@ -271,7 +271,7 @@ services/worker/
   src/
     index.ts                                 ← Express server + cron + graceful shutdown
     config.ts                                ← Environment config
-    chain/client.ts                          ← ChainClient factory (currently returns MockChainClient)
+    chain/client.ts                          ← ChainClient factory (returns MockChainClient or SignetChainClient)
     chain/mock.ts                            ← Mock implementation
     chain/types.ts                           ← ChainClient interface (IAnchorPublisher equivalent)
     jobs/anchor.ts                           ← Process pending anchors
@@ -457,17 +457,17 @@ npx supabase db reset
 | P4-E2 Credential Metadata | 3/3 | 0 | 0 | 100% |
 | P5 Org Admin | 6/6 | 0 | 0 | 100% |
 | P6 Verification | 4/6 | 2/6 | 0 | 75% |
-| P7 Go-Live | 6/10 | 1/10 | 3/10 | 65% |
+| P7 Go-Live | 6/10 | 2/10 | 2/10 | 70% |
 | P4.5 Verification API | 0/13 | 0 | 13/13 | 0% |
-| **Total** | **36/55** | **3/55** | **16/55** | **~70%** |
+| **Total** | **36/55** | **4/55** | **15/55** | **~71%** |
 
 ### Critical Blockers (resolve before production)
 
 | ID | Issue | Severity | Detail |
 |----|-------|----------|--------|
 | ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-10. Real Supabase insert replacing setTimeout simulation. Commit a38b485.~~ |
-| CRIT-2 | No real Bitcoin chain client | **HIGH** | `getChainClient()` always returns `MockChainClient`. No `bitcoinjs-lib`, no OP_RETURN, no AWS KMS. |
-| CRIT-3 | No Stripe checkout flow | **HIGH** | Pricing UI + useBilling hook + checkout pages implemented. Webhook handlers work. **Remaining:** billing portal endpoint, entitlement enforcement, plan change/downgrade. |
+| CRIT-2 | No real Bitcoin chain client | **HIGH** | SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix). Factory updated. **Remaining:** AWS KMS signing (mainnet), Signet node connectivity test, mainnet treasury funding. |
+| CRIT-3 | No Stripe checkout flow | **HIGH** | Pricing UI + useBilling hook + checkout pages + checkout/portal worker endpoints all implemented (b1f798a). Webhook handlers work. **Remaining:** entitlement enforcement, plan change/downgrade. |
 | ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. Commit a38b485.~~ |
 | ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. onDownloadProofJson wired in RecordDetailPage + AssetDetailView. Commit a38b485.~~ |
 | ~~CRIT-6~~ | ~~`CSVUploadWizard` uses simulated processing~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. Connected to csvParser + useBulkAnchors hook. Commit a38b485.~~ |
