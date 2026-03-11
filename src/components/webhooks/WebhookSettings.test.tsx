@@ -129,7 +129,7 @@ describe('WebhookSettings', () => {
       await userEvent.click(screen.getByText('Add Endpoint'));
 
       const urlInput = screen.getByPlaceholderText('https://your-server.com/webhooks');
-      await userEvent.type(urlInput, 'http://insecure.com/hooks');
+      await userEvent.type(urlInput, 'http://insecure.com/hooks'); // NOSONAR — intentional: testing that HTTP is rejected
 
       // Submit the form
       const submitButtons = screen.getAllByText('Add Endpoint');

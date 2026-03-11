@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-10 (post-audit rewrite)
+> **Version:** 2026-03-11 (comprehensive audit update)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion file:** `MEMORY.md` (living state — decisions, blockers, sprint context)
 
@@ -36,7 +36,7 @@ These rules apply to every task. If a story conflicts with any rule below, **the
 | Routing | react-router-dom v6 | Named routes in `src/lib/routes.ts` |
 | Worker | Node.js + Express in `services/worker/` | Webhooks, anchoring jobs, cron |
 | Payments | Stripe (SDK + webhooks) | Worker-only, never browser |
-| Chain | bitcoinjs-lib + AWS KMS (target) | MockChainClient until real implementation |
+| Chain | bitcoinjs-lib + AWS KMS (target) | SignetChainClient implemented; MockChainClient for tests. AWS KMS for mainnet TBD. |
 | Testing | Vitest + Playwright + RLS test helpers | `npm test`, `npm run test:coverage`, `npm run test:rls`, `npm run test:e2e` |
 
 **Hard constraints:**
@@ -272,6 +272,7 @@ services/worker/
     index.ts                                 ← Express server + cron + graceful shutdown
     config.ts                                ← Environment config
     chain/client.ts                          ← ChainClient factory (returns MockChainClient or SignetChainClient)
+    chain/signet.ts                          ← Real Signet implementation (bitcoinjs-lib, OP_RETURN)
     chain/mock.ts                            ← Mock implementation
     chain/types.ts                           ← ChainClient interface (IAnchorPublisher equivalent)
     jobs/anchor.ts                           ← Process pending anchors
@@ -283,7 +284,7 @@ services/worker/
     webhooks/delivery.ts                     ← Outbound webhook delivery engine
     utils/                                   ← DB client, logger, rate limiter, correlation ID
 supabase/
-  migrations/                                ← 46 files (0001–0046, 0033 skipped)
+  migrations/                                ← 45 files (0001–0046, 0033 skipped)
   seed.sql                                   ← Demo data
   config.toml                                ← Local Supabase config
 docs/confluence/                             ← Architecture, data model, security, audit, etc.
@@ -338,6 +339,8 @@ Any task that changes schema, security posture, or API contracts must update doc
 | Worker (P7+) | `docs/confluence/10_anchoring_worker.md` |
 | Proof packages (P7+) | `docs/confluence/11_proof_packages.md` |
 | Verification API (P4.5+) | `docs/confluence/12_verification_api.md` |
+| Identity / access | `docs/confluence/12_identity_access.md` |
+| Feature flags | `docs/confluence/13_switchboard.md` |
 | Story status change | `docs/stories/` (the group doc for that story's priority) |
 
 If a page doesn't exist yet, create it using this template:
@@ -365,7 +368,7 @@ _Last updated: [date] | Story: [story ID]_
 
 ### Document Standards
 
-All docs live in `docs/confluence/` and are numbered 00–13. The index (`00_index.md`) lists all documents with descriptions and a suggested reading order.
+All docs live in `docs/confluence/` and are numbered 00–13 (14 files total). The index (`00_index.md`) lists all documents with descriptions and a suggested reading order.
 
 Every doc must include:
 - `_Last updated: [date] | Story: [story ID]_` line below the title
@@ -440,7 +443,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 46 files, versions 0001–0046 (0033 intentionally skipped). Last: `0046_webhook_server_side_secret.sql`.
+**Current migration inventory:** 45 files, versions 0001–0046 (0033 intentionally skipped). Last: `0046_webhook_server_side_secret.sql`.
 
 ---
 
@@ -458,7 +461,7 @@ npx supabase db reset
 | P5 Org Admin | 6/6 | 0 | 0 | 100% |
 | P6 Verification | 4/6 | 2/6 | 0 | 75% |
 | P7 Go-Live | 6/10 | 2/10 | 2/10 | 70% |
-| P4.5 Verification API | 0/13 | 0 | 13/13 | 0% |
+| P4.5 Verification API | 0/13 | 0/13 | 13/13 | 0% |
 | **Total** | **36/55** | **4/55** | **15/55** | **~71%** |
 
 ### Critical Blockers (resolve before production)
@@ -490,8 +493,6 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P3-TS-01: DashboardPage + VaultDashboard use `useAnchors()` — real Supabase queries, no mock data
 - P3-TS-02: `is_public_profile` migration + RLS + toggle persisted to DB via `updateProfile()`
 - P3-TS-03: Sidebar uses `<Link>` with active route highlighting
-
-⚠️ **Note:** Dashboard queries are real but `SecureDocumentDialog` (accessed from dashboard) still fakes the insert — see CRIT-1.
 
 ### P4-E1 Anchor Engine — 3/3 COMPLETE
 
@@ -525,12 +526,12 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P6-TS-05: ✅ `generateAuditReport.ts` (jsPDF, 201 lines). Called from RecordDetailPage.
 - P6-TS-06: ✅ `verification_events` table (migration 0042), SECURITY DEFINER RPC (migration 0045), wired into PublicVerification.tsx.
 
-### P7 Go-Live — 6/10 COMPLETE, 1/10 PARTIAL, 3/10 NOT STARTED
+### P7 Go-Live — 6/10 COMPLETE, 2/10 PARTIAL, 2/10 NOT STARTED
 
-- P7-TS-01: ✅ Billing schema (migration 0016). BillingOverview.tsx exists (not routed with real data).
-- P7-TS-02: ⚠️ PARTIAL — Pricing UI (PricingPage, PricingCard, BillingOverview), useBilling hook, checkout success/cancel pages all implemented. Stripe webhook handlers handle checkout.session.completed + subscription lifecycle. 74 tests (12 useBilling + 12 PricingPage + 7 CheckoutSuccess + 5 CheckoutCancel + 38 handlers). **Remaining:** Stripe billing portal endpoint, entitlement enforcement, plan change/downgrade flows.
+- P7-TS-01: ✅ Billing schema (migration 0016). BillingOverview.tsx wired in PricingPage with useBilling data.
+- P7-TS-02: ⚠️ PARTIAL — Pricing UI (PricingPage, PricingCard, BillingOverview), useBilling hook, checkout success/cancel pages all implemented. Stripe webhook handlers handle checkout.session.completed + subscription lifecycle. Worker checkout + billing portal endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade flows.
 - P7-TS-03: ✅ Stripe webhook signature verification works. Mock mode for tests.
-- P7-TS-05: ❌ NOT STARTED — `getChainClient()` always returns MockChainClient. **Production blocker.**
+- P7-TS-05: ⚠️ PARTIAL — SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix). `getChainClient()` returns SignetChainClient when `ENABLE_PROD_NETWORK_ANCHORING=true`. **Remaining:** AWS KMS signing (mainnet), Signet node connectivity test, mainnet treasury funding.
 - P7-TS-07: ✅ COMPLETE — PDF + JSON proof package downloads both wired. Fixed in CRIT-5 (commit a38b485).
 - P7-TS-08: ✅ `generateAuditReport.ts` — full PDF certificate with jsPDF.
 - P7-TS-09: ✅ COMPLETE — WebhookSettings.tsx with two-phase dialog (creation form → one-time secret display). Server-side secret generation via SECURITY DEFINER RPC (migration 0046). 34 tests (23 component + 11 integration).
@@ -545,8 +546,6 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 | File | What It Does | Missing |
 |------|-------------|---------|
 | `src/components/embed/VerificationWidget.tsx` | Embeddable verification widget | Never imported. Needs route or standalone bundle. |
-| `src/components/billing/BillingOverview.tsx` | Plan info display | Now wired in PricingPage with useBilling data. |
-| `src/components/public/ProofDownload.tsx` | PDF/JSON download buttons | JSON handler is no-op. |
 
 ---
 
@@ -555,53 +554,37 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 > **Goal:** Production launch of Phase 1 credentialing MVP.
 > For detailed task assignments and owner context, see MEMORY.md.
 
-### Immediate (do first, sub-day tasks)
+### Completed (sprint archive)
+
+All of the following are done. Details in MEMORY.md completed sprints.
+
+- ✅ CRIT-1 fix (SecureDocumentDialog real insert)
+- ✅ CRIT-4 fix (onboarding routes wired)
+- ✅ CRIT-5 fix (JSON proof download wired)
+- ✅ CRIT-6 fix (CSVUploadWizard wired to useBulkAnchors)
+- ✅ CRIT-7 fix (Ralph → Arkova branding)
+- ✅ Worker hardening sprint (268 worker tests, 80%+ thresholds on all critical paths)
+- ✅ E2E test suite (86 specs + 25 load + 5 perf)
+- ✅ SonarQube remediation (~100 issues, 24 hotspots)
+- ✅ P7-TS-09 webhook settings (migration 0046, 34 tests)
+- ✅ P7-TS-10 webhook delivery engine (HMAC signing, exponential backoff)
+- ✅ Stripe checkout + billing portal worker endpoints (b1f798a)
+- ✅ SignetChainClient (bitcoinjs-lib OP_RETURN, `ARKV` prefix)
+
+### Current: Remaining Production Blockers
 
 | Task | Blocker | Detail |
 |------|---------|--------|
-| Fix `SecureDocumentDialog` | CRIT-1 | Replace `setTimeout` simulation with real Supabase insert. Follow `IssueCredentialForm` pattern. |
-| Wire onboarding routes | CRIT-4 | Replace `<DashboardPage/>` placeholders with `RoleSelector`, `OrgOnboardingForm`, `ManualReviewGate`. |
-| ~~Fix Ralph branding~~ | ~~CRIT-7~~ | ~~DONE 2026-03-10. `package.json` name → `arkova`. `index.html` title → `Arkova`.~~ |
-| Wire CSVUploadWizard | CRIT-6 | Connect to `useBulkAnchors` hook instead of simulated processing. |
+| AWS KMS signing | CRIT-2 | Key provisioning for mainnet signing. SignetChainClient done, mainnet needs KMS. |
+| Signet node connectivity test | CRIT-2 | Verify SignetChainClient against a real Signet node. |
+| Mainnet treasury funding | CRIT-2 | Fund the production treasury wallet. |
+| Entitlement enforcement | CRIT-3 | Gate features by subscription plan after checkout. |
+| Plan change/downgrade | CRIT-3 | Handle subscription upgrades, downgrades, cancellations. |
 
-### Week 1: Worker Hardening (pre-chain prerequisite)
-
-> **Decision (2026-03-10):** Worker/chain path has 0% test coverage. Harden before writing real chain code so regressions are caught immediately when MockChainClient is swapped for bitcoinjs-lib.
->
-> **SPRINT COMPLETE (2026-03-10 ~8 PM EST).** 6 sessions, 5 bugs found/fixed, 228 worker tests + 253 frontend tests = 481 total. All 80%+ thresholds pass.
-
-| Task | Status | Detail |
-|------|--------|--------|
-| Unit test `processAnchor()` | ✅ HARDENING-1 | 27 tests, 100% coverage on anchor.ts |
-| Test job claim/completion flow | ✅ HARDENING-2 | processPendingAnchors query shape, failure isolation, completion logging |
-| Test chain client interface contract | ✅ HARDENING-2 | 23 tests (18 mock.ts + 5 client.ts), 100% coverage |
-| Wire webhook dispatch in `anchor.ts` | ✅ HARDENING-4 | `processAnchor()` calls `dispatchWebhookEvent()` after SECURED. Non-fatal. Webhook retries in cron. |
-| Test webhook HMAC signing | ✅ HARDENING-3 | 30 tests on delivery.ts (99% stmts), HMAC verified against crypto.createHmac |
-| Anchor lifecycle integration test | ✅ HARDENING-4 | 8 tests: full flow PENDING → chain → SECURED → audit → webhook. Failure isolation, ordering. |
-| Coverage threshold audit | ✅ PR-HARDENING-1 | Fixed `validators.ts` (71% → 100% functions) + `proofPackage.ts` (0% → 100%). 385 total tests. |
-| Test all remaining worker files | ✅ HARDENING-5 | 7 new test files (96 tests): config, index, stripe/mock, jobs/report, jobs/webhook, utils/correlationId, utils/rateLimit. 80% thresholds on all. 481 total tests. |
-
-### Week 1-2: Payments + Proof
-
-| Task | Blocker | Detail |
-|------|---------|--------|
-| Stripe checkout session | CRIT-3 | Worker endpoint for `checkout.session.create`. Pricing UI. |
-| JSON proof download | CRIT-5 | Wire `downloadProofPackage()` in ProofDownload component. |
-
-### Week 2-3: Bitcoin Signet + Mainnet
-
-| Task | Blocker | Detail |
-|------|---------|--------|
-| Bitcoin Signet | CRIT-2 | Install `bitcoinjs-lib`. Implement real ChainClient with OP_RETURN. Signet first. Worker hardening tests catch regressions. |
-| AWS KMS | — | Key provisioning for mainnet signing. |
-| Mainnet OP_RETURN | — | Real Bitcoin anchoring. Treasury wallet funding. |
-| Webhook secret hashing | — | HMAC-SHA256 for webhook secrets. |
-
-### Week 4: Pre-Launch
+### Pre-Launch (after blockers resolved)
 
 | Task | Detail |
 |------|--------|
-| E2E test suite | All Playwright specs pass. |
 | Supabase production | Provision production-tier project. |
 | DNS + custom domain | `app.arkova.io` or equivalent. |
 | Seed data strip | Remove demo users. |
@@ -682,9 +665,9 @@ it('blocks cross-tenant access', async () => {
 
 ### Worker Tests
 ```typescript
-const mockPayment: IPaymentProvider = { createCheckout: jest.fn() };
+const mockPayment: IPaymentProvider = { createCheckout: vi.fn() };
 const mockChain: IAnchorPublisher = {
-  publishAnchor: jest.fn().mockResolvedValue({ txId: 'mock_tx' })
+  publishAnchor: vi.fn().mockResolvedValue({ txId: 'mock_tx' })
 };
 ```
 
@@ -721,7 +704,7 @@ const mockChain: IAnchorPublisher = {
 | Raw API key in DB | Security violation | HMAC-SHA256 hash with `API_KEY_HMAC_SECRET` |
 | `generateFingerprint` in worker | Constitution violation | Fingerprinting is client-side only |
 | `arkova://rec/` URI format | ADR-001: use HTTPS | `https://app.arkova.io/verify/{public_id}` |
-| Following `SecureDocumentDialog` pattern for new anchor creation | It's broken (CRIT-1) — uses setTimeout | Follow `IssueCredentialForm` pattern instead |
+| Following old `SecureDocumentDialog` pattern (pre-CRIT-1 fix) | Old version used setTimeout simulation | Follow `IssueCredentialForm` pattern — both now use real Supabase inserts |
 
 ---
 
@@ -730,22 +713,36 @@ const mockChain: IAnchorPublisher = {
 Never commit. Load from `.env` (gitignored). Worker fails loudly if required vars missing.
 
 ```bash
-# Supabase
+# Supabase (browser)
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=          # worker only — never in browser
+
+# Supabase (worker only — never in browser)
+SUPABASE_URL=                       # worker uses non-VITE prefixed URL
+SUPABASE_SERVICE_ROLE_KEY=
 
 # Stripe (worker only)
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
 # Bitcoin (worker only)
-BITCOIN_TREASURY_WIF=               # signing key — never logged
-BITCOIN_NETWORK=                    # "mainnet" or "testnet"
+BITCOIN_TREASURY_WIF=               # signing key — never logged (Constitution 1.4)
+BITCOIN_NETWORK=                    # "signet", "testnet", or "mainnet"
+BITCOIN_RPC_URL=                    # optional — Signet/mainnet RPC endpoint
+BITCOIN_RPC_AUTH=                   # optional — RPC auth credentials
+
+# Legacy chain API (backward compat)
+CHAIN_API_URL=                      # optional
+CHAIN_API_KEY=                      # optional
+CHAIN_NETWORK=                      # "testnet" or "mainnet" (default: testnet)
 
 # Worker
-WORKER_PORT=3001
+WORKER_PORT=3001                    # default: 3001
 NODE_ENV=development
+LOG_LEVEL=info                      # debug | info | warn | error
+FRONTEND_URL=http://localhost:5173  # CORS origin for worker endpoints
+USE_MOCKS=false                     # use mock chain/stripe clients
+ENABLE_PROD_NETWORK_ANCHORING=false # gates real Bitcoin chain calls (Constitution 1.9)
 
 # Verification API (worker only — Phase 1.5)
 ENABLE_VERIFICATION_API=false
@@ -755,5 +752,5 @@ CORS_ALLOWED_ORIGINS=*
 
 ---
 
-_Directive version: 2026-03-10 (post-audit rewrite) | Repo: ArkovaCarson | 45 migrations | ~70+ source files_
+_Directive version: 2026-03-11 (comprehensive audit update) | Repo: ArkovaCarson | 45 migrations | 587+ tests_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

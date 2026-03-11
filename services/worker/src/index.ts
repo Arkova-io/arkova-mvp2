@@ -17,6 +17,7 @@ import { processPendingAnchors } from './jobs/anchor.js';
 import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './stripe/client.js';
 import { processWebhookRetries } from './webhooks/delivery.js';
+import { rateLimiters } from './utils/rateLimit.js';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.get('/health', (_req, res) => {
 // Stripe webhook endpoint — signature verified via constructEvent()
 app.post(
   '/webhooks/stripe',
+  rateLimiters.stripeWebhook,
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     const sig = req.headers['stripe-signature'] as string;
@@ -145,7 +147,7 @@ app.options('/api/billing/portal', (req, res) => { setCorsHeaders(req, res); });
  * @header Authorization - Bearer <supabase-jwt>
  * @body planId - UUID of the plan from the plans table
  */
-app.post('/api/checkout/session', async (req, res) => {
+app.post('/api/checkout/session', rateLimiters.checkout, async (req, res) => {
   if (setCorsHeaders(req, res)) return;
 
   // Authenticate the user from the JWT — never trust client-supplied userId
@@ -234,7 +236,7 @@ app.post('/api/checkout/session', async (req, res) => {
  *
  * @header Authorization - Bearer <supabase-jwt>
  */
-app.post('/api/billing/portal', async (req, res) => {
+app.post('/api/billing/portal', rateLimiters.checkout, async (req, res) => {
   if (setCorsHeaders(req, res)) return;
 
   // Authenticate the user from the JWT — never trust client-supplied userId

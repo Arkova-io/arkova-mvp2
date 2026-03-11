@@ -229,6 +229,7 @@ export class SignetChainClient implements ChainClient {
     // Pick the largest UTXO
     const utxo = utxos.reduce((best, current) =>
       current.amount > best.amount ? current : best,
+      utxos[0],
     );
 
     // Convert BTC amount to satoshis

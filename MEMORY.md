@@ -1,6 +1,6 @@
 # MEMORY.md — Arkova Living Project State
 
-> **Last updated:** 2026-03-10
+> **Last updated:** 2026-03-11
 > **Purpose:** Living context for AI-assisted development sessions. CLAUDE.md has rules and story status. This file has decisions, blockers, sprint state, and institutional knowledge.
 > **Update frequency:** After every significant session or decision. If you learn something during a task, update this file before closing out.
 
@@ -17,12 +17,12 @@
 
 | ID | Issue | Owner | Status |
 |----|-------|-------|--------|
-| CRIT-1 | `SecureDocumentDialog` uses `setTimeout` simulation — individual users cannot anchor documents. The org admin path (`IssueCredentialForm`) works correctly. Pattern to follow exists. | Prajal | **OPEN — Fix first** |
-| CRIT-2 | No real Bitcoin chain client. `MockChainClient` is the only implementation. No `bitcoinjs-lib`, no OP_RETURN, no AWS KMS. | Specialist | **OPEN — Weeks 2-3** |
-| CRIT-3 | No Stripe checkout flow. SDK initialized, webhook verification works, but no way to collect payment. | Carson/Prajal | **OPEN — Week 2** |
-| CRIT-4 | Onboarding routes (`/onboarding/role`, `/onboarding/org`, `/review-pending`) render `DashboardPage` as placeholder. Components exist (`RoleSelector`, `OrgOnboardingForm`, `ManualReviewGate`). | Prajal | **OPEN — Quick fix** |
-| CRIT-5 | Proof export is JSON-only. jsPDF is in deps. `generateAuditReport.ts` exists but JSON proof download handler is a no-op. | Prajal | **OPEN — Week 2** |
-| CRIT-6 | `CSVUploadWizard` uses simulated processing. `useBulkAnchors` hook exists but wizard doesn't call it. | Prajal | **OPEN — Week 1** |
+| ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Real Supabase insert. Commit a38b485.~~ |
+| CRIT-2 | Bitcoin chain client — partial | Specialist | **PARTIAL.** SignetChainClient implemented (`bitcoinjs-lib`, OP_RETURN `ARKV` prefix). Factory updated. **Remaining:** AWS KMS signing (mainnet), Signet node connectivity test, mainnet treasury funding. |
+| CRIT-3 | Stripe checkout — partial | Carson/Prajal | **PARTIAL.** Pricing UI + useBilling hook + checkout/portal worker endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade. |
+| ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired RoleSelector, OrgOnboardingForm, ManualReviewGate. Commit a38b485.~~ |
+| ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired onDownloadProofJson. Commit a38b485.~~ |
+| ~~CRIT-6~~ | ~~CSVUploadWizard uses simulated processing~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Connected to csvParser + useBulkAnchors. Commit a38b485.~~ |
 | ~~CRIT-7~~ | ~~Browser tab says "Ralph."~~ | ~~Anyone~~ | ~~**RESOLVED 2026-03-10.** `package.json` name → `arkova`, `index.html` title → `Arkova`.~~ |
 
 ### What's NOT Blocked
@@ -31,8 +31,17 @@ These areas are production-ready or very close:
 - Database layer (45 migrations, RLS on all tables, audit trail immutable)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance (`IssueCredentialForm` — real Supabase insert + Zod + audit log)
+- Individual anchor creation (`SecureDocumentDialog` — fixed, real Supabase insert)
 - Public verification portal (5-section display, `get_public_anchor` RPC, verification event logging)
 - CI/CD (secret scanning, dep scanning, typecheck, lint, copy lint, tests)
+- Worker test coverage (268 tests, 80%+ on all critical paths)
+- Webhook delivery engine (HMAC signing, exponential backoff, retry cron)
+- Webhook settings UI (two-phase dialog, server-side secret generation)
+- Stripe webhook handlers (checkout.session.completed + subscription lifecycle)
+- Billing UI (PricingPage, BillingOverview, checkout success/cancel pages)
+- PDF + JSON proof downloads (both wired and working)
+- CSV bulk upload (connected to real parser + useBulkAnchors hook)
+- Onboarding flow (RoleSelector → OrgOnboardingForm → ManualReviewGate)
 
 ---
 
@@ -51,6 +60,8 @@ Decisions that affect architecture and should never be revisited without explici
 | 2026-02 | GTM Report March 2026 is authoritative pricing source | Supersedes Sales Playbook Jan 2026 and older docs | Use $1K/$3K/custom tiers from GTM report. |
 | 2026-03 | CLAUDE.md story status is more current than the Technical Backlog PDF | Backlog audit notes for P4-E2 say "NOT STARTED" but migrations 0029-0032 are implemented | When status conflicts, trust CLAUDE.md Section 11 over the PDF backlog |
 | 2026-03-10 | Worker hardening sprint before Bitcoin chain integration | Worker/chain critical path has 0% test coverage. processAnchor(), job claim flow, webhook dispatch all untested. Building on sand. | ~1 week of test writing before any bitcoinjs-lib work. CLAUDE.md Section 9 updated to reflect new ordering. |
+| 2026-03-11 | SignetChainClient uses `ARKV` OP_RETURN prefix | 4-byte protocol identifier in every anchored transaction for future proof verification | All chain transactions carry `ARKV` + anchor fingerprint in OP_RETURN output |
+| 2026-03-11 | Billing endpoints use JWT auth (not API keys) | Checkout and portal endpoints are user-facing, not machine-to-machine | Worker validates Supabase JWT from Authorization header, extracts user_id |
 
 ---
 
@@ -58,40 +69,43 @@ Decisions that affect architecture and should never be revisited without explici
 
 ### Where Things Live
 ```
-CLAUDE.md                          ← Rules, Constitution, story status (707 lines)
+CLAUDE.md                          ← Rules, Constitution, story status (~760 lines)
 MEMORY.md                          ← This file. Living state, decisions, sprint context.
 src/App.tsx                        ← React Router with AuthGuard + RouteGuard
-src/components/anchor/             ← Document anchoring UI (SecureDocumentDialog is the broken one)
+src/components/anchor/             ← Document anchoring UI (SecureDocumentDialog — fixed, real inserts)
 src/components/auth/               ← LoginForm, SignUpForm, AuthGuard, RouteGuard
-src/components/organization/       ← IssueCredentialForm (working), MembersTable, RevokeDialog
+src/components/billing/            ← BillingOverview, PricingCard
+src/components/organization/       ← IssueCredentialForm, MembersTable, RevokeDialog
 src/components/public/             ← PublicVerifyPage (public verification portal)
 src/components/verification/       ← PublicVerification (5-section result display)
-src/hooks/                         ← All data hooks (useAnchors, useAuth, useProfile, etc.)
+src/components/webhooks/           ← WebhookSettings (two-phase dialog + server-side secrets)
+src/hooks/                         ← All data hooks (useAnchors, useAuth, useProfile, useBilling, etc.)
 src/lib/copy.ts                    ← All UI strings (enforced by CI)
 src/lib/validators.ts              ← Zod schemas for all writes
 src/lib/fileHasher.ts              ← Client-side SHA-256 (Web Crypto API)
 src/lib/routes.ts                  ← Named route constants
 src/lib/switchboard.ts             ← Feature flags
-services/worker/                   ← Express worker (anchoring jobs, Stripe webhooks)
-services/worker/src/chain/         ← ChainClient interface + MockChainClient (real client TBD)
-services/worker/src/stripe/        ← Stripe SDK + webhook verification
-supabase/migrations/               ← 45 migrations (0001-0045, 0033 skipped)
+services/worker/                   ← Express worker (anchoring jobs, Stripe webhooks, billing)
+services/worker/src/chain/         ← ChainClient interface + MockChainClient + SignetChainClient
+services/worker/src/stripe/        ← Stripe SDK + webhook verification + handlers
+services/worker/src/webhooks/      ← Outbound webhook delivery engine (HMAC, backoff, retries)
+supabase/migrations/               ← 45 migrations (0001-0046, 0033 skipped)
 supabase/seed.sql                  ← Demo data (admin_demo, user_demo, beta_admin)
-docs/confluence/                   ← Architecture, data model, security, audit, retention docs
+docs/confluence/                   ← 14 docs (00-13): architecture, data model, security, etc.
+docs/stories/                      ← Story docs (9 group files + index)
+e2e/                               ← Playwright E2E specs + fixtures
 ```
 
 ### Key Patterns to Follow
 - **New hooks:** Follow `useAuth.ts` / `useAnchors.ts` pattern (Supabase query, loading/error state, refresh callback)
 - **New components:** Go in `src/components/<domain>/` with barrel export in `index.ts`
 - **New migrations:** Sequential numbering, include rollback comment, regenerate `database.types.ts`
-- **Anchor creation (the right way):** See `IssueCredentialForm.tsx` — validateAnchorCreate() → supabase.insert → logAuditEvent. Do NOT follow `SecureDocumentDialog.tsx` (it's the broken one).
+- **Anchor creation:** Both `IssueCredentialForm.tsx` (org admin) and `SecureDocumentDialog.tsx` (individual) now use the correct pattern: validateAnchorCreate() → supabase.insert → logAuditEvent.
 
 ### Orphaned Code (built but not wired)
 | File | What It Does | What's Missing |
 |------|-------------|----------------|
 | `src/components/embed/VerificationWidget.tsx` | Compact/full embeddable verification widget | Never imported. Needs route or standalone bundle. |
-| `src/components/billing/BillingOverview.tsx` | Displays plan info, usage, payment method | Not wired to a route with real billing data. |
-| `src/components/public/ProofDownload.tsx` | PDF/JSON download buttons | PDF works via generateAuditReport. JSON download still no-op. |
 
 ---
 
@@ -123,59 +137,36 @@ docs/confluence/                   ← Architecture, data model, security, audit
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-10 ~4:15 PM EST):** HARDENING-3 complete. Wrote tests for delivery.ts (30 tests), stripe/client.ts (7 tests), stripe/handlers.ts (18 tests). All critical worker paths now have >80% coverage. Total worker tests: 114 (was 59 after HARDENING-2). No bugs found. See HARDENING-3 section below.
+**Last session (2026-03-11 ~8:00 PM EST):** Comprehensive CLAUDE.md + MEMORY.md audit. Both files brought fully up to date with actual codebase state.
 
-**Worker hardening scope (6 tasks):**
-1. ✅ Unit test `processAnchor()` — HARDENING-1 (27 tests)
-2. ✅ Test `processPendingAnchors()` job claim/completion flow — HARDENING-2
-3. ✅ Test ChainClient interface contract — HARDENING-2 (23 tests)
-4. Wire webhook dispatch in `anchor.ts` (status → SECURED triggers delivery.ts) — **NEXT**
-5. ✅ Test webhook HMAC signing correctness — HARDENING-3
-6. Anchor lifecycle integration test (PENDING → SECURED → webhook → public verify) — **NEXT**
+**Current state:**
+- 587+ total tests (268 worker + 319 frontend) + 116 E2E/load tests
+- All worker critical paths at 80%+ coverage (14 test files, 268 tests)
+- Worker hardening sprint COMPLETE (6/6 tasks, 5 bugs found/fixed)
+- SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix)
+- Stripe checkout/portal endpoints wired with JWT auth
+- Webhook delivery engine complete with HMAC signing + exponential backoff
 
-**Coverage infrastructure (2026-03-10):** `@vitest/coverage-v8` installed in both root and worker. Per-file 80% thresholds on critical paths. All 6 critical worker files now pass thresholds. Remaining coverage gaps: `stripe/mock.ts` (0% — unused in tests, only used as a factory singleton), `jobs/report.ts` (0%), `jobs/webhook.ts` (0%), `utils/*` (0%).
+**Remaining production blockers (5 items):**
+1. AWS KMS signing for mainnet Bitcoin
+2. Signet node connectivity test
+3. Mainnet treasury funding
+4. Entitlement enforcement (restrict features by billing plan)
+5. Plan change/downgrade flows
 
-**Next session should:** Wire webhook dispatch in `anchor.ts` (task 4), then write the anchor lifecycle integration test (task 6).
+**Next session should:** Pick up one of the remaining blockers above, or address GitHub state (user noted it is "horrifically behind" — may need branch cleanup, PR creation, or merge to main).
 
----
-
-## HARDENING-3 (2026-03-10 4:15 PM EST) — COMPLETE
-
-**Scope:** Webhook delivery engine tests + Stripe client/handlers tests — all three files had 0% coverage with 80% thresholds enforced.
-
-**New test files:**
-- `services/worker/src/webhooks/delivery.test.ts` — 30 tests, 99%/85%/100%/99% (stmts/branch/funcs/lines) on delivery.ts
-  - HMAC-SHA256 signing: correctness verification against crypto.createHmac, determinism, different secrets
-  - Exponential backoff: delay doubles per attempt via next_retry_at
-  - dispatchWebhookEvent: feature flag off, flag null, no endpoints, null endpoints, DB error, parallel delivery, payload structure, endpoint query filters
-  - deliverToEndpoint: idempotency (already delivered), log insert failure, HTTP 200 success, HTTP 500 retry, response body truncation, network error (ECONNREFUSED), timeout (AbortError), AbortSignal presence, success logging, delivery log fields
-  - processWebhookRetries: empty queue, null data, DB error, inactive endpoint skip, null endpoint skip, retry with incremented attempt, query shape (status=retrying, limit=50)
-- `services/worker/src/stripe/client.test.ts` — 7 tests, 100% coverage on client.ts
-  - Mock mode: uses mockStripeClient, passes string payload, converts Buffer to string
-  - Production mode: uses stripe.webhooks.constructEvent, passes payload/sig/secret, propagates errors, passes Buffer directly
-- `services/worker/src/stripe/handlers.test.ts` — 18 tests, 98%/94%/100%/98% on handlers.ts
-  - handleStripeWebhook routing: all 4 event types + unhandled type + event recording
-  - handleCheckoutComplete: profile update with user_id, audit event, missing user_id (2 cases), DB error throws, no audit on failure, logging
-  - handleSubscriptionUpdated/Deleted/PaymentFailed: smoke tests
-
-**Coverage after HARDENING-3 (all critical paths):**
-
-| File | Stmts | Branch | Funcs | Lines | Threshold |
-|------|-------|--------|-------|-------|-----------|
-| chain/client.ts | 100% | 100% | 100% | 100% | 80% ✅ |
-| chain/mock.ts | 100% | 100% | 100% | 100% | 80% ✅ |
-| jobs/anchor.ts | 100% | 100% | 100% | 100% | 80% ✅ |
-| stripe/client.ts | 100% | 100% | 100% | 100% | 80% ✅ |
-| stripe/handlers.ts | 98% | 94% | 100% | 98% | 80% ✅ |
-| webhooks/delivery.ts | 99% | 85% | 100% | 99% | 80% ✅ |
-
-**Uncovered lines (acceptable):**
-- `handlers.ts:132-134` — `isEventProcessed` early return (hardcoded `false`, unreachable until real idempotency implementation)
-- `delivery.ts:135,164` — `next_retry_at: null` branch when `attempt >= MAX_RETRIES` (only reachable through retry at attempt 5)
-
-**Total worker tests:** 114 (was 59 after HARDENING-2)
-**Bugs found:** None. All three modules are clean.
-**Pre-existing coverage gaps (non-threshold):** `stripe/mock.ts` (0%), `jobs/report.ts` (0%), `jobs/webhook.ts` (0%), `utils/*` (0%), `config.ts` (0%), `index.ts` (0%).
+**Completed sprints (archived):**
+All sprint details moved to Claude project memory. Summary:
+- CRIT Bug Fixes (2026-03-10): CRIT-1,4,5,6 all fixed
+- Worker Hardening (2026-03-10): 6 sessions, 268 tests, 5 bugs fixed, all 80%+ thresholds pass
+- E2E Testing (2026-03-10-11): 116 tests (86 E2E + 25 load + 5 perf)
+- SonarQube Remediation (2026-03-11): ~100 issues, 24 hotspots resolved
+- Story Docs (2026-03-10): 9 group files + index in `docs/stories/`
+- P7-TS-02 Stripe (2026-03-11): 74 tests, pricing UI + useBilling + checkout pages
+- P7-TS-09 Webhooks (2026-03-11): 34 tests, migration 0046, server-side secrets
+- Bitcoin Signet (2026-03-11): SignetChainClient, factory updated, 268 worker tests
+- Billing Endpoints (2026-03-11): Checkout + portal worker endpoints, IDOR fix
 
 ---
 
@@ -220,7 +211,7 @@ Then add a detail block below the table:
 ## Things That Surprised Us (Institutional Knowledge)
 
 - The backlog PDF audit notes go stale. CLAUDE.md Section 11 is updated more frequently and should be treated as source of truth for story completion status.
-- `IssueCredentialForm` (org admin path) does real Supabase inserts correctly. `SecureDocumentDialog` (individual path) fakes it with setTimeout. They look like the same flow from the user's perspective but are completely different under the hood.
+- ~~`SecureDocumentDialog` (individual path) used to fake inserts with setTimeout while `IssueCredentialForm` (org admin) worked correctly.~~ Both now use real Supabase inserts. Fixed 2026-03-10.
 - ~~The Vercel deployment at `arkova-carson.vercel.app` shows "Ralph" in the browser tab.~~ Fixed 2026-03-10.
 - ~~`package.json` name is still "ralph" — affects build artifacts and Vercel project name.~~ Fixed 2026-03-10.
 - Google Drive search is unreliable with complex queries. Use `name contains 'X' or name contains 'Y'` chaining or `fullText contains` with folder parent IDs.
