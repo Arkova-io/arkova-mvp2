@@ -130,7 +130,21 @@
       "Bash(git log:*)",
       "Bash(git branch:*)",
       "Bash(git merge:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npm view:*)",
+      "Bash(gh api:*)",
+      "Bash(python3 -c \"import sys,json; items=json.load\\(sys.stdin\\); [print\\(i[''''type''''], i[''''name'''']\\) for i in items]\")",
+      "Bash(npm list:*)",
+      "Bash(python3 -c \"import sys,json,base64; d=json.load\\(sys.stdin\\); print\\(base64.b64decode\\(d[''''content'''']\\).decode\\(\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); items=d if isinstance\\(d,list\\) else []; [print\\(i[''''type''''], i[''''name'''']\\) for i in items]\")",
+      "Bash(gh issue:*)",
+      "Bash(gh repo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(for pr:*)",
+      "Bash(do echo:*)",
+      "Bash(python3:*)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:arkova-26-diin7f2dc-carsons-projects-1179ca27.vercel.app)"
     ]
   },
   "enableAllProjectMcpServers": true,
