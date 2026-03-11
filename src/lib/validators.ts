@@ -55,6 +55,45 @@ export const CREDENTIAL_TYPES = [
 export type CredentialType = (typeof CREDENTIAL_TYPES)[number];
 
 // =============================================================================
+// SHARED ANCHOR FIELD SCHEMAS
+// =============================================================================
+
+/** Filename: 1–255 chars, no control characters */
+const filenameField = z
+  .string()
+  .min(1, 'Filename is required')
+  .max(MAX_FILENAME_LENGTH, `Filename must be ${MAX_FILENAME_LENGTH} characters or less`)
+  .refine(
+    (val) => !CONTROL_CHARS_REGEX.test(val),
+    'Filename must not contain control characters'
+  );
+
+/** MIME type: up to 100 chars, optional + nullable */
+const fileMimeField = z
+  .string()
+  .max(100, 'MIME type must be 100 characters or less')
+  .optional()
+  .nullable();
+
+/** Label: 1–500 chars, optional + nullable */
+const labelField = z
+  .string()
+  .min(1, 'Label is required')
+  .max(MAX_LABEL_LENGTH, `Label must be ${MAX_LABEL_LENGTH} characters or less`)
+  .optional()
+  .nullable();
+
+/** Credential type: one of the CREDENTIAL_TYPES enum values, optional + nullable */
+const credentialTypeField = z
+  .enum(CREDENTIAL_TYPES, {
+    errorMap: () => ({
+      message: `Credential type must be one of: ${CREDENTIAL_TYPES.join(', ')}`,
+    }),
+  })
+  .optional()
+  .nullable();
+
+// =============================================================================
 // ANCHOR SCHEMAS
 // =============================================================================
 
@@ -71,14 +110,7 @@ export const AnchorCreateSchema = z.object({
     .regex(FINGERPRINT_REGEX, 'Fingerprint must be a valid SHA-256 hash (64 hex characters)')
     .transform((val) => val.toLowerCase()), // Normalize to lowercase
 
-  filename: z
-    .string()
-    .min(1, 'Filename is required')
-    .max(MAX_FILENAME_LENGTH, `Filename must be ${MAX_FILENAME_LENGTH} characters or less`)
-    .refine(
-      (val) => !CONTROL_CHARS_REGEX.test(val),
-      'Filename must not contain control characters'
-    ),
+  filename: filenameField,
 
   file_size: z
     .number()
@@ -87,11 +119,7 @@ export const AnchorCreateSchema = z.object({
     .optional()
     .nullable(),
 
-  file_mime: z
-    .string()
-    .max(100, 'MIME type must be 100 characters or less')
-    .optional()
-    .nullable(),
+  file_mime: fileMimeField,
 
   org_id: z
     .string()
@@ -99,21 +127,9 @@ export const AnchorCreateSchema = z.object({
     .optional()
     .nullable(),
 
-  label: z
-    .string()
-    .min(1, 'Label is required')
-    .max(MAX_LABEL_LENGTH, `Label must be ${MAX_LABEL_LENGTH} characters or less`)
-    .optional()
-    .nullable(),
+  label: labelField,
 
-  credential_type: z
-    .enum(CREDENTIAL_TYPES, {
-      errorMap: () => ({
-        message: `Credential type must be one of: ${CREDENTIAL_TYPES.join(', ')}`,
-      }),
-    })
-    .optional()
-    .nullable(),
+  credential_type: credentialTypeField,
 
   metadata: z
     .custom<Record<string, Json | undefined>>((val) => {
@@ -143,21 +159,9 @@ export type AnchorCreate = z.infer<typeof AnchorCreateSchema>;
  * - fingerprint (immutable identifier)
  */
 export const AnchorUpdateSchema = z.object({
-  filename: z
-    .string()
-    .min(1, 'Filename is required')
-    .max(MAX_FILENAME_LENGTH, `Filename must be ${MAX_FILENAME_LENGTH} characters or less`)
-    .refine(
-      (val) => !CONTROL_CHARS_REGEX.test(val),
-      'Filename must not contain control characters'
-    )
-    .optional(),
+  filename: filenameField.optional(),
 
-  file_mime: z
-    .string()
-    .max(100, 'MIME type must be 100 characters or less')
-    .optional()
-    .nullable(),
+  file_mime: fileMimeField,
 
   retention_until: z
     .string()
@@ -165,21 +169,9 @@ export const AnchorUpdateSchema = z.object({
     .optional()
     .nullable(),
 
-  label: z
-    .string()
-    .min(1, 'Label is required')
-    .max(MAX_LABEL_LENGTH, `Label must be ${MAX_LABEL_LENGTH} characters or less`)
-    .optional()
-    .nullable(),
+  label: labelField,
 
-  credential_type: z
-    .enum(CREDENTIAL_TYPES, {
-      errorMap: () => ({
-        message: `Credential type must be one of: ${CREDENTIAL_TYPES.join(', ')}`,
-      }),
-    })
-    .optional()
-    .nullable(),
+  credential_type: credentialTypeField,
 
   metadata: z
     .record(z.unknown())

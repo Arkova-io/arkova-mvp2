@@ -35,13 +35,17 @@ vi.mock('./mock.js', () => ({
 }));
 
 // Mock Stripe constructor so it doesn't try to initialize with invalid key
-vi.mock('stripe', () => {
-  const MockStripe = vi.fn(() => ({
-    webhooks: {
-      constructEvent: mockConstructEvent,
-    },
-  }));
-  return { default: MockStripe };
+vi.mock('stripe', async () => {
+  function MockStripe() {
+    return {
+      webhooks: {
+        constructEvent: mockConstructEvent,
+      },
+      checkout: { sessions: { create: vi.fn() } },
+      billingPortal: { sessions: { create: vi.fn() } },
+    };
+  }
+  return { default: MockStripe, Stripe: MockStripe };
 });
 
 // ---- System under test ----

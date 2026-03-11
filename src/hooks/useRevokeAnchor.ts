@@ -5,8 +5,9 @@
  * Supports an optional reason parameter (persisted to DB).
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAsyncAction } from './useAsyncAction';
 
 interface UseRevokeAnchorReturn {
   revokeAnchor: (anchorId: string, reason?: string) => Promise<boolean>;
@@ -16,53 +17,42 @@ interface UseRevokeAnchorReturn {
 }
 
 export function useRevokeAnchor(): UseRevokeAnchorReturn {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const revokeImpl = useCallback(async (anchorId: string, reason?: string): Promise<boolean> => {
+    // Type assertion needed until types are regenerated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: rpcError } = await (supabase.rpc as any)('revoke_anchor', {
+      anchor_id: anchorId,
+      reason: reason || null,
+    });
 
-  const clearError = useCallback(() => {
-    setError(null);
+    if (rpcError) {
+      // Handle specific error codes
+      if (rpcError.message.includes('insufficient_privilege')) {
+        throw new Error('You do not have permission to revoke this anchor.');
+      } else if (rpcError.message.includes('already revoked')) {
+        throw new Error('This anchor has already been revoked.');
+      } else if (rpcError.message.includes('legal hold')) {
+        throw new Error('Cannot revoke an anchor under legal hold.');
+      } else {
+        throw new Error(rpcError.message || 'Failed to revoke anchor.');
+      }
+    }
+
+    return true;
   }, []);
 
-  const revokeAnchor = useCallback(async (anchorId: string, reason?: string): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+  const { execute, loading, error, clearError } = useAsyncAction(revokeImpl);
 
-    try {
-      // Type assertion needed until types are regenerated
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: rpcError } = await (supabase.rpc as any)('revoke_anchor', {
-        anchor_id: anchorId,
-        reason: reason || null,
-      });
-
-      if (rpcError) {
-        // Handle specific error codes
-        if (rpcError.message.includes('insufficient_privilege')) {
-          setError('You do not have permission to revoke this anchor.');
-        } else if (rpcError.message.includes('already revoked')) {
-          setError('This anchor has already been revoked.');
-        } else if (rpcError.message.includes('legal hold')) {
-          setError('Cannot revoke an anchor under legal hold.');
-        } else {
-          setError(rpcError.message || 'Failed to revoke anchor.');
-        }
+  const revokeAnchor = useCallback(
+    async (anchorId: string, reason?: string): Promise<boolean> => {
+      try {
+        return await execute(anchorId, reason);
+      } catch {
         return false;
       }
+    },
+    [execute],
+  );
 
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    revokeAnchor,
-    loading,
-    error,
-    clearError,
-  };
+  return { revokeAnchor, loading, error, clearError };
 }

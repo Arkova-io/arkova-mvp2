@@ -34,7 +34,7 @@ These areas are production-ready or very close:
 - Individual anchor creation (`SecureDocumentDialog` — fixed, real Supabase insert)
 - Public verification portal (5-section display, `get_public_anchor` RPC, verification event logging)
 - CI/CD (secret scanning, dep scanning, typecheck, lint, copy lint, tests)
-- Worker test coverage (268 tests, 80%+ on all critical paths)
+- Worker test coverage (275 tests, 80%+ on all critical paths)
 - Webhook delivery engine (HMAC signing, exponential backoff, retry cron)
 - Webhook settings UI (two-phase dialog, server-side secret generation)
 - Stripe webhook handlers (checkout.session.completed + subscription lifecycle)
@@ -140,9 +140,10 @@ e2e/                               ← Playwright E2E specs + fixtures
 **Last session (2026-03-11 ~8:00 PM EST):** Comprehensive CLAUDE.md + MEMORY.md audit. Both files brought fully up to date with actual codebase state.
 
 **Current state:**
-- 587+ total tests (268 worker + 319 frontend) + 116 E2E/load tests
-- All worker critical paths at 80%+ coverage (14 test files, 268 tests)
+- 594+ total tests (275 worker + 319 frontend) + 116 E2E/load tests
+- All worker critical paths at 80%+ coverage (15 test files, 275 tests)
 - Worker hardening sprint COMPLETE (6/6 tasks, 5 bugs found/fixed)
+- Vite 5→6 + vitest 1→3 upgrade (Dependabot CVE fix for esbuild)
 - SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix)
 - Stripe checkout/portal endpoints wired with JWT auth
 - Webhook delivery engine complete with HMAC signing + exponential backoff
@@ -167,6 +168,7 @@ All sprint details moved to Claude project memory. Summary:
 - P7-TS-09 Webhooks (2026-03-11): 34 tests, migration 0046, server-side secrets
 - Bitcoin Signet (2026-03-11): SignetChainClient, factory updated, 268 worker tests
 - Billing Endpoints (2026-03-11): Checkout + portal worker endpoints, IDOR fix
+- Dependency Upgrade (2026-03-11): Vite 5→6, vitest 1→3, esbuild CVE fixed, 0 npm vulnerabilities
 
 ---
 

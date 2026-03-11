@@ -34,6 +34,37 @@ interface BillingActions {
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
 
+/**
+ * POST to a worker endpoint with the user's JWT, returning the parsed `url` field.
+ * Shared by startCheckout and openBillingPortal to avoid duplicated fetch boilerplate.
+ */
+async function workerPost(
+  endpoint: string,
+  body: Record<string, unknown>,
+): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('No active session — please sign in again');
+  }
+
+  const response = await fetch(`${WORKER_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const parsed = await response.json().catch(() => ({}));
+    throw new Error(parsed.error ?? `Request failed (${response.status})`);
+  }
+
+  const { url } = await response.json();
+  return url as string;
+}
+
 export function useBilling(): BillingState & BillingActions {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -104,27 +135,7 @@ export function useBilling(): BillingState & BillingActions {
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No active session — please sign in again');
-      }
-
-      const response = await fetch(`${WORKER_URL}/api/checkout/session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ planId }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? `Checkout failed (${response.status})`);
-      }
-
-      const { url } = await response.json();
-      return url as string;
+      return await workerPost('/api/checkout/session', { planId });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start checkout';
       setError(message);
@@ -141,27 +152,7 @@ export function useBilling(): BillingState & BillingActions {
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No active session — please sign in again');
-      }
-
-      const response = await fetch(`${WORKER_URL}/api/billing/portal`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? `Portal access failed (${response.status})`);
-      }
-
-      const { url } = await response.json();
-      return url as string;
+      return await workerPost('/api/billing/portal', {});
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to open billing portal';
       setError(message);

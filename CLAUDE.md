@@ -563,7 +563,7 @@ All of the following are done. Details in MEMORY.md completed sprints.
 - ✅ CRIT-5 fix (JSON proof download wired)
 - ✅ CRIT-6 fix (CSVUploadWizard wired to useBulkAnchors)
 - ✅ CRIT-7 fix (Ralph → Arkova branding)
-- ✅ Worker hardening sprint (268 worker tests, 80%+ thresholds on all critical paths)
+- ✅ Worker hardening sprint (275 worker tests, 80%+ thresholds on all critical paths)
 - ✅ E2E test suite (86 specs + 25 load + 5 perf)
 - ✅ SonarQube remediation (~100 issues, 24 hotspots)
 - ✅ P7-TS-09 webhook settings (migration 0046, 34 tests)
@@ -752,5 +752,5 @@ CORS_ALLOWED_ORIGINS=*
 
 ---
 
-_Directive version: 2026-03-11 (comprehensive audit update) | Repo: ArkovaCarson | 45 migrations | 587+ tests_
+_Directive version: 2026-03-11 (comprehensive audit update) | Repo: ArkovaCarson | 46 migrations | 594+ tests_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_
