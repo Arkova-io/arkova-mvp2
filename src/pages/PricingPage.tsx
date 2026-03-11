@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// useNavigate still needed for settings back button
 import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -24,7 +25,7 @@ import type { BillingInfo } from '@/components/billing/BillingOverview';
 
 export function PricingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const {
     subscription,
@@ -60,7 +61,7 @@ export function PricingPage() {
   };
 
   const handleSignOut = async () => {
-    navigate(ROUTES.LOGIN);
+    await signOut();
   };
 
   // Build BillingInfo for BillingOverview when user has a subscription
@@ -152,7 +153,7 @@ export function PricingPage() {
                     : 'Custom',
                   period: dbPlan.price_cents !== null ? 'month' : 'custom',
                   features: getPlanFeatures(dbPlan.name),
-                  recordsIncluded: dbPlan.records_per_month ?? 0,
+                  recordsIncluded: dbPlan.records_per_month ?? (dbPlan.name === 'Organization' ? 'unlimited' as const : 0),
                   recommended: dbPlan.name === 'Professional',
                   current: currentPlan?.id === dbPlan.id,
                 }}

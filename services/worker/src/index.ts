@@ -63,6 +63,74 @@ app.post(
 app.use(express.json());
 
 // =========================================================================
+// CORS for browser-facing billing routes
+// =========================================================================
+const CORS_ALLOWED_ORIGINS = config.frontendUrl
+  ? [config.frontendUrl]
+  : ['http://localhost:5173'];
+
+function setCorsHeaders(req: express.Request, res: express.Response): boolean {
+  const origin = req.headers.origin;
+  if (origin && CORS_ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return true;
+  }
+  return false;
+}
+
+// =========================================================================
+// Auth helper — extract userId from Supabase JWT
+// =========================================================================
+
+/**
+ * Extracts the authenticated user ID from the Authorization header.
+ * Verifies the JWT against Supabase to ensure the caller is who they claim.
+ *
+ * TODO: For production, verify the JWT signature using the Supabase JWT secret
+ * instead of making a network call. This is a security-critical path.
+ */
+async function extractAuthUserId(req: express.Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.slice(7);
+  if (!token) {
+    return null;
+  }
+
+  try {
+    // Verify the token by calling Supabase auth.getUser()
+    // This validates the JWT and returns the authenticated user
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseClient = createClient(config.supabaseUrl, config.supabaseServiceKey);
+    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+
+    if (error || !user) {
+      logger.warn({ error }, 'Invalid or expired auth token');
+      return null;
+    }
+
+    return user.id;
+  } catch (error) {
+    logger.error({ error }, 'Failed to verify auth token');
+    return null;
+  }
+}
+
+// CORS preflight for billing routes
+app.options('/api/checkout/session', (req, res) => { setCorsHeaders(req, res); });
+app.options('/api/billing/portal', (req, res) => { setCorsHeaders(req, res); });
+
+// =========================================================================
 // Billing API Routes (P7-TS-02)
 // =========================================================================
 
@@ -70,26 +138,37 @@ app.use(express.json());
  * POST /api/checkout/session
  *
  * Creates a Stripe Checkout Session for subscription purchase.
+ * Authenticates the user via Supabase JWT in Authorization header.
  * Looks up the plan from DB, gets user email from profiles,
  * then creates a checkout session via Stripe SDK.
  *
+ * @header Authorization - Bearer <supabase-jwt>
  * @body planId - UUID of the plan from the plans table
- * @body userId - UUID of the authenticated user
  */
 app.post('/api/checkout/session', async (req, res) => {
-  const { planId, userId } = req.body as { planId?: string; userId?: string };
+  if (setCorsHeaders(req, res)) return;
 
-  if (!planId || !userId) {
-    res.status(400).json({ error: 'planId and userId are required' });
+  // Authenticate the user from the JWT — never trust client-supplied userId
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const { planId } = req.body as { planId?: string };
+
+  if (!planId) {
+    res.status(400).json({ error: 'planId is required' });
     return;
   }
 
   try {
-    // Look up the plan
+    // Look up the plan — only active plans can be used for checkout
     const { data: plan, error: planError } = await db
       .from('plans')
       .select('id, name, stripe_price_id, price_cents, anchor_limit')
       .eq('id', planId)
+      .eq('is_active', true)
       .single();
 
     if (planError || !plan) {
@@ -150,15 +229,18 @@ app.post('/api/checkout/session', async (req, res) => {
  * POST /api/billing/portal
  *
  * Creates a Stripe Billing Portal Session for subscription management.
+ * Authenticates the user via Supabase JWT in Authorization header.
  * Looks up the user's Stripe customer ID from the subscriptions table.
  *
- * @body userId - UUID of the authenticated user
+ * @header Authorization - Bearer <supabase-jwt>
  */
 app.post('/api/billing/portal', async (req, res) => {
-  const { userId } = req.body as { userId?: string };
+  if (setCorsHeaders(req, res)) return;
 
+  // Authenticate the user from the JWT — never trust client-supplied userId
+  const userId = await extractAuthUserId(req);
   if (!userId) {
-    res.status(400).json({ error: 'userId is required' });
+    res.status(401).json({ error: 'Authentication required' });
     return;
   }
 

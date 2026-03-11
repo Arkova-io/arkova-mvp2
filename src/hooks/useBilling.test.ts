@@ -12,9 +12,16 @@ const mockFrom = vi.hoisted(() => vi.fn());
 const mockUser = vi.hoisted(() => ({ id: 'user-123', email: 'test@arkova.local' }));
 const mockUseAuth = vi.hoisted(() => vi.fn(() => ({ user: mockUser })));
 
+const mockGetSession = vi.hoisted(() => vi.fn(() =>
+  Promise.resolve({ data: { session: { access_token: 'mock-jwt-token' } } })
+));
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: mockFrom,
+    auth: {
+      getSession: mockGetSession,
+    },
   },
 }));
 
@@ -148,7 +155,11 @@ describe('useBilling', () => {
         expect.stringContaining('/api/checkout/session'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ planId: 'plan-ind', userId: 'user-123' }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer mock-jwt-token',
+          },
+          body: JSON.stringify({ planId: 'plan-ind' }),
         }),
       );
     });

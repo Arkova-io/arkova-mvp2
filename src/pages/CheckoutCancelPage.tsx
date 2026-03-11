@@ -7,7 +7,7 @@
  * @see P7-TS-02
  */
 
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { XCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -18,12 +18,11 @@ import { ROUTES } from '@/lib/routes';
 import { BILLING_LABELS } from '@/lib/copy';
 
 export function CheckoutCancelPage() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
 
   const handleSignOut = async () => {
-    navigate(ROUTES.LOGIN);
+    await signOut();
   };
 
   return (

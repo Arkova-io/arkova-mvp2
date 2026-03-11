@@ -99,9 +99,14 @@ export function WebhookSettings({
 
   const handleCopySecret = async () => {
     if (!generatedSecret) return;
-    await navigator.clipboard.writeText(generatedSecret);
-    setSecretCopied(true);
-    setTimeout(() => setSecretCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(generatedSecret);
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    } catch {
+      // Fallback: select the text so the user can manually copy
+      setError('Could not copy to clipboard. Please select and copy the secret manually.');
+    }
   };
 
   const handleCloseDialog = () => {

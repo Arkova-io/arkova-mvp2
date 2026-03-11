@@ -318,13 +318,12 @@ describe('handleCheckoutComplete', () => {
     expect(plansSelect.select).toHaveBeenCalledWith('id, stripe_price_id');
   });
 
-  it('defaults to individual plan when no plans match', async () => {
-    plansSelect.not.mockResolvedValue({ data: [] });
-    await handleCheckoutComplete(CHECKOUT_EVENT);
-    expect(subscriptionsUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({ plan_id: 'individual' }),
-      expect.anything(),
+  it('throws when no plans match and multiple plans exist', async () => {
+    plansSelect.not.mockResolvedValue({ data: [{ id: 'a' }, { id: 'b' }] });
+    await expect(handleCheckoutComplete(CHECKOUT_EVENT)).rejects.toThrow(
+      'Could not resolve plan from checkout session',
     );
+    expect(subscriptionsUpsert).not.toHaveBeenCalled();
   });
 
   it('logs audit event for subscription creation', async () => {
@@ -598,10 +597,9 @@ describe('handlePaymentFailed', () => {
     expect(subscriptionsUpdate.update).not.toHaveBeenCalled();
   });
 
-  it('does not throw when subscription update fails', async () => {
+  it('throws when subscription update fails', async () => {
     subscriptionsUpdate.eq.mockResolvedValue({ error: { message: 'db error' } });
-    // handlePaymentFailed logs errors but does not throw
-    await handlePaymentFailed(PAYMENT_FAILED_EVENT);
+    await expect(handlePaymentFailed(PAYMENT_FAILED_EVENT)).rejects.toThrow('db error');
     expect(mockLogger.error).toHaveBeenCalled();
   });
 });

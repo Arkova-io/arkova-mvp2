@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -20,9 +20,8 @@ import { ROUTES } from '@/lib/routes';
 import { BILLING_LABELS } from '@/lib/copy';
 
 export function CheckoutSuccessPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { plan, loading: billingLoading, refresh } = useBilling();
 
@@ -42,7 +41,7 @@ export function CheckoutSuccessPage() {
   }, [sessionId, refreshed, refresh]);
 
   const handleSignOut = async () => {
-    navigate(ROUTES.LOGIN);
+    await signOut();
   };
 
   return (

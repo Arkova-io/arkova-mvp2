@@ -73,7 +73,7 @@ export async function handleCheckoutComplete(event: StripeEvent): Promise<void> 
     id: string;
     customer: string;
     subscription: string;
-    metadata?: { user_id?: string };
+    metadata?: { user_id?: string; price_id?: string };
   };
 
   logger.info({ sessionId: session.id }, 'Processing checkout completion');
@@ -85,21 +85,37 @@ export async function handleCheckoutComplete(event: StripeEvent): Promise<void> 
   }
 
   // Look up plan from the subscription's price
-  // Default to 'individual' if we can't resolve the plan
-  let planId = 'individual';
+  // The price_id is stored in session metadata by createCheckoutSession
+  let planId: string | null = null;
+  const priceId = session.metadata?.price_id;
 
-  // Try to get the plan by looking at existing plans
-  const { data: plans } = await db
-    .from('plans')
-    .select('id, stripe_price_id')
-    .not('stripe_price_id', 'is', null);
+  if (priceId) {
+    // Match the exact price_id from the checkout session to the plan
+    const { data: matchedPlan } = await db
+      .from('plans')
+      .select('id')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
 
-  if (plans && plans.length > 0) {
-    // The plan lookup would ideally use the line items from the session
-    // but since we embed user_id in metadata, we match what we can
-    const matchedPlan = plans.find(p => p.stripe_price_id);
     if (matchedPlan) {
       planId = matchedPlan.id;
+    }
+  }
+
+  // Fallback: try all plans with stripe_price_id set
+  if (!planId) {
+    const { data: plans } = await db
+      .from('plans')
+      .select('id, stripe_price_id')
+      .not('stripe_price_id', 'is', null);
+
+    if (plans && plans.length === 1) {
+      // Only use fallback if there's exactly one plan (unambiguous)
+      planId = plans[0].id;
+      logger.warn({ planId }, 'Used single-plan fallback for plan matching');
+    } else {
+      logger.error({ priceId, planCount: plans?.length }, 'Could not resolve plan from checkout session');
+      throw new Error('Could not resolve plan from checkout session');
     }
   }
 
@@ -252,6 +268,7 @@ export async function handlePaymentFailed(event: StripeEvent): Promise<void> {
 
     if (error) {
       logger.error({ error, invoiceId: invoice.id }, 'Failed to update subscription to past_due');
+      throw error;
     }
   }
 

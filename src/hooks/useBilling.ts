@@ -104,10 +104,18 @@ export function useBilling(): BillingState & BillingActions {
     setError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session — please sign in again');
+      }
+
       const response = await fetch(`${WORKER_URL}/api/checkout/session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, userId: user.id }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ planId }),
       });
 
       if (!response.ok) {
@@ -133,10 +141,18 @@ export function useBilling(): BillingState & BillingActions {
     setError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session — please sign in again');
+      }
+
       const response = await fetch(`${WORKER_URL}/api/billing/portal`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({}),
       });
 
       if (!response.ok) {
