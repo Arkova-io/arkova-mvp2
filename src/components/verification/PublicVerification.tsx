@@ -49,14 +49,19 @@ interface PublicAnchorData {
   verified: boolean;
   credential_type?: string;
   issuer_name?: string;
-  secured_at?: string;
-  network_receipt?: string;
-  block_height?: number;
+  // Lifecycle fields (from migration 0047)
   created_at?: string;
+  secured_at?: string;
   issued_at?: string;
   revoked_at?: string;
   revocation_reason?: string;
   expires_at?: string;
+  // Phase 1.5 frozen schema fields
+  anchor_timestamp?: string;
+  issued_date?: string;
+  expiry_date?: string;
+  network_receipt_id?: string;
+  bitcoin_block?: number;
   metadata?: Record<string, unknown>;
   error?: string;
 }
@@ -236,7 +241,7 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
         {/* ============================================================
             SECTION 3: Issuer Info
             ============================================================ */}
-        {(data.issuer_name || data.issued_at) && (
+        {(data.issuer_name || data.issued_at || data.issued_date) && (
           <>
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -247,8 +252,8 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
                 {data.issuer_name && (
                   <InfoRow label="Organization" value={data.issuer_name} />
                 )}
-                {data.issued_at && (
-                  <InfoRow label="Issued" value={formatDate(data.issued_at)} />
+                {(data.issued_at ?? data.issued_date) && (
+                  <InfoRow label="Issued" value={formatDate((data.issued_at ?? data.issued_date)!)} />
                 )}
               </div>
             </div>
@@ -290,7 +295,7 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
               </div>
             </div>
 
-            {data.network_receipt && (
+            {data.network_receipt_id && (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-muted-foreground">Network Receipt</span>
@@ -298,7 +303,7 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
                     variant="ghost"
                     size="sm"
                     className="h-6 px-2 text-xs"
-                    onClick={() => handleCopy(data.network_receipt!, 'receipt')}
+                    onClick={() => handleCopy(data.network_receipt_id!, 'receipt')}
                   >
                     {copied === 'receipt' ? (
                       <Check className="h-3 w-3" />
@@ -308,17 +313,17 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
                   </Button>
                 </div>
                 <div className="font-mono text-xs bg-muted rounded px-3 py-2 break-all">
-                  {data.network_receipt}
+                  {data.network_receipt_id}
                 </div>
               </div>
             )}
 
-            {data.block_height && (
-              <InfoRow label="Network Record" value={`#${data.block_height.toLocaleString()}`} />
+            {data.bitcoin_block && (
+              <InfoRow label="Network Record" value={`#${data.bitcoin_block.toLocaleString()}`} />
             )}
 
-            {data.secured_at && (
-              <InfoRow label="Observed Time" value={formatDate(data.secured_at)} />
+            {(data.secured_at ?? data.anchor_timestamp) && (
+              <InfoRow label="Observed Time" value={formatDate((data.secured_at ?? data.anchor_timestamp)!)} />
             )}
           </div>
         </div>
@@ -350,16 +355,25 @@ export function PublicVerification({ publicId }: Readonly<PublicVerificationProp
   );
 }
 
-/** Map public anchor data to AnchorLifecycleData for the timeline */
+/** Map public anchor data to AnchorLifecycleData for the timeline.
+ * The RPC maps SECURED→ACTIVE for the frozen API schema, so we reverse it here. */
 function mapToLifecycleData(data: PublicAnchorData): AnchorLifecycleData {
+  // Reverse the RPC status mapping: ACTIVE→SECURED for the lifecycle component
+  const statusMap: Record<string, AnchorLifecycleData['status']> = {
+    ACTIVE: 'SECURED',
+    SECURED: 'SECURED',
+    REVOKED: 'REVOKED',
+    EXPIRED: 'EXPIRED',
+    PENDING: 'PENDING',
+  };
   return {
-    status: (data.status as AnchorLifecycleData['status']) ?? 'PENDING',
+    status: statusMap[data.status] ?? 'PENDING',
     createdAt: data.created_at!,
-    issuedAt: data.issued_at,
-    securedAt: data.secured_at,
+    issuedAt: data.issued_at ?? data.issued_date,
+    securedAt: data.secured_at ?? data.anchor_timestamp,
     revokedAt: data.revoked_at,
     revocationReason: data.revocation_reason,
-    expiresAt: data.expires_at,
+    expiresAt: data.expires_at ?? data.expiry_date,
   };
 }
 

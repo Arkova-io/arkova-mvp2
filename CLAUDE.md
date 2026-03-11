@@ -443,7 +443,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 45 files, versions 0001–0046 (0033 intentionally skipped). Last: `0046_webhook_server_side_secret.sql`.
+**Current migration inventory:** 46 files, versions 0001–0047 (0033 intentionally skipped). Last: `0047_add_lifecycle_fields_to_get_public_anchor.sql`.
 
 ---
 
@@ -752,5 +752,5 @@ CORS_ALLOWED_ORIGINS=*
 
 ---
 
-_Directive version: 2026-03-11 (comprehensive audit update) | Repo: ArkovaCarson | 46 migrations | 594+ tests_
+_Directive version: 2026-03-11 (comprehensive audit update) | Repo: ArkovaCarson | 47 migrations | 594+ tests_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_
