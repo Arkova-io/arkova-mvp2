@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:rls": "vitest run tests/rls",
+    "test:rls": "vitest run --config vitest.config.rls.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:load": "vitest run tests/load"

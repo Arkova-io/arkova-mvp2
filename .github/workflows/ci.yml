@@ -130,6 +130,18 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
+      - name: Extract Supabase keys
+        id: supabase-keys
+        run: |
+          SUPABASE_URL=$(supabase status --output json | jq -r '.API_URL')
+          SUPABASE_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')
+          SUPABASE_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')
+          echo "::add-mask::$SUPABASE_ANON_KEY"
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+          echo "url=$SUPABASE_URL" >> "$GITHUB_OUTPUT"
+          echo "anon_key=$SUPABASE_ANON_KEY" >> "$GITHUB_OUTPUT"
+          echo "service_role_key=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_OUTPUT"
+
       - name: Run database reset
         run: supabase db reset
 
@@ -139,9 +151,9 @@ jobs:
       - name: Run RLS tests
         run: npm run test:rls
         env:
-          SUPABASE_URL: http://127.0.0.1:54321
-          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          SUPABASE_URL: ${{ steps.supabase-keys.outputs.url }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase-keys.outputs.anon_key }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase-keys.outputs.service_role_key }}
           RLS_TEST_PASSWORD: demo_password_123
 
       - name: Run worker tests with coverage
@@ -177,14 +189,23 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
+      - name: Extract Supabase keys
+        id: supabase-e2e-keys
+        run: |
+          E2E_URL=$(supabase status --output json | jq -r '.API_URL')
+          E2E_SERVICE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')
+          echo "::add-mask::$E2E_SERVICE_KEY"
+          echo "url=$E2E_URL" >> "$GITHUB_OUTPUT"
+          echo "service_key=$E2E_SERVICE_KEY" >> "$GITHUB_OUTPUT"
+
       - name: Seed database
         run: supabase db reset
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          E2E_SUPABASE_URL: http://127.0.0.1:54321
-          E2E_SUPABASE_SERVICE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_KEY }}
+          E2E_SUPABASE_URL: ${{ steps.supabase-e2e-keys.outputs.url }}
+          E2E_SUPABASE_SERVICE_KEY: ${{ steps.supabase-e2e-keys.outputs.service_key }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

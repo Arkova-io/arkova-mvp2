@@ -1,0 +1,15 @@
+# Gitleaks configuration for Arkova
+# See: https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+# Use the default gitleaks rules as a base
+useDefault = true
+
+[allowlist]
+  description = "Allow well-known Supabase local development JWTs"
+  # These are publicly documented default keys for local Supabase development.
+  # They are NOT real secrets — they only work with the local dev instance.
+  # See: https://supabase.com/docs/guides/local-development
+  commits = [
+    "9710074050c09cc26152ddbe9033601f01126b9d",
+  ]
