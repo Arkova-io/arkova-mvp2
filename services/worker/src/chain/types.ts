@@ -27,6 +27,30 @@ export interface VerificationResult {
   error?: string;
 }
 
+// ─── Chain Index Lookup (P7-TS-13) ──────────────────────────────────────
+
+/**
+ * Entry returned from the chain index for a fingerprint.
+ */
+export interface IndexEntry {
+  chainTxId: string;
+  blockHeight: number | null;
+  blockTimestamp: string | null;
+  confirmations: number | null;
+  anchorId: string | null;
+}
+
+/**
+ * Abstraction for O(1) fingerprint verification via a DB index.
+ *
+ * BitcoinChainClient uses this (when configured) to skip the O(n) UTXO scan.
+ * The default implementation queries the `anchor_chain_index` table.
+ */
+export interface ChainIndexLookup {
+  /** Look up a fingerprint in the index. Returns null if not found. */
+  lookupFingerprint(fingerprint: string): Promise<IndexEntry | null>;
+}
+
 export interface ChainClient {
   /**
    * Submit a fingerprint to be anchored on-chain

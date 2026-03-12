@@ -34,6 +34,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      anchor_chain_index: {
+        Row: {
+          anchor_id: string | null
+          chain_block_height: number | null
+          chain_block_timestamp: string | null
+          chain_tx_id: string
+          confirmations: number | null
+          created_at: string
+          fingerprint_sha256: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_id?: string | null
+          chain_block_height?: number | null
+          chain_block_timestamp?: string | null
+          chain_tx_id: string
+          confirmations?: number | null
+          created_at?: string
+          fingerprint_sha256: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_id?: string | null
+          chain_block_height?: number | null
+          chain_block_timestamp?: string | null
+          chain_tx_id?: string
+          confirmations?: number | null
+          created_at?: string
+          fingerprint_sha256?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anchor_chain_index_anchor_id_fkey"
+            columns: ["anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anchor_proofs: {
         Row: {
           anchor_id: string
@@ -1130,6 +1174,7 @@ export type Database = {
     }
     Functions: {
       bulk_create_anchors: { Args: { anchors_data: Json }; Returns: Json }
+      check_anchor_quota: { Args: never; Returns: number }
       claim_anchoring_job: {
         Args: { p_lock_duration_seconds?: number; p_worker_id: string }
         Returns: string

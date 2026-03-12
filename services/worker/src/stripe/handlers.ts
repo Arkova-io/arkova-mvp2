@@ -44,7 +44,7 @@ async function recordEventProcessed(
     stripe_event_id: eventId,
     event_type: eventType,
     user_id: userId,
-    payload,
+    payload: payload as unknown as import('../types/database.types.js').Json,
   });
 
   if (error) {

@@ -93,8 +93,7 @@ async function generateActivityLog(userId: string, orgId: string | null): Promis
  */
 async function generateBillingHistory(userId: string, _orgId: string | null): Promise<Record<string, unknown>> {
   // Fetch billing events
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: events } = await (db as any)
+  const { data: events } = await db
     .from('billing_events')
     .select('*')
     .eq('user_id', userId)
@@ -114,8 +113,7 @@ async function generateBillingHistory(userId: string, _orgId: string | null): Pr
 export async function processReport(report: ReportData): Promise<boolean> {
   logger.info({ reportId: report.id, type: report.report_type }, 'Processing report');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: updateError } = await (db as any)
+  const { error: updateError } = await db
     .from('reports')
     .update({
       status: 'generating',
@@ -153,8 +151,7 @@ export async function processReport(report: ReportData): Promise<boolean> {
     const storagePath = `reports/${report.user_id}/${filename}`;
     const content = JSON.stringify(reportContent, null, 2);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any).from('report_artifacts').insert({
+    await db.from('report_artifacts').insert({
       report_id: report.id,
       filename,
       mime_type: 'application/json',
@@ -163,8 +160,7 @@ export async function processReport(report: ReportData): Promise<boolean> {
     });
 
     // Mark report as completed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any)
+    await db
       .from('reports')
       .update({
         status: 'completed',
@@ -179,8 +175,7 @@ export async function processReport(report: ReportData): Promise<boolean> {
     logger.error({ reportId: report.id, error }, 'Failed to generate report');
 
     // Mark as failed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any)
+    await db
       .from('reports')
       .update({
         status: 'failed',
@@ -198,8 +193,7 @@ export async function processReport(report: ReportData): Promise<boolean> {
 export async function processPendingReports(): Promise<{ processed: number; failed: number }> {
   logger.info('Starting pending report processing');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: reports, error } = await (db as any)
+  const { data: reports, error } = await db
     .from('reports')
     .select('*')
     .eq('status', 'pending')
@@ -222,7 +216,10 @@ export async function processPendingReports(): Promise<{ processed: number; fail
   let failed = 0;
 
   for (const report of reports) {
-    const success = await processReport(report);
+    const success = await processReport({
+      ...report,
+      parameters: (report.parameters as Record<string, unknown>) ?? {},
+    });
     if (success) {
       processed++;
     } else {

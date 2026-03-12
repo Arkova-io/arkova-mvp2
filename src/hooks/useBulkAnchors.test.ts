@@ -4,13 +4,32 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Hoist mock function
+// Hoist mock functions
 const mockRpc = vi.hoisted(() => vi.fn());
+const mockRefreshEntitlements = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const mockCanCreateCount = vi.hoisted(() => vi.fn().mockReturnValue(true));
+const mockRemaining = vi.hoisted(() => ({ current: 100 as number | null }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: mockRpc,
   },
+}));
+
+vi.mock('@/hooks/useEntitlements', () => ({
+  useEntitlements: () => ({
+    canCreateCount: mockCanCreateCount,
+    remaining: mockRemaining.current,
+    refresh: mockRefreshEntitlements,
+    canCreateAnchor: true,
+    recordsUsed: 0,
+    recordsLimit: 100,
+    percentUsed: 0,
+    isNearLimit: false,
+    planName: 'Professional',
+    loading: false,
+    error: null,
+  }),
 }));
 
 // Import after mocks
@@ -199,5 +218,46 @@ describe('useBulkAnchors', () => {
     });
 
     expect(result.current.error).toBeNull();
+  });
+
+  it('should reject bulk creation when quota exceeded', async () => {
+    mockCanCreateCount.mockReturnValue(false);
+    mockRemaining.current = 1;
+
+    const { result } = renderHook(() => useBulkAnchors());
+
+    let finalResult: Awaited<ReturnType<typeof result.current.createBulkAnchors>> = null;
+    await act(async () => {
+      finalResult = await result.current.createBulkAnchors(mockRecords);
+    });
+
+    expect(finalResult).toBeNull();
+    expect(result.current.error).toContain('1 records remaining');
+    expect(result.current.error).toContain('3');
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('should refresh entitlements after successful bulk creation', async () => {
+    mockCanCreateCount.mockReturnValue(true);
+    mockRemaining.current = 100;
+
+    mockRpc.mockResolvedValue({
+      data: {
+        total: 3,
+        created: 3,
+        skipped: 0,
+        failed: 0,
+        results: [],
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useBulkAnchors());
+
+    await act(async () => {
+      await result.current.createBulkAnchors(mockRecords);
+    });
+
+    expect(mockRefreshEntitlements).toHaveBeenCalled();
   });
 });

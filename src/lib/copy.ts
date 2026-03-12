@@ -255,6 +255,22 @@ export const BILLING_LABELS = {
 } as const;
 
 // =============================================================================
+// ENTITLEMENTS / QUOTA
+// =============================================================================
+
+export const ENTITLEMENT_LABELS = {
+  QUOTA_REACHED_TITLE: 'Monthly Limit Reached',
+  QUOTA_REACHED_DESCRIPTION: 'You have used all of your records for this billing period. Upgrade your plan to continue securing documents.',
+  QUOTA_NEAR_LIMIT: 'You are approaching your monthly limit.',
+  UPGRADE_CTA: 'Upgrade Plan',
+  RECORDS_REMAINING: 'records remaining this period',
+  RECORDS_USED: 'records used',
+  UNLIMITED: 'Unlimited',
+  QUOTA_CHECK_FAILED: 'Unable to check your plan quota. Please try again.',
+  BULK_EXCEEDS_QUOTA: 'This upload would exceed your monthly limit. You have {remaining} records remaining but are trying to create {requested}.',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 

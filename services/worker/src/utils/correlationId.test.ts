@@ -69,7 +69,8 @@ describe('withCorrelationId', () => {
 describe('correlationIdMiddleware', () => {
   let req: any;
   let res: any;
-  let next: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let next: any;
 
   beforeEach(() => {
     req = { headers: {} };

@@ -253,7 +253,7 @@ describe('worker server', () => {
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         status: 'healthy',
-        network: 'testnet',
+        network: 'signet',
       });
       expect(res.body.uptime).toBeDefined();
       expect(typeof res.body.uptime).toBe('number');

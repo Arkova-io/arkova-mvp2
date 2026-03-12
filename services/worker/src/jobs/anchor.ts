@@ -6,7 +6,7 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { chainClient } from '../chain/client.js';
+import { getInitializedChainClient } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 
@@ -31,6 +31,7 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
 
   try {
     // Submit fingerprint to chain
+    const chainClient = getInitializedChainClient();
     const receipt = await chainClient.submitFingerprint({
       fingerprint: anchor.fingerprint,
       timestamp: new Date().toISOString(),
@@ -52,6 +53,25 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
       throw updateError;
     }
 
+    // Upsert chain index entry — non-fatal (anchor is already secured)
+    const { error: indexError } = await db
+      .from('anchor_chain_index')
+      .upsert(
+        {
+          fingerprint_sha256: anchor.fingerprint,
+          chain_tx_id: receipt.receiptId,
+          chain_block_height: receipt.blockHeight,
+          chain_block_timestamp: receipt.blockTimestamp,
+          confirmations: receipt.confirmations,
+          anchor_id: anchorId,
+        },
+        { onConflict: 'fingerprint_sha256,chain_tx_id' },
+      );
+
+    if (indexError) {
+      logger.warn({ anchorId, error: indexError }, 'Failed to upsert chain index entry');
+    }
+
     // Log audit event — non-fatal if it fails (anchor is already secured)
     const { error: auditError } = await db.from('audit_events').insert({
       event_type: 'anchor.secured',
@@ -60,7 +80,7 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
       target_type: 'anchor',
       target_id: anchorId,
       org_id: anchor.org_id,
-      details: `Secured on ${getNetworkDisplayName(config.chainNetwork)}: ${receipt.receiptId}`,
+      details: `Secured on ${getNetworkDisplayName(config.bitcoinNetwork)}: ${receipt.receiptId}`,
     });
 
     if (auditError) {

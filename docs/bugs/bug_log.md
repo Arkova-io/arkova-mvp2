@@ -1,5 +1,5 @@
 # Arkova Bug Log
-_Last updated: 2026-03-11 ~10:00 PM EST | Active bugs: 2 | Resolved: 15_
+_Last updated: 2026-03-12 ~3:30 AM EST | Active bugs: 2 | Resolved: 15_
 
 ## Layman's Summary
 
@@ -8,7 +8,7 @@ _For each bug: what it means in plain English and why it matters._
 | ID | What's Wrong (Plain English) |
 |----|------------------------------|
 | ~~CRIT-1~~ | ~~When a regular user tries to secure a document, the app **pretends** it worked (shows a fake progress bar) but never actually saves anything.~~ **FIXED** — real Supabase insert replacing setTimeout simulation. |
-| CRIT-2 | The system that writes permanent records to the Bitcoin network is **partially implemented**. A Signet (test network) client exists and can construct real OP_RETURN transactions, but the mainnet (production) path still falls back to a mock. UTXO provider pattern and wallet utilities are complete. **Remaining:** AWS KMS signing for mainnet, fund Signet treasury, live Signet broadcast test. |
+| CRIT-2 | The system that writes permanent records to the Bitcoin network is **code complete**. `BitcoinChainClient` supports signet, testnet, and mainnet via provider abstractions (`SigningProvider`, `FeeEstimator`, `UtxoProvider`). Async factory pattern, `SupabaseChainIndexLookup` for O(1) fingerprint verification, and migration 0050 all implemented. 408 worker tests. **Remaining (operational only):** AWS KMS key provisioning for mainnet, live Signet broadcast test, mainnet treasury funding. |
 | CRIT-3 | The payment system is **partially built**. Pricing UI, checkout pages, billing hooks, webhook handlers, and checkout/portal worker endpoints are implemented with 91+ tests. **Remaining:** entitlement enforcement and plan change/downgrade flows. |
 | ~~CRIT-4~~ | ~~New users who sign up get **dumped straight onto the dashboard** instead of going through the setup wizard.~~ **FIXED** — OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. |
 | ~~CRIT-5~~ | ~~The "Download JSON Proof" button **does absolutely nothing** when clicked.~~ **FIXED** — onDownloadProofJson wired in RecordDetailPage with generateProofPackage + downloadProofPackage. |
@@ -26,7 +26,7 @@ _For each bug: what it means in plain English and why it matters._
 
 | ID | Severity | Story | Summary | Status |
 |----|----------|-------|---------|--------|
-| CRIT-2 | HIGH | P7-TS-05 | Bitcoin chain client — Signet complete, mainnet remaining | PARTIAL |
+| CRIT-2 | HIGH | P7-TS-05 | Bitcoin chain client — CODE COMPLETE, operational items remaining | CODE COMPLETE |
 | CRIT-3 | HIGH | P7-TS-02 | Stripe checkout flow incomplete | PARTIAL — UI + tests + checkout/portal endpoints done (b1f798a), entitlements remain |
 
 ## Resolved Bugs Summary
@@ -125,60 +125,71 @@ Follow `src/components/organization/IssueCredentialForm.tsx` (lines 89-155):
 
 - **Severity:** HIGH (production blocker)
 - **Found:** 2026-03-10, codebase audit
-- **Story:** P7-TS-05
-- **Component:** `services/worker/src/chain/client.ts`
+- **Story:** P7-TS-05, P7-TS-13
+- **Components:** `services/worker/src/chain/` (8 source files, 5 test files)
 
 #### Steps to Reproduce
 
-1. Read `services/worker/src/chain/client.ts` — factory now has full Signet path
-2. `getChainClient()` returns `SignetChainClient` when `enableProdNetworkAnchoring=true`, `bitcoinNetwork=signet`, and valid WIF + RPC URL provided
-3. `bitcoinjs-lib`, `ecpair`, `tiny-secp256k1` installed in `services/worker/package.json`
-4. **Remaining gap:** AWS KMS signing for mainnet, mainnet treasury funding, live Signet node connectivity test
+1. Read `services/worker/src/chain/client.ts` — async factory pattern with `initChainClient()` (once at startup) / `getInitializedChainClient()` (synchronous in hot paths)
+2. Factory returns `BitcoinChainClient` when `enableProdNetworkAnchoring=true` with valid config (WIF for signet/testnet, KMS key for mainnet)
+3. `SupabaseChainIndexLookup` provides O(1) fingerprint verification via `anchor_chain_index` table (migration 0050)
+4. **Remaining gap (operational only):** AWS KMS key provisioning for mainnet, live Signet broadcast test, mainnet treasury funding
 
 #### Expected Behavior
 
-When `BITCOIN_NETWORK=mainnet` and `BITCOIN_TREASURY_WIF` is set, `getChainClient()` should return a real chain client that constructs OP_RETURN transactions, signs via AWS KMS, and submits to Bitcoin network.
+When `BITCOIN_NETWORK=mainnet` and KMS key is provisioned, `initChainClient()` should initialize a `BitcoinChainClient` with `KmsSigningProvider` that constructs OP_RETURN transactions, signs via AWS KMS, and submits to Bitcoin network.
 
-#### Actual Behavior (Updated 2026-03-11)
+#### Actual Behavior (Updated 2026-03-12)
 
 ```typescript
-export function getChainClient(): ChainClient {
+// Async factory — called once at startup in index.ts listen callback
+export async function initChainClient(): Promise<ChainClient> {
   if (config.useMocks || config.nodeEnv === 'test') {
-    return new MockChainClient();
+    _client = new MockChainClient();
+    return _client;
   }
   if (!config.enableProdNetworkAnchoring) {
-    return new MockChainClient();
+    _client = new MockChainClient();
+    return _client;
   }
-  if (config.bitcoinNetwork === 'signet' || config.bitcoinNetwork === 'testnet') {
-    if (!config.bitcoinTreasuryWif || !config.bitcoinRpcUrl) {
-      return new MockChainClient(); // fallback
-    }
-    return new SignetChainClient({ treasuryWif, rpcUrl, rpcAuth });
-  }
-  if (config.bitcoinNetwork === 'mainnet') {
-    return new MockChainClient(); // not yet implemented
-  }
-  return new MockChainClient();
+  // Resolve provider abstractions based on config
+  const signingProvider = config.bitcoinNetwork === 'mainnet'
+    ? new KmsSigningProvider(config.bitcoinKmsKeyId!, network)
+    : new WifSigningProvider(config.bitcoinTreasuryWif!, network);
+  const feeEstimator = config.bitcoinFeeStrategy === 'mempool'
+    ? new MempoolFeeEstimator(config.bitcoinMempoolApiUrl)
+    : new StaticFeeEstimator(config.bitcoinFeeRate);
+  const utxoProvider = createUtxoProvider(config, network);
+  _client = new BitcoinChainClient({ signingProvider, feeEstimator, utxoProvider, network });
+  return _client;
 }
+
+// Synchronous getter — used in processAnchor() hot paths
+export function getInitializedChainClient(): ChainClient { ... }
 ```
 
-Signet path now returns real `SignetChainClient` with OP_RETURN transaction construction (`ARKV` 4-byte prefix + SHA-256 fingerprint). Mainnet path still falls back to MockChainClient.
+`BitcoinChainClient` (renamed from `SignetChainClient`, alias kept) supports signet, testnet, and mainnet via `SigningProvider` + `FeeEstimator` + `UtxoProvider` abstractions. `SupabaseChainIndexLookup` enables O(1) fingerprint verification. Non-fatal chain index upsert after SECURED status in `processAnchor()`.
 
 #### Root Cause
 
-Real Bitcoin integration was deferred. The interface contract exists (`ChainClient` in `types.ts`). Signet implementation now complete. Mainnet requires AWS KMS integration.
+Real Bitcoin integration was deferred during initial development. The interface contract exists (`ChainClient` + `ChainIndexLookup` in `types.ts`). All code paths are now implemented. Mainnet operational readiness (KMS key provisioning, treasury funding) is the remaining work.
 
 #### Fix Pattern
 
 1. ~~Install `bitcoinjs-lib` in `services/worker/`~~ DONE
-2. ~~Create `services/worker/src/chain/signet.ts` implementing `ChainClient` interface~~ DONE (~300 lines)
+2. ~~Create `services/worker/src/chain/signet.ts` implementing `ChainClient` interface~~ DONE → renamed to `BitcoinChainClient`
 3. ~~Construct OP_RETURN transactions with embedded fingerprint (`ARKV` prefix)~~ DONE
-4. ~~Sign via `BITCOIN_TREASURY_WIF` env var~~ DONE (WIF-based, KMS later)
-5. ~~Submit to Bitcoin network (Signet)~~ DONE (via RPC)
-6. ~~Update `getChainClient()` factory to return real client when not in test/mock mode~~ DONE
+4. ~~Sign via `BITCOIN_TREASURY_WIF` env var~~ DONE (WIF-based for signet/testnet)
+5. ~~Submit to Bitcoin network (Signet)~~ DONE (via RPC + Mempool.space)
+6. ~~Update factory to return real client when not in test/mock mode~~ DONE (async factory pattern)
 7. ~~Gate behind `ENABLE_PROD_NETWORK_ANCHORING` switchboard flag~~ DONE
-8. AWS KMS integration for mainnet signing — NOT DONE
-9. Mainnet configuration and treasury wallet funding — NOT DONE
+8. ~~Create `SigningProvider` abstraction (WIF + KMS)~~ DONE (`signing-provider.ts`)
+9. ~~Create `FeeEstimator` abstraction (static + mempool)~~ DONE (`fee-estimator.ts`)
+10. ~~Create `SupabaseChainIndexLookup` for O(1) fingerprint verification~~ DONE (P7-TS-13)
+11. ~~Create `anchor_chain_index` table (migration 0050)~~ DONE
+12. ~~Refactor factory to async pattern (`initChainClient` / `getInitializedChainClient`)~~ DONE
+13. AWS KMS key provisioning for mainnet — OPERATIONAL (not code)
+14. Mainnet treasury wallet funding — OPERATIONAL (not code)
 
 #### Actions Taken
 
@@ -193,21 +204,25 @@ Real Bitcoin integration was deferred. The interface contract exists (`ChainClie
 | 2026-03-11 | P7-TS-12: utxo-provider.ts (RpcUtxoProvider + MempoolUtxoProvider + factory). utxo-provider.test.ts (31 tests). Integrated into SignetChainClient + getChainClient(). |
 | 2026-03-12 | Fixed 6 signet.test.ts failures: ESM require() → direct import, PSBT validation via buildDummyFundingTx(). |
 | 2026-03-12 | Added 6 broadcast-specific tests: 3 in signet.test.ts (txid mismatch, empty fallback, hex verification), 3 in utxo-provider.test.ts (POST /tx content-type, whitespace trim, HTTP error). |
+| 2026-03-12 | CRIT-2 Steps 5-8: Added `signing-provider.ts` (WIF + KMS), `fee-estimator.ts` (static + mempool), `SupabaseChainIndexLookup` in `client.ts`, migration 0050 (`anchor_chain_index`). Refactored `signet.ts` → `BitcoinChainClient` with provider abstractions. Rewrote `client.ts` to async factory pattern. 5 new config env vars. |
+| 2026-03-12 | P7-TS-13 (fingerprint indexing) promoted to COMPLETE via `SupabaseChainIndexLookup`. Non-fatal chain index upsert wired in `processAnchor()`. |
+| 2026-03-12 | All 8 CRIT-2 code steps complete. 408 worker tests pass (167 chain-specific across 7 files). |
 
 #### Resolution
 
-**Status:** PARTIAL — Signet implementation complete (SignetChainClient + UTXO providers + wallet utilities + broadcast tests). Mainnet (AWS KMS + treasury) remaining.
+**Status:** CODE COMPLETE — All code implemented. `BitcoinChainClient` with provider abstractions (`SigningProvider`, `FeeEstimator`, `UtxoProvider`), async factory, `SupabaseChainIndexLookup`, migration 0050. Remaining items are operational (AWS KMS key provisioning, mainnet treasury funding, live Signet broadcast test).
 
 #### Regression Test
 
-- `services/worker/src/chain/client.test.ts` (9 tests — factory returns correct type for all config combinations)
-- `services/worker/src/chain/signet.test.ts` (30 tests — OP_RETURN construction, broadcasting, txid handling, RPC interactions, health check, error handling)
-- `services/worker/src/chain/utxo-provider.test.ts` (31 tests — RPC + Mempool.space UTXO listing, broadcasting, error handling)
+- `services/worker/src/chain/client.test.ts` (28 tests — async factory, SupabaseChainIndexLookup, signet/mainnet/mock paths)
+- `services/worker/src/chain/signet.test.ts` (47 tests — OP_RETURN construction, PSBT validation via buildDummyFundingTx, broadcasting, txid handling, health check, error handling)
+- `services/worker/src/chain/utxo-provider.test.ts` (34 tests — RPC + Mempool.space UTXO listing, broadcasting, error handling)
 - `services/worker/src/chain/wallet.test.ts` (13 tests — keypair generation, WIF validation, address derivation)
 - `services/worker/src/chain/mock.test.ts` (18 tests — interface contract)
-- `services/worker/src/jobs/anchor.test.ts` (46 tests — full lifecycle PENDING → SECURED)
-- **Total chain-related:** 147 tests across 6 files
-- Needed: Live Signet node connectivity integration test
+- `services/worker/src/jobs/anchor.test.ts` (20 tests — full lifecycle PENDING → SECURED + chain index upsert)
+- `services/worker/src/jobs/anchor-lifecycle.test.ts` (7 tests — integration lifecycle: PENDING → chain submit → SECURED → audit → webhook)
+- **Total chain-related:** 167 tests across 7 files
+- Needed: Live Signet node connectivity integration test (operational, not code)
 
 ---
 

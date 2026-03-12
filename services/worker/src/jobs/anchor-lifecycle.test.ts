@@ -51,7 +51,7 @@ vi.mock('../config.js', () => ({
 }));
 
 vi.mock('../chain/client.js', () => ({
-  chainClient: { submitFingerprint: mockSubmitFingerprint },
+  getInitializedChainClient: () => ({ submitFingerprint: mockSubmitFingerprint }),
 }));
 
 vi.mock('../webhooks/delivery.js', () => ({
@@ -123,6 +123,11 @@ vi.mock('../utils/db.js', () => {
               dbState.auditEvents.push(event);
               return Promise.resolve({ error: null });
             }),
+          };
+        }
+        if (table === 'anchor_chain_index') {
+          return {
+            upsert: vi.fn(() => Promise.resolve({ error: null })),
           };
         }
         return {};

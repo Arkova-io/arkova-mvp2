@@ -14,6 +14,7 @@ import { config } from './config.js';
 import { logger } from './utils/logger.js';
 import { db } from './utils/db.js';
 import { processPendingAnchors } from './jobs/anchor.js';
+import { initChainClient } from './chain/client.js';
 import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './stripe/client.js';
 import { processWebhookRetries } from './webhooks/delivery.js';
@@ -30,7 +31,7 @@ app.get('/health', (_req, res) => {
     status: 'healthy',
     version: process.env.npm_package_version ?? '0.1.0',
     uptime: process.uptime(),
-    network: config.chainNetwork,
+    network: config.bitcoinNetwork,
   });
 });
 
@@ -168,7 +169,7 @@ app.post('/api/checkout/session', rateLimiters.checkout, async (req, res) => {
     // Look up the plan — only active plans can be used for checkout
     const { data: plan, error: planError } = await db
       .from('plans')
-      .select('id, name, stripe_price_id, price_cents, anchor_limit')
+      .select('id, name, stripe_price_id, price_cents')
       .eq('id', planId)
       .eq('is_active', true)
       .single();
@@ -285,16 +286,20 @@ app.post('/jobs/process-anchors', async (_req, res) => {
 });
 
 // Scheduled jobs
-function setupScheduledJobs(): void {
-  // Process pending anchors every minute
-  cron.schedule('* * * * *', async () => {
-    logger.debug('Running scheduled anchor processing');
-    try {
-      await processPendingAnchors();
-    } catch (error) {
-      logger.error({ error }, 'Scheduled anchor processing failed');
-    }
-  });
+function setupScheduledJobs(chainInitialized: boolean): void {
+  // Process pending anchors every minute — only if chain client initialized
+  if (chainInitialized) {
+    cron.schedule('* * * * *', async () => {
+      logger.debug('Running scheduled anchor processing');
+      try {
+        await processPendingAnchors();
+      } catch (error) {
+        logger.error({ error }, 'Scheduled anchor processing failed');
+      }
+    });
+  } else {
+    logger.warn('Anchor processing cron DISABLED — chain client not initialized');
+  }
 
   // Process webhook retries every 2 minutes
   cron.schedule('*/2 * * * *', async () => {
@@ -342,18 +347,28 @@ function setupGracefulShutdown(): void {
 }
 
 // Start server
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, async () => {
   logger.info(
     {
       port: config.port,
       env: config.nodeEnv,
-      network: config.chainNetwork,
+      network: config.bitcoinNetwork,
       mocks: config.useMocks,
     },
     'Worker service started'
   );
 
-  setupScheduledJobs();
+  // Initialize chain client singleton (async — KMS key init may need network call)
+  let chainInitialized = false;
+  try {
+    await initChainClient();
+    logger.info('Chain client initialized');
+    chainInitialized = true;
+  } catch (err) {
+    logger.error({ error: err }, 'Failed to initialize chain client — anchor cron job will NOT start');
+  }
+
+  setupScheduledJobs(chainInitialized);
   setupGracefulShutdown();
 });
 

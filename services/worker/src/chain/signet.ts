@@ -1,9 +1,12 @@
 /**
- * Bitcoin Signet Chain Client
+ * Bitcoin Chain Client (formerly SignetChainClient)
  *
  * Real implementation of the ChainClient interface using bitcoinjs-lib.
  * Constructs OP_RETURN transactions to anchor document fingerprints
- * on Bitcoin Signet (testnet). Treasury WIF loaded from env — never logged.
+ * on Bitcoin (Signet, testnet, or mainnet).
+ *
+ * Accepts pluggable SigningProvider (WIF or KMS) and FeeEstimator
+ * (static or mempool.space) so the same class works for all networks.
  *
  * UTXO fetching and tx broadcasting are delegated to a UtxoProvider,
  * supporting either Bitcoin Core RPC or Mempool.space REST API.
@@ -13,7 +16,7 @@
  *   - 1.4: Treasury/signing keys server-side only, never logged
  *   - 1.6: generateFingerprint is client-side only — this file never imports it
  *
- * Stories: P7-TS-05 (Signet chain client), P7-TS-12 (UTXO management)
+ * Stories: P7-TS-05 (Signet chain client), P7-TS-12 (UTXO management), CRIT-2 (completion)
  */
 
 import * as bitcoin from 'bitcoinjs-lib';
@@ -23,14 +26,19 @@ import { logger } from '../utils/logger.js';
 import type {
   ChainClient,
   ChainReceipt,
+  ChainIndexLookup,
   SubmitFingerprintRequest,
   VerificationResult,
 } from './types.js';
 import { RpcUtxoProvider, type UtxoProvider, type Utxo } from './utxo-provider.js';
+import type { SigningProvider } from './signing-provider.js';
+import { WifSigningProvider } from './signing-provider.js';
+import type { FeeEstimator } from './fee-estimator.js';
+import { StaticFeeEstimator } from './fee-estimator.js';
 
 const ECPair = ECPairFactory(ecc);
 
-// Signet uses testnet network parameters
+// Default network: Signet uses testnet network parameters
 const SIGNET_NETWORK = bitcoin.networks.testnet;
 
 // OP_RETURN prefix for Arkova anchors (4 bytes: 'ARKV')
@@ -38,6 +46,8 @@ const OP_RETURN_PREFIX = Buffer.from('ARKV');
 
 // Maximum OP_RETURN payload is 80 bytes. Prefix (4) + SHA-256 hash (32) = 36 bytes.
 const MAX_OP_RETURN_DATA = 80;
+
+// ─── Legacy Config (backward compat) ────────────────────────────────────
 
 export interface SignetConfig {
   /** Treasury WIF for signing transactions — NEVER log this */
@@ -48,13 +58,26 @@ export interface SignetConfig {
   feeRate?: number;
 }
 
-// ─── Deprecated — kept for backward compat with existing tests ──────────
-
 /** @deprecated Use SignetConfig with utxoProvider instead */
 export interface LegacySignetConfig {
   treasuryWif: string;
   rpcUrl: string;
   rpcAuth?: string;
+}
+
+// ─── New Config (supports SigningProvider + FeeEstimator) ────────────────
+
+export interface BitcoinClientConfig {
+  /** Pluggable signing provider (WIF or KMS) */
+  signingProvider: SigningProvider;
+  /** UTXO provider instance (RPC or Mempool.space) */
+  utxoProvider: UtxoProvider;
+  /** Fee estimator (static or mempool). Defaults to StaticFeeEstimator(1). */
+  feeEstimator?: FeeEstimator;
+  /** Bitcoin network. Defaults to testnet (Signet). */
+  network?: bitcoin.Network;
+  /** Optional chain index for O(1) fingerprint verification */
+  chainIndex?: ChainIndexLookup;
 }
 
 /**
@@ -131,17 +154,26 @@ const DUST_THRESHOLD = 546;
 /**
  * Build an OP_RETURN transaction embedding a document fingerprint.
  *
+ * Now async to support KMS signing (via SigningProvider).
+ *
  * Transaction structure:
  *   Input:  Selected UTXO from treasury address
  *   Output 0: OP_RETURN <ARKV><sha256_hex_as_bytes>
  *   Output 1: Change back to treasury (input - fee), if above dust
+ *
+ * @param fingerprint - 64-char hex SHA-256 hash
+ * @param utxo - Selected UTXO to spend
+ * @param signer - SigningProvider (WIF or KMS)
+ * @param feeRate - Fee rate in sat/vbyte (default 1)
+ * @param network - Bitcoin network (default testnet/Signet)
  */
-export function buildOpReturnTransaction(
+export async function buildOpReturnTransaction(
   fingerprint: string,
   utxo: SelectedUtxo,
-  keyPair: ReturnType<typeof ECPair.fromWIF>,
+  signer: SigningProvider,
   feeRate: number = 1, // sat/vbyte — Signet minimum
-): { txHex: string; txId: string; fee: number } {
+  network: bitcoin.Network = SIGNET_NETWORK,
+): Promise<{ txHex: string; txId: string; fee: number }> {
   // Validate fingerprint is a 64-char hex string (SHA-256)
   if (!/^[a-f0-9]{64}$/i.test(fingerprint)) {
     throw new Error('Fingerprint must be a 64-character hex string (SHA-256)');
@@ -179,7 +211,7 @@ export function buildOpReturnTransaction(
     );
   }
 
-  const psbt = new bitcoin.Psbt({ network: SIGNET_NETWORK });
+  const psbt = new bitcoin.Psbt({ network });
 
   // Add input with full raw transaction (nonWitnessUtxo for P2PKH)
   psbt.addInput({
@@ -195,14 +227,15 @@ export function buildOpReturnTransaction(
   });
 
   // Add change output if above dust
+  const publicKey = signer.getPublicKey();
   if (hasChange) {
     const { address } = bitcoin.payments.p2pkh({
-      pubkey: Buffer.from(keyPair.publicKey),
-      network: SIGNET_NETWORK,
+      pubkey: publicKey,
+      network,
     });
 
     if (!address) {
-      throw new Error('Failed to derive change address from key pair');
+      throw new Error('Failed to derive change address from signing provider');
     }
 
     psbt.addOutput({
@@ -216,10 +249,10 @@ export function buildOpReturnTransaction(
     );
   }
 
-  // Sign
-  psbt.signInput(0, {
-    publicKey: Buffer.from(keyPair.publicKey),
-    sign: (hash: Buffer) => Buffer.from(keyPair.sign(hash)),
+  // Sign asynchronously (supports both WIF and KMS)
+  await psbt.signInputAsync(0, {
+    publicKey,
+    sign: (hash: Buffer) => signer.sign(hash),
   });
 
   psbt.finalizeAllInputs();
@@ -233,54 +266,76 @@ export function buildOpReturnTransaction(
   };
 }
 
-export class SignetChainClient implements ChainClient {
-  private readonly keyPair: ReturnType<typeof ECPair.fromWIF>;
-  private readonly provider: UtxoProvider;
-  private readonly address: string;
-  private readonly feeRate: number;
+// ─── Type guard helpers for config shapes ────────────────────────────────
 
-  constructor(signetConfig: SignetConfig | LegacySignetConfig) {
-    // Parse the treasury WIF — validation happens here.
-    // The WIF itself is NEVER logged (Constitution 1.4).
-    try {
-      this.keyPair = ECPair.fromWIF(
-        signetConfig.treasuryWif,
-        SIGNET_NETWORK,
-      );
-    } catch {
-      throw new Error(
-        'Invalid BITCOIN_TREASURY_WIF — cannot parse as WIF for Signet network',
-      );
+function isBitcoinClientConfig(
+  cfg: SignetConfig | LegacySignetConfig | BitcoinClientConfig,
+): cfg is BitcoinClientConfig {
+  return 'signingProvider' in cfg;
+}
+
+function isSignetConfig(
+  cfg: SignetConfig | LegacySignetConfig,
+): cfg is SignetConfig {
+  return 'utxoProvider' in cfg;
+}
+
+// ─── Bitcoin Chain Client ────────────────────────────────────────────────
+
+export class BitcoinChainClient implements ChainClient {
+  private readonly signingProvider: SigningProvider;
+  private readonly provider: UtxoProvider;
+  private readonly feeEstimator: FeeEstimator;
+  private readonly address: string;
+  private readonly network: bitcoin.Network;
+  private readonly chainIndex?: ChainIndexLookup;
+
+  constructor(clientConfig: BitcoinClientConfig | SignetConfig | LegacySignetConfig) {
+    if (isBitcoinClientConfig(clientConfig)) {
+      // ── New config path: SigningProvider + FeeEstimator ──
+      this.signingProvider = clientConfig.signingProvider;
+      this.provider = clientConfig.utxoProvider;
+      this.feeEstimator = clientConfig.feeEstimator ?? new StaticFeeEstimator(1);
+      this.network = clientConfig.network ?? SIGNET_NETWORK;
+      this.chainIndex = clientConfig.chainIndex;
+    } else if (isSignetConfig(clientConfig)) {
+      // ── SignetConfig path: wrap WIF in provider ──
+      this.signingProvider = new WifSigningProvider(clientConfig.treasuryWif, SIGNET_NETWORK);
+      this.provider = clientConfig.utxoProvider;
+      this.feeEstimator = new StaticFeeEstimator(clientConfig.feeRate ?? 1);
+      this.network = SIGNET_NETWORK;
+    } else {
+      // ── Legacy RPC-only config ──
+      this.signingProvider = new WifSigningProvider(clientConfig.treasuryWif, SIGNET_NETWORK);
+      this.provider = new RpcUtxoProvider({
+        rpcUrl: clientConfig.rpcUrl,
+        rpcAuth: clientConfig.rpcAuth,
+      });
+      this.feeEstimator = new StaticFeeEstimator(1);
+      this.network = SIGNET_NETWORK;
     }
 
+    // Derive address from signing provider's public key
     const { address } = bitcoin.payments.p2pkh({
-      pubkey: Buffer.from(this.keyPair.publicKey),
-      network: SIGNET_NETWORK,
+      pubkey: this.signingProvider.getPublicKey(),
+      network: this.network,
     });
 
     if (!address) {
-      throw new Error('Failed to derive treasury address from WIF');
+      throw new Error('Failed to derive treasury address from signing provider');
     }
 
     this.address = address;
 
-    // Support both new and legacy config shapes
-    if ('utxoProvider' in signetConfig) {
-      this.provider = signetConfig.utxoProvider;
-      this.feeRate = signetConfig.feeRate ?? 1;
-    } else {
-      // Legacy RPC-only config — wrap in RpcUtxoProvider
-      this.provider = new RpcUtxoProvider({
-        rpcUrl: signetConfig.rpcUrl,
-        rpcAuth: signetConfig.rpcAuth,
-      });
-      this.feeRate = 1;
-    }
-
-    // Log only the address, NEVER the WIF
+    // Log only the address, NEVER the key material (Constitution 1.4)
     logger.info(
-      { address: this.address, provider: this.provider.name },
-      'Signet chain client initialized',
+      {
+        address: this.address,
+        provider: this.provider.name,
+        signer: this.signingProvider.name,
+        feeEstimator: this.feeEstimator.name,
+      },
+      'Bitcoin chain client initialized',
     );
   }
 
@@ -289,10 +344,14 @@ export class SignetChainClient implements ChainClient {
   ): Promise<ChainReceipt> {
     logger.info(
       { fingerprint: data.fingerprint },
-      'Submitting fingerprint to Signet',
+      'Submitting fingerprint to chain',
     );
 
-    // 1. Fetch UTXOs for treasury address
+    // 1. Estimate fee rate
+    const feeRate = await this.feeEstimator.estimateFee();
+    logger.debug({ feeRate, estimator: this.feeEstimator.name }, 'Fee rate estimated');
+
+    // 2. Fetch UTXOs for treasury address
     const utxos = await this.provider.listUnspent(this.address);
 
     if (utxos.length === 0) {
@@ -306,8 +365,8 @@ export class SignetChainClient implements ChainClient {
       'Fetched UTXOs for treasury',
     );
 
-    // 2. Select the best UTXO
-    const estimatedFee = Math.ceil(estimateTxVsize(true) * this.feeRate);
+    // 3. Select the best UTXO
+    const estimatedFee = Math.ceil(estimateTxVsize(true) * feeRate);
     const selected = selectUtxo(utxos, estimatedFee);
 
     if (!selected) {
@@ -322,12 +381,13 @@ export class SignetChainClient implements ChainClient {
       'Selected UTXO for anchor',
     );
 
-    // 3. Build and sign the OP_RETURN transaction
-    const { txHex, txId, fee } = buildOpReturnTransaction(
+    // 4. Build and sign the OP_RETURN transaction (async for KMS)
+    const { txHex, txId, fee } = await buildOpReturnTransaction(
       data.fingerprint,
       selected,
-      this.keyPair,
-      this.feeRate,
+      this.signingProvider,
+      feeRate,
+      this.network,
     );
 
     logger.info(
@@ -335,7 +395,7 @@ export class SignetChainClient implements ChainClient {
       'Transaction built, broadcasting',
     );
 
-    // 4. Broadcast
+    // 5. Broadcast
     const { txid: broadcastTxid } = await this.provider.broadcastTx(txHex);
 
     // Sanity check: broadcast returned txid should match our computed txId
@@ -350,10 +410,10 @@ export class SignetChainClient implements ChainClient {
 
     logger.info(
       { txId: finalTxId, fingerprint: data.fingerprint, fee },
-      'Fingerprint anchored on Signet',
+      'Fingerprint anchored on chain',
     );
 
-    // 5. Get the current block height for the receipt
+    // 6. Get the current block height for the receipt
     const blockchainInfo = await this.provider.getBlockchainInfo();
 
     return {
@@ -367,18 +427,41 @@ export class SignetChainClient implements ChainClient {
   async verifyFingerprint(
     fingerprint: string,
   ): Promise<VerificationResult> {
-    logger.info({ fingerprint }, 'Verifying fingerprint on Signet');
+    logger.info({ fingerprint }, 'Verifying fingerprint on chain');
 
-    // Search for the fingerprint in recent transactions
-    // This is a simplified approach — production would use an indexer
+    // ── Step 1: Try chain index first (O(1) lookup) ──
+    if (this.chainIndex) {
+      try {
+        const entry = await this.chainIndex.lookupFingerprint(fingerprint);
+        if (entry) {
+          logger.debug(
+            { fingerprint, txId: entry.chainTxId },
+            'Fingerprint found via chain index',
+          );
+          return {
+            verified: true,
+            receipt: {
+              receiptId: entry.chainTxId,
+              blockHeight: entry.blockHeight ?? 0,
+              blockTimestamp: entry.blockTimestamp ?? new Date().toISOString(),
+              confirmations: entry.confirmations ?? 0,
+            },
+          };
+        }
+        logger.debug({ fingerprint }, 'Fingerprint not in chain index, falling back to UTXO scan');
+      } catch (indexError) {
+        const message = indexError instanceof Error ? indexError.message : String(indexError);
+        logger.warn(
+          { fingerprint, error: message },
+          'Chain index lookup failed, falling back to UTXO scan',
+        );
+      }
+    }
+
+    // ── Step 2: Fall back to O(n) UTXO scan ──
     try {
-      // Use provider to get raw transaction and inspect OP_RETURN outputs
-      // For now we still use the RPC listtransactions approach when available
-      // TODO: P7-TS-13 — Add fingerprint indexing for efficient lookup
       const utxos = await this.provider.listUnspent(this.address);
 
-      // Walk recent transactions looking for our OP_RETURN
-      // This is O(n) and not ideal — flagged for future indexer story
       for (const utxo of utxos) {
         try {
           const rawTx = await this.provider.getRawTransaction(utxo.txid);
@@ -435,7 +518,7 @@ export class SignetChainClient implements ChainClient {
   }
 
   async getReceipt(receiptId: string): Promise<ChainReceipt | null> {
-    logger.info({ receiptId }, 'Getting receipt from Signet');
+    logger.info({ receiptId }, 'Getting receipt from chain');
 
     try {
       const rawTx = await this.provider.getRawTransaction(receiptId);
@@ -455,7 +538,7 @@ export class SignetChainClient implements ChainClient {
         confirmations: rawTx.confirmations ?? 0,
       };
     } catch {
-      logger.warn({ receiptId }, 'Receipt not found on Signet');
+      logger.warn({ receiptId }, 'Receipt not found on chain');
       return null;
     }
   }
@@ -464,18 +547,27 @@ export class SignetChainClient implements ChainClient {
     try {
       const info = await this.provider.getBlockchainInfo();
 
-      // Verify we're actually on signet/testnet
-      const isSignet = info.chain === 'signet' || info.chain === 'test';
+      // Accept signet, testnet, and mainnet chain names
+      const isValid =
+        info.chain === 'signet' ||
+        info.chain === 'test' ||
+        info.chain === 'main';
+
       logger.info(
-        { chain: info.chain, blocks: info.blocks, healthy: isSignet },
-        'Signet health check',
+        { chain: info.chain, blocks: info.blocks, healthy: isValid },
+        'Chain health check',
       );
-      return isSignet;
+      return isValid;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : String(error);
-      logger.error({ error: message }, 'Signet health check failed');
+      logger.error({ error: message }, 'Chain health check failed');
       return false;
     }
   }
 }
+
+// ─── Backward-compatible alias ──────────────────────────────────────────
+
+/** @deprecated Use BitcoinChainClient — this alias exists for backward compatibility. */
+export const SignetChainClient = BitcoinChainClient;
