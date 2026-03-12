@@ -33,13 +33,15 @@
 import { createHash } from 'crypto';
 import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
-import { BitcoinChainClient } from '../src/chain/signet.js';
-import { WifSigningProvider } from '../src/chain/signing-provider.js';
-import { MempoolUtxoProvider } from '../src/chain/utxo-provider.js';
-import { StaticFeeEstimator } from '../src/chain/fee-estimator.js';
 
-// Load .env from worker directory
+// Load .env BEFORE any worker imports (config.ts fires at import time)
 dotenvConfig({ path: resolve(import.meta.dirname ?? '.', '../.env') });
+
+// Dynamic imports — must come after dotenv so config.ts sees env vars
+const { BitcoinChainClient } = await import('../src/chain/signet.js');
+const { WifSigningProvider } = await import('../src/chain/signing-provider.js');
+const { MempoolUtxoProvider } = await import('../src/chain/utxo-provider.js');
+const { StaticFeeEstimator } = await import('../src/chain/fee-estimator.js');
 
 async function main(): Promise<void> {
   console.log('=== Arkova Signet E2E Broadcast ===\n');
@@ -68,14 +70,11 @@ async function main(): Promise<void> {
   });
 
   // Derive address for display (address is logged by constructor)
-  const address = (() => {
-    const bitcoin = require('bitcoinjs-lib') as typeof import('bitcoinjs-lib');
-    const { address } = bitcoin.payments.p2pkh({
-      pubkey: signingProvider.getPublicKey(),
-      network: bitcoin.networks.testnet,
-    });
-    return address!;
-  })();
+  const bitcoin = await import('bitcoinjs-lib');
+  const { address } = bitcoin.payments.p2pkh({
+    pubkey: signingProvider.getPublicKey(),
+    network: bitcoin.networks.testnet,
+  });
 
   console.log(`   Address: ${address}`);
   console.log(`   Provider: ${utxoProvider.name}`);
