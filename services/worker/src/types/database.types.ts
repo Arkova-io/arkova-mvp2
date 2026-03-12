@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json
           operationName?: string
           query?: string
           variables?: Json
-          extensions?: Json
         }
         Returns: Json
       }
@@ -34,6 +34,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      anchor_chain_index: {
+        Row: {
+          anchor_id: string | null
+          chain_block_height: number | null
+          chain_block_timestamp: string | null
+          chain_tx_id: string
+          confirmations: number | null
+          created_at: string
+          fingerprint_sha256: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_id?: string | null
+          chain_block_height?: number | null
+          chain_block_timestamp?: string | null
+          chain_tx_id: string
+          confirmations?: number | null
+          created_at?: string
+          fingerprint_sha256: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_id?: string | null
+          chain_block_height?: number | null
+          chain_block_timestamp?: string | null
+          chain_tx_id?: string
+          confirmations?: number | null
+          created_at?: string
+          fingerprint_sha256?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anchor_chain_index_anchor_id_fkey"
+            columns: ["anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anchor_proofs: {
         Row: {
           anchor_id: string
@@ -248,7 +292,7 @@ export type Database = {
         Row: {
           actor_email: string | null
           actor_id: string | null
-          actor_ip: unknown | null
+          actor_ip: unknown
           actor_user_agent: string | null
           created_at: string
           details: string | null
@@ -262,7 +306,7 @@ export type Database = {
         Insert: {
           actor_email?: string | null
           actor_id?: string | null
-          actor_ip?: unknown | null
+          actor_ip?: unknown
           actor_user_agent?: string | null
           created_at?: string
           details?: string | null
@@ -276,7 +320,7 @@ export type Database = {
         Update: {
           actor_email?: string | null
           actor_id?: string | null
-          actor_ip?: unknown | null
+          actor_ip?: unknown
           actor_user_agent?: string | null
           created_at?: string
           details?: string | null
@@ -1129,47 +1173,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bulk_create_anchors: {
-        Args: {
-          anchors_data: Json
-        }
-        Returns: Json
-      }
+      bulk_create_anchors: { Args: { anchors_data: Json }; Returns: Json }
+      check_anchor_quota: { Args: never; Returns: number }
       claim_anchoring_job: {
-        Args: {
-          p_worker_id: string
-          p_lock_duration_seconds?: number
-        }
+        Args: { p_lock_duration_seconds?: number; p_worker_id: string }
         Returns: string
       }
       complete_anchoring_job: {
-        Args: {
-          p_job_id: string
-          p_success: boolean
-          p_error?: string
-        }
+        Args: { p_error?: string; p_job_id: string; p_success: boolean }
         Returns: boolean
       }
-      generate_public_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_flag: {
-        Args: {
-          p_flag_id: string
-        }
-        Returns: boolean
-      }
-      get_public_anchor: {
-        Args: {
-          p_public_id: string
-        }
+      create_webhook_endpoint: {
+        Args: { p_events: string[]; p_url: string }
         Returns: Json
       }
-      get_user_org_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      delete_webhook_endpoint: {
+        Args: { p_endpoint_id: string }
+        Returns: undefined
       }
+      generate_public_id: { Args: never; Returns: string }
+      get_flag: { Args: { p_flag_id: string }; Returns: boolean }
+      get_public_anchor: { Args: { p_public_id: string }; Returns: Json }
+      get_user_org_id: { Args: never; Returns: string }
       invite_member: {
         Args: {
           invite_email: string
@@ -1178,30 +1203,27 @@ export type Database = {
         }
         Returns: string
       }
-      is_org_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
+      is_org_admin: { Args: never; Returns: boolean }
+      log_verification_event: {
+        Args: {
+          p_fingerprint_provided?: boolean
+          p_method?: string
+          p_public_id: string
+          p_referrer?: string
+          p_result?: string
+          p_user_agent?: string
+        }
+        Returns: undefined
       }
       revoke_anchor:
-        | {
-            Args: {
-              anchor_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              anchor_id: string
-              reason?: string
-            }
-            Returns: undefined
-          }
+        | { Args: { anchor_id: string }; Returns: undefined }
+        | { Args: { anchor_id: string; reason?: string }; Returns: undefined }
       update_profile_onboarding: {
         Args: {
-          p_role: Database["public"]["Enums"]["user_role"]
-          p_org_legal_name?: string
           p_org_display_name?: string
           p_org_domain?: string
+          p_org_legal_name?: string
+          p_role: Database["public"]["Enums"]["user_role"]
         }
         Returns: Json
       }
@@ -1230,27 +1252,33 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1258,20 +1286,24 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1279,20 +1311,24 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1300,30 +1336,64 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
-    | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      anchor_status: ["PENDING", "SECURED", "REVOKED", "EXPIRED"],
+      credential_type: [
+        "DEGREE",
+        "LICENSE",
+        "CERTIFICATE",
+        "TRANSCRIPT",
+        "PROFESSIONAL",
+        "OTHER",
+      ],
+      job_status: ["pending", "processing", "completed", "failed"],
+      report_status: ["pending", "generating", "completed", "failed"],
+      report_type: [
+        "anchor_summary",
+        "compliance_audit",
+        "activity_log",
+        "billing_history",
+      ],
+      user_role: ["INDIVIDUAL", "ORG_ADMIN", "ORG_MEMBER"],
+    },
+  },
+} as const
 

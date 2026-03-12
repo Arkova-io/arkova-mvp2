@@ -1,4 +1,5 @@
 # agents.md — services/worker/src/chain/
+
 _Last updated: 2026-03-12_
 
 ## What This Folder Contains
@@ -22,17 +23,18 @@ Bitcoin chain client implementation for anchoring document fingerprints on-chain
 | `wallet.test.ts` | Wallet utility tests (13 tests) |
 
 ## Recent Changes
+
 - **CRIT-2 Step 5-8:** Added `signing-provider.ts` (WIF + KMS), `fee-estimator.ts` (static + mempool), chain index lookup (`SupabaseChainIndexLookup` in `client.ts`). Refactored `signet.ts` → `BitcoinChainClient` with provider abstractions. Rewrote `client.ts` to async factory pattern (`initChainClient()` / `getInitializedChainClient()`). Supports signet (WIF), testnet (WIF), mainnet (KMS). Migration 0050 creates `anchor_chain_index` table. Config expanded with 5 new env vars.
 - Broadcast test coverage: Added 3 broadcast-specific tests to `signet.test.ts` (txid mismatch handling, empty txid fallback, raw hex format verification) and 3 to `utxo-provider.test.ts` (Mempool POST format, whitespace trimming, HTTP status in errors).
 - P7-TS-12: Added `utxo-provider.ts` — `UtxoProvider` interface, `RpcUtxoProvider`, `MempoolUtxoProvider`, factory.
 - P7-TS-11: Added `wallet.ts` — `generateSignetKeypair()`, `addressFromWif()`, `isValidSignetWif()`.
 
 ## Do / Don't Rules
+
 - **DO** use `getInitializedChainClient()` in hot paths (e.g., `processAnchor`) — NOT the old `getChainClient()`
 - **DO** call `initChainClient()` once at startup (in `index.ts` listen callback)
 - **DO** use `UtxoProvider` interface for all UTXO operations (never raw `fetch` in signet.ts)
 - **DO** use `MockChainClient` in all test suites outside this folder
-- **DO** use `(db as any)` for `anchor_chain_index` queries until `database.types.ts` is regenerated with migration 0050
 - **DO NOT** log the treasury WIF or KMS key ID (Constitution 1.4)
 - **DO NOT** import `generateFingerprint` (Constitution 1.6 — client-side only)
 - **DO NOT** call real Bitcoin APIs in tests — mock `UtxoProvider` methods
@@ -41,6 +43,7 @@ Bitcoin chain client implementation for anchoring document fingerprints on-chain
 - Test funding txs: use `buildDummyFundingTx()` pattern — static hex strings fail PSBT validation
 
 ## Dependencies
+
 - `bitcoinjs-lib`, `tiny-secp256k1`, `ecpair` — Bitcoin transaction construction + signing
 - `@aws-sdk/client-kms` — AWS KMS signing (mainnet)
 - `../config.js` — environment config (WIF, KMS key, RPC URL, fee strategy, feature flags)

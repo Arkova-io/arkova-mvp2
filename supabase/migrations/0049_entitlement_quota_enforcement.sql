@@ -214,7 +214,7 @@ BEGIN
         results := results || jsonb_build_object(
           'fingerprint', anchor_fingerprint,
           'status', 'failed',
-          'reason', SQLERRM
+          'reason', 'insert_failed'
         );
       END;
     END IF;

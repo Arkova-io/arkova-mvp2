@@ -227,6 +227,20 @@ describe('useEntitlements', () => {
     expect(result.current.error).toContain('Network error');
   });
 
+  it('should fall back to free tier on fetch error (not fail open)', async () => {
+    setupMocks({ subError: new Error('DB connection lost') });
+
+    const { result } = renderHook(() => useEntitlements());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Verify it does NOT stay in the unlimited state (recordsLimit=null)
+    // after an error — it should fall back to free tier limits
+    expect(result.current.recordsLimit).toBe(3);
+    expect(result.current.planName).toBe('Free');
+    expect(result.current.canCreateAnchor).toBe(true); // free tier with 0 usage
+  });
+
   it('refresh should re-fetch entitlements', async () => {
     setupMocks({ count: 0 });
 

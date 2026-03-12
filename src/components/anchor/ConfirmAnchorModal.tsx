@@ -45,7 +45,7 @@ export function ConfirmAnchorModal({
 }: Readonly<ConfirmAnchorModalProps>) {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { canCreateAnchor, recordsUsed, recordsLimit, planName, refresh: refreshEntitlements } = useEntitlements();
+  const { canCreateAnchor, recordsUsed, recordsLimit, planName, loading: entitlementsLoading, refresh: refreshEntitlements } = useEntitlements();
   const [isCreating, setIsCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -60,6 +60,12 @@ export function ConfirmAnchorModal({
   const handleConfirm = async () => {
     if (!file || !fingerprint || !user) {
       onError?.('Missing required data');
+      return;
+    }
+
+    // Wait for entitlements to load before allowing creation
+    if (entitlementsLoading) {
+      onError?.('Checking plan quota — please try again');
       return;
     }
 

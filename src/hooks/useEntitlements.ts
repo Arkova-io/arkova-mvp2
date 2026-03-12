@@ -126,6 +126,11 @@ export function useEntitlements(): EntitlementState & EntitlementActions {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to check plan quota';
       setError(message);
+      // Fail closed: fall back to free tier defaults on error.
+      // Never leave recordsLimit as null (unlimited) when we can't verify the plan.
+      setRecordsLimit(3);
+      setPlanName('Free');
+      setRecordsUsed(0);
     } finally {
       setLoading(false);
     }

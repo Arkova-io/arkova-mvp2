@@ -312,7 +312,7 @@ A real Bitcoin chain client implementing the `ChainClient` interface with OP_RET
 
 #### Architecture
 
-```
+```text
 BitcoinChainClient
   ├── SigningProvider   (WifSigningProvider | KmsSigningProvider)
   ├── FeeEstimator      (StaticFeeEstimator | MempoolFeeEstimator)

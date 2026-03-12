@@ -42,7 +42,7 @@ interface UseBulkAnchorsReturn {
 const BATCH_SIZE = 50;
 
 export function useBulkAnchors(): UseBulkAnchorsReturn {
-  const { canCreateCount, remaining, refresh: refreshEntitlements } = useEntitlements();
+  const { canCreateCount, remaining, loading: entitlementsLoading, refresh: refreshEntitlements } = useEntitlements();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
@@ -60,6 +60,12 @@ export function useBulkAnchors(): UseBulkAnchorsReturn {
 
   const createBulkAnchors = useCallback(
     async (records: BulkAnchorRecord[]): Promise<BulkCreateResult | null> => {
+      // Wait for entitlements to load before allowing creation
+      if (entitlementsLoading) {
+        setError('Checking plan quota — please try again');
+        return null;
+      }
+
       // Entitlement pre-check — reject early if batch exceeds remaining quota
       if (!canCreateCount(records.length)) {
         const msg = ENTITLEMENT_LABELS.BULK_EXCEEDS_QUOTA
@@ -144,7 +150,7 @@ export function useBulkAnchors(): UseBulkAnchorsReturn {
         setLoading(false);
       }
     },
-    [canCreateCount, remaining, refreshEntitlements]
+    [canCreateCount, remaining, entitlementsLoading, refreshEntitlements]
   );
 
   return {

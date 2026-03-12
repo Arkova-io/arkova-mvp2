@@ -54,8 +54,7 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
     }
 
     // Upsert chain index entry — non-fatal (anchor is already secured)
-    // Cast needed until database.types.ts is regenerated with migration 0050
-    const { error: indexError } = await (db as any)
+    const { error: indexError } = await db
       .from('anchor_chain_index')
       .upsert(
         {

@@ -88,7 +88,11 @@ export class MempoolFeeEstimator implements FeeEstimator {
 
   constructor(config: MempoolFeeEstimatorConfig = {}) {
     this.baseUrl = (config.baseUrl ?? DEFAULT_MEMPOOL_URL).replace(/\/$/, '');
-    this.fallbackRate = config.fallbackRate ?? DEFAULT_FALLBACK_RATE;
+    const fallback = config.fallbackRate ?? DEFAULT_FALLBACK_RATE;
+    if (typeof fallback !== 'number' || !Number.isFinite(fallback) || fallback < 1) {
+      throw new Error(`Fallback fee rate must be a finite number >= 1, got: ${fallback}`);
+    }
+    this.fallbackRate = fallback;
     this.target = config.target ?? 'halfHour';
   }
 

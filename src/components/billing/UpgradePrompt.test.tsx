@@ -43,7 +43,7 @@ describe('UpgradePrompt', () => {
     );
 
     expect(getByText(/10 \/ 10/)).toBeInTheDocument();
-    expect(getByText(/Individual plan/)).toBeInTheDocument();
+    expect(getByText(/Individual Plan/)).toBeInTheDocument();
   });
 
   it('should navigate to billing on upgrade click', () => {

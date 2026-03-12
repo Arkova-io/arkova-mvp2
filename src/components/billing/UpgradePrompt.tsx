@@ -65,10 +65,10 @@ export function UpgradePrompt({
         <div className="space-y-4 py-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              {planName} plan
+              {planName} Plan
             </span>
             <span className="font-medium">
-              {recordsUsed} / {recordsLimit} {ENTITLEMENT_LABELS.RECORDS_USED}
+              {recordsUsed} / {recordsLimit ?? ENTITLEMENT_LABELS.UNLIMITED} {ENTITLEMENT_LABELS.RECORDS_USED}
             </span>
           </div>
 

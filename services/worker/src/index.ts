@@ -286,16 +286,20 @@ app.post('/jobs/process-anchors', async (_req, res) => {
 });
 
 // Scheduled jobs
-function setupScheduledJobs(): void {
-  // Process pending anchors every minute
-  cron.schedule('* * * * *', async () => {
-    logger.debug('Running scheduled anchor processing');
-    try {
-      await processPendingAnchors();
-    } catch (error) {
-      logger.error({ error }, 'Scheduled anchor processing failed');
-    }
-  });
+function setupScheduledJobs(chainInitialized: boolean): void {
+  // Process pending anchors every minute — only if chain client initialized
+  if (chainInitialized) {
+    cron.schedule('* * * * *', async () => {
+      logger.debug('Running scheduled anchor processing');
+      try {
+        await processPendingAnchors();
+      } catch (error) {
+        logger.error({ error }, 'Scheduled anchor processing failed');
+      }
+    });
+  } else {
+    logger.warn('Anchor processing cron DISABLED — chain client not initialized');
+  }
 
   // Process webhook retries every 2 minutes
   cron.schedule('*/2 * * * *', async () => {
@@ -355,14 +359,16 @@ const server = app.listen(config.port, async () => {
   );
 
   // Initialize chain client singleton (async — KMS key init may need network call)
+  let chainInitialized = false;
   try {
     await initChainClient();
     logger.info('Chain client initialized');
+    chainInitialized = true;
   } catch (err) {
-    logger.error({ error: err }, 'Failed to initialize chain client — anchoring jobs will fail');
+    logger.error({ error: err }, 'Failed to initialize chain client — anchor cron job will NOT start');
   }
 
-  setupScheduledJobs();
+  setupScheduledJobs(chainInitialized);
   setupGracefulShutdown();
 });
 

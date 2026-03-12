@@ -40,11 +40,12 @@ import { createFeeEstimator } from './fee-estimator.js';
  */
 export class SupabaseChainIndexLookup implements ChainIndexLookup {
   async lookupFingerprint(fingerprint: string): Promise<IndexEntry | null> {
-    // Cast needed until database.types.ts is regenerated with migration 0050
-    const { data, error } = await (db as any)
+    // Normalize to lowercase — fingerprints are stored lowercase
+    const normalizedFingerprint = fingerprint.toLowerCase();
+    const { data, error } = await db
       .from('anchor_chain_index')
       .select('chain_tx_id, chain_block_height, chain_block_timestamp, confirmations, anchor_id')
-      .eq('fingerprint_sha256', fingerprint)
+      .eq('fingerprint_sha256', normalizedFingerprint)
       .limit(1)
       .maybeSingle();
 
@@ -230,6 +231,7 @@ export function getChainClient(): ChainClient {
   if (_chainClient) {
     return _chainClient;
   }
-  logger.warn('getChainClient() called before initChainClient() — returning MockChainClient');
-  return new MockChainClient();
+  throw new Error(
+    'getChainClient() called before initChainClient() — call initChainClient() at startup',
+  );
 }
