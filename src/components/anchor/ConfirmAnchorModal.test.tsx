@@ -3,8 +3,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
 import { ConfirmAnchorModal } from './ConfirmAnchorModal';
+
+// Mock react-router-dom (needed by UpgradePrompt)
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
 
 // Mock supabase
 vi.mock('@/lib/supabase', () => ({
@@ -29,6 +34,24 @@ vi.mock('@/hooks/useAuth', () => ({
 vi.mock('@/hooks/useProfile', () => ({
   useProfile: () => ({
     profile: { org_id: null },
+  }),
+}));
+
+const mockCanCreateAnchor = vi.hoisted(() => ({ current: true }));
+
+vi.mock('@/hooks/useEntitlements', () => ({
+  useEntitlements: () => ({
+    canCreateAnchor: mockCanCreateAnchor.current,
+    recordsUsed: mockCanCreateAnchor.current ? 0 : 3,
+    recordsLimit: 3,
+    remaining: mockCanCreateAnchor.current ? 3 : 0,
+    percentUsed: mockCanCreateAnchor.current ? 0 : 100,
+    isNearLimit: !mockCanCreateAnchor.current,
+    planName: 'Free',
+    loading: false,
+    error: null,
+    refresh: vi.fn().mockResolvedValue(undefined),
+    canCreateCount: vi.fn().mockReturnValue(mockCanCreateAnchor.current),
   }),
 }));
 
@@ -110,5 +133,29 @@ describe('ConfirmAnchorModal', () => {
     );
 
     expect(queryByText('Confirm Anchor')).not.toBeInTheDocument();
+  });
+
+  it('should show upgrade prompt when quota exhausted', async () => {
+    mockCanCreateAnchor.current = false;
+
+    const { getByText } = render(
+      <ConfirmAnchorModal
+        open={true}
+        onOpenChange={() => {}}
+        file={mockFile}
+        fingerprint={mockFingerprint}
+      />
+    );
+
+    // Click create — should trigger upgrade prompt instead of insert
+    fireEvent.click(getByText('Create Anchor'));
+
+    // UpgradePrompt renders "Monthly Limit Reached"
+    await waitFor(() => {
+      expect(getByText('Monthly Limit Reached')).toBeInTheDocument();
+    });
+
+    // Reset for other tests
+    mockCanCreateAnchor.current = true;
   });
 });

@@ -14,6 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.1007.0",
     "@supabase/supabase-js": "^2.39.0",
     "adm-zip": "^0.5.10",
     "bitcoinjs-lib": "^6.1.7",

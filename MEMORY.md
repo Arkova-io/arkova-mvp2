@@ -137,26 +137,27 @@ e2e/                               ← Playwright E2E specs + fixtures
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-12 ~1:00 AM EST):** Documentation audit across all project files. Updated CLAUDE.md, MEMORY.md, bug_log.md, story docs. PR #24 created for broadcast test coverage + anchoring worker docs.
+**Last session (2026-03-12 ~2:30 AM EST):** Documentation update sprint. Updated all project docs with current test counts (369 worker, 688 total, 153 chain-specific across 6 files), Signet treasury funding status, and UTXO provider integration details. Files updated: `docs/stories/08_p7_go_live.md` (P7-TS-05, P7-TS-11, P7-TS-12 entries), `docs/confluence/10_anchoring_worker.md` (coverage, chain integration, change log), `CLAUDE.md` (CRIT-2 blocker + P7-TS-05 story entry). All 688 tests green. Signet treasury still awaiting first UTXO confirmation.
 
 **Current state:**
-- 682 total tests (363 worker + 319 frontend) + 116 E2E/load tests
-- All worker critical paths at 80%+ coverage (17 test files, 363 tests)
-- 147 chain-specific tests across 6 files (signet 30, utxo-provider 31, wallet 13, client 9, mock 18, anchor 46)
+- 688 total tests (369 worker + 319 frontend) + 116 E2E/load tests
+- All worker critical paths at 80%+ coverage (17 test files, 369 tests)
+- 153 chain-specific tests across 6 files (signet 33, utxo-provider 34, wallet 13, client 9, mock 18, anchor 46)
 - Worker hardening sprint COMPLETE (6/6 tasks, 5 bugs found/fixed)
 - Vite 6.4.1 + vitest 3 + esbuild 0.25.12 (CVE patched, 0 npm vulnerabilities)
 - SignetChainClient + UTXO providers + wallet utilities all implemented
 - Stripe checkout/portal endpoints wired with JWT auth
 - Webhook delivery engine complete with HMAC signing + exponential backoff
+- Signet treasury address: `mx1zmGtQTghi4GWcJaV1oPwJ5TKhGfFpjs` — funded 500,636 sats, awaiting confirmation
 
 **Remaining production blockers (5 items):**
 1. AWS KMS signing for mainnet Bitcoin
-2. Signet node connectivity test (fund treasury via faucet, run live broadcast)
+2. Signet E2E connectivity test — treasury funded, awaiting UTXO confirmation for first real OP_RETURN broadcast
 3. Mainnet treasury funding
 4. Entitlement enforcement (restrict features by billing plan)
 5. Plan change/downgrade flows
 
-**Next session should:** Pick up one of the remaining blockers above, or address any remaining GitHub PRs.
+**Next session should:** Check UTXO confirmation status, run real Signet E2E broadcast if confirmed, or pick up entitlement enforcement (CRIT-3).
 
 **Completed sprints (archived):**
 All sprint details moved to Claude project memory. Summary:

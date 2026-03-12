@@ -271,12 +271,14 @@ services/worker/
   src/
     index.ts                                 ← Express server + cron + graceful shutdown
     config.ts                                ← Environment config
-    chain/client.ts                          ← ChainClient factory (returns MockChainClient or SignetChainClient)
-    chain/signet.ts                          ← Real Signet implementation (bitcoinjs-lib, OP_RETURN)
-    chain/mock.ts                            ← Mock implementation
-    chain/types.ts                           ← ChainClient interface (IAnchorPublisher equivalent)
-    chain/wallet.ts                          ← Signet wallet utilities (generateSignetKeypair, addressFromWif, isValidSignetWif)
-    chain/utxo-provider.ts                   ← UTXO provider (RpcUtxoProvider, MempoolUtxoProvider, factory)
+    chain/types.ts                           ← ChainClient + ChainIndexLookup interfaces, IndexEntry, request/response types
+    chain/client.ts                          ← Async factory (initChainClient/getInitializedChainClient) + SupabaseChainIndexLookup
+    chain/signet.ts                          ← BitcoinChainClient (renamed from SignetChainClient, alias kept). Supports signet/testnet/mainnet via provider abstractions.
+    chain/mock.ts                            ← In-memory mock for tests and development
+    chain/signing-provider.ts                ← WifSigningProvider (ECPair, signet/testnet) + KmsSigningProvider (AWS KMS, mainnet)
+    chain/fee-estimator.ts                   ← StaticFeeEstimator (fixed rate) + MempoolFeeEstimator (live API)
+    chain/utxo-provider.ts                   ← RpcUtxoProvider (Bitcoin Core RPC) + MempoolUtxoProvider (Mempool.space REST) + factory
+    chain/wallet.ts                          ← Treasury wallet utilities (keypair generation, address derivation, WIF validation)
     jobs/anchor.ts                           ← Process pending anchors
     jobs/report.ts                           ← Report generation job
     jobs/webhook.ts                          ← Webhook dispatch job (stub)
@@ -286,7 +288,7 @@ services/worker/
     webhooks/delivery.ts                     ← Outbound webhook delivery engine
     utils/                                   ← DB client, logger, rate limiter, correlation ID
 supabase/
-  migrations/                                ← 48 files (0001–0048, 0033 skipped)
+  migrations/                                ← 49 files (0001–0050, 0033 + 0049 intentionally skipped)
   seed.sql                                   ← Demo data
   config.toml                                ← Local Supabase config
 docs/confluence/                             ← Architecture, data model, security, audit, etc.
@@ -445,7 +447,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 48 files, versions 0001–0048 (0033 intentionally skipped). Last: `0048_consolidate_get_public_anchor_single_read.sql`.
+**Current migration inventory:** 49 files, versions 0001–0050 (0033, 0049 intentionally skipped). Last: `0050_create_anchor_chain_index.sql`.
 
 ---
 
@@ -462,16 +464,16 @@ npx supabase db reset
 | P4-E2 Credential Metadata | 3/3 | 0 | 0 | 100% |
 | P5 Org Admin | 6/6 | 0 | 0 | 100% |
 | P6 Verification | 5/6 | 1/6 | 0 | 83% |
-| P7 Go-Live | 8/13 | 2/13 | 3/13 | 62% |
+| P7 Go-Live | 9/13 | 2/13 | 2/13 | 69% |
 | P4.5 Verification API | 0/13 | 0/13 | 13/13 | 0% |
-| **Total** | **39/58** | **3/58** | **16/58** | **~72%** |
+| **Total** | **40/58** | **3/58** | **15/58** | **~74%** |
 
 ### Critical Blockers (resolve before production)
 
 | ID | Issue | Severity | Detail |
 |----|-------|----------|--------|
 | ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-10. Real Supabase insert replacing setTimeout simulation. Commit a38b485.~~ |
-| CRIT-2 | No real Bitcoin chain client | **HIGH** | SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix). Factory updated. Wallet utilities + CLI scripts (P7-TS-11). **Remaining:** Fund Signet treasury via faucet, Signet node connectivity test, AWS KMS signing (mainnet), mainnet treasury funding. |
+| CRIT-2 | Bitcoin chain client — code complete, operational items remain | **HIGH** | **CODE COMPLETE.** BitcoinChainClient (renamed from SignetChainClient) with provider abstractions: `SigningProvider` (WIF + KMS), `FeeEstimator` (static + mempool), `UtxoProvider` (RPC + Mempool.space). `SupabaseChainIndexLookup` for O(1) verification (migration 0050). Async factory (`initChainClient()` / `getInitializedChainClient()`). Wallet utilities + CLI scripts. 408 worker tests across 17 files. **Remaining operational items:** Signet E2E broadcast (awaiting UTXO confirmation), AWS KMS key provisioning (mainnet), mainnet treasury funding. |
 | CRIT-3 | No Stripe checkout flow | **HIGH** | Pricing UI + useBilling hook + checkout pages + checkout/portal worker endpoints all implemented (b1f798a). Webhook handlers work. **Remaining:** entitlement enforcement, plan change/downgrade. |
 | ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. Commit a38b485.~~ |
 | ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. onDownloadProofJson wired in RecordDetailPage + AssetDetailView. Commit a38b485.~~ |
@@ -528,19 +530,19 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 - P6-TS-05: ✅ `generateAuditReport.ts` (jsPDF, 201 lines). Called from RecordDetailPage.
 - P6-TS-06: ✅ `verification_events` table (migration 0042), SECURITY DEFINER RPC (migration 0045), wired into PublicVerification.tsx.
 
-### P7 Go-Live — 8/13 COMPLETE, 2/13 PARTIAL, 3/13 NOT STARTED
+### P7 Go-Live — 9/13 COMPLETE, 2/13 PARTIAL, 2/13 NOT STARTED
 
 - P7-TS-01: ✅ Billing schema (migration 0016). BillingOverview.tsx wired in PricingPage with useBilling data.
 - P7-TS-02: ⚠️ PARTIAL — Pricing UI (PricingPage, PricingCard, BillingOverview), useBilling hook, checkout success/cancel pages all implemented. Stripe webhook handlers handle checkout.session.completed + subscription lifecycle. Worker checkout + billing portal endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade flows.
 - P7-TS-03: ✅ Stripe webhook signature verification works. Mock mode for tests.
-- P7-TS-05: ⚠️ PARTIAL — SignetChainClient implemented with `bitcoinjs-lib` OP_RETURN (`ARKV` prefix). `getChainClient()` returns SignetChainClient when `ENABLE_PROD_NETWORK_ANCHORING=true`. **Remaining:** AWS KMS signing (mainnet), Signet node connectivity test, mainnet treasury funding.
+- P7-TS-05: ⚠️ PARTIAL (CODE COMPLETE — operational items remain) — `BitcoinChainClient` (renamed from SignetChainClient) with provider abstractions: `SigningProvider` (WIF + KMS), `FeeEstimator` (static + mempool), `UtxoProvider` (RPC + Mempool.space). Async factory (`initChainClient()` / `getInitializedChainClient()`). `SupabaseChainIndexLookup` for O(1) verification. Migration 0050 creates `anchor_chain_index` table. 408 worker tests across 17 files. **Remaining operational:** Signet E2E broadcast, AWS KMS key provisioning, mainnet treasury funding.
 - P7-TS-07: ✅ COMPLETE — PDF + JSON proof package downloads both wired. Fixed in CRIT-5 (commit a38b485).
 - P7-TS-08: ✅ `generateAuditReport.ts` — full PDF certificate with jsPDF.
 - P7-TS-09: ✅ COMPLETE — WebhookSettings.tsx with two-phase dialog (creation form → one-time secret display). Server-side secret generation via SECURITY DEFINER RPC (migration 0046). 34 tests (23 component + 11 integration).
 - P7-TS-10: ✅ COMPLETE — Delivery engine with exponential backoff + HMAC signing. `anchor.ts` dispatches `anchor.secured` webhook after SECURED status set. Webhook retries scheduled in worker cron.
 - P7-TS-11: ✅ COMPLETE — Signet treasury wallet utilities (`wallet.ts`: `generateSignetKeypair()`, `addressFromWif()`, `isValidSignetWif()`). CLI scripts (`generate-signet-keypair.ts`, `check-signet-balance.ts`). 13 tests.
-- P7-TS-12: ✅ COMPLETE — UTXO provider pattern (`utxo-provider.ts`): `UtxoProvider` interface with `RpcUtxoProvider` (Bitcoin Core JSON-RPC) and `MempoolUtxoProvider` (Mempool.space REST API). Factory function `createUtxoProvider()`. Integrated into `SignetChainClient` + `getChainClient()`. 35 tests.
-- P7-TS-13: ❌ NOT STARTED — Fingerprint indexing for efficient verification lookup. Currently O(n) UTXO scan in `verifyFingerprint()`.
+- P7-TS-12: ✅ COMPLETE — UTXO provider pattern (`utxo-provider.ts`): `UtxoProvider` interface with `RpcUtxoProvider` (Bitcoin Core JSON-RPC) and `MempoolUtxoProvider` (Mempool.space REST API). Factory function `createUtxoProvider()`. Integrated into `BitcoinChainClient` + `initChainClient()`. 35 tests.
+- P7-TS-13: ✅ COMPLETE — `SupabaseChainIndexLookup` for O(1) fingerprint verification. Migration 0050 creates `anchor_chain_index` table. Chain index upsert in `processAnchor()` (non-fatal). Implemented as part of CRIT-2 Steps 5-8.
 
 ### P4.5 Verification API — 0/13 NOT STARTED
 

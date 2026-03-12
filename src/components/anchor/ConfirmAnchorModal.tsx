@@ -23,6 +23,8 @@ import { validateAnchorCreate } from '@/lib/validators';
 import { logAuditEvent } from '@/lib/auditLog';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useEntitlements } from '@/hooks/useEntitlements';
+import { UpgradePrompt } from '@/components/billing/UpgradePrompt';
 
 interface ConfirmAnchorModalProps {
   open: boolean;
@@ -43,8 +45,10 @@ export function ConfirmAnchorModal({
 }: Readonly<ConfirmAnchorModalProps>) {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { canCreateAnchor, recordsUsed, recordsLimit, planName, refresh: refreshEntitlements } = useEntitlements();
   const [isCreating, setIsCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const handleCopyFingerprint = async () => {
     if (!fingerprint) return;
@@ -56,6 +60,12 @@ export function ConfirmAnchorModal({
   const handleConfirm = async () => {
     if (!file || !fingerprint || !user) {
       onError?.('Missing required data');
+      return;
+    }
+
+    // Entitlement check — block if quota exhausted
+    if (!canCreateAnchor) {
+      setShowUpgrade(true);
       return;
     }
 
@@ -95,6 +105,9 @@ export function ConfirmAnchorModal({
         details: `Created anchor for "${file.name}"`,
       });
 
+      // Refresh entitlement counts after successful creation
+      await refreshEntitlements();
+
       onSuccess?.(data.id);
       onOpenChange(false);
     } catch (err) {
@@ -120,6 +133,14 @@ export function ConfirmAnchorModal({
   if (!file || !fingerprint) return null;
 
   return (
+    <>
+    <UpgradePrompt
+      open={showUpgrade}
+      onOpenChange={setShowUpgrade}
+      recordsUsed={recordsUsed}
+      recordsLimit={recordsLimit}
+      planName={planName}
+    />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -212,5 +233,6 @@ export function ConfirmAnchorModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

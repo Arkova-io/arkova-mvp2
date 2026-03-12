@@ -17,6 +17,22 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+vi.mock('@/hooks/useEntitlements', () => ({
+  useEntitlements: () => ({
+    canCreateCount: () => true,
+    remaining: 1000,
+    refresh: vi.fn().mockResolvedValue(undefined),
+    canCreateAnchor: true,
+    recordsUsed: 0,
+    recordsLimit: 1000,
+    percentUsed: 0,
+    isNearLimit: false,
+    planName: 'Professional',
+    loading: false,
+    error: null,
+  }),
+}));
+
 describe('BulkUploadWizard', () => {
   const mockOnComplete = vi.fn();
   const mockOnCancel = vi.fn();

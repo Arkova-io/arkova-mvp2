@@ -36,6 +36,20 @@ const ConfigSchema = z.object({
   /** Mempool.space API URL override (defaults to Signet endpoint) */
   mempoolApiUrl: z.string().url().optional(),
 
+  // Bitcoin fee estimation
+  /** Fee estimation strategy: 'static' (fixed rate) or 'mempool' (live API) */
+  bitcoinFeeStrategy: z.enum(['static', 'mempool']).optional(),
+  /** Static fee rate in sat/vB (used when bitcoinFeeStrategy is 'static') */
+  bitcoinStaticFeeRate: z.coerce.number().positive().optional(),
+  /** Fallback fee rate in sat/vB (used when live estimation fails) */
+  bitcoinFallbackFeeRate: z.coerce.number().positive().optional(),
+
+  // Bitcoin mainnet KMS signing (Constitution 1.1)
+  /** AWS KMS key ID for mainnet transaction signing */
+  bitcoinKmsKeyId: z.string().optional(),
+  /** AWS region for KMS key */
+  bitcoinKmsRegion: z.string().optional(),
+
   // Legacy chain API fields (kept for backward compat with existing tests)
   chainApiUrl: z.string().url().optional(),
   chainApiKey: z.string().optional(),
@@ -67,6 +81,11 @@ function loadConfig(): Config {
     bitcoinTreasuryWif: process.env.BITCOIN_TREASURY_WIF,
     bitcoinUtxoProvider: process.env.BITCOIN_UTXO_PROVIDER,
     mempoolApiUrl: process.env.MEMPOOL_API_URL,
+    bitcoinFeeStrategy: process.env.BITCOIN_FEE_STRATEGY,
+    bitcoinStaticFeeRate: process.env.BITCOIN_STATIC_FEE_RATE,
+    bitcoinFallbackFeeRate: process.env.BITCOIN_FALLBACK_FEE_RATE,
+    bitcoinKmsKeyId: process.env.BITCOIN_KMS_KEY_ID,
+    bitcoinKmsRegion: process.env.BITCOIN_KMS_REGION,
     chainApiUrl: process.env.CHAIN_API_URL,
     chainApiKey: process.env.CHAIN_API_KEY,
     chainNetwork: process.env.CHAIN_NETWORK,

@@ -16,6 +16,7 @@ const {
   mockLimit,
   mockUpdateEq,
   mockAuditInsert,
+  mockChainIndexUpsert,
   mockDispatchWebhookEvent,
   mockLogger,
   anchorsTable,
@@ -27,6 +28,7 @@ const {
   const mockLimit = vi.fn();
   const mockUpdateEq = vi.fn();
   const mockAuditInsert = vi.fn();
+  const mockChainIndexUpsert = vi.fn();
   const mockSubmitFingerprint = vi.fn();
   const mockDispatchWebhookEvent = vi.fn();
 
@@ -53,6 +55,7 @@ const {
     update: vi.fn(() => updateChain),
   };
   const auditTable = { insert: mockAuditInsert };
+  const chainIndexTable = { upsert: mockChainIndexUpsert };
 
   const mockFrom = vi.fn((table: string) => {
     switch (table) {
@@ -60,6 +63,8 @@ const {
         return anchorsTable;
       case 'audit_events':
         return auditTable;
+      case 'anchor_chain_index':
+        return chainIndexTable;
       default:
         return {};
     }
@@ -71,11 +76,13 @@ const {
     mockLimit,
     mockUpdateEq,
     mockAuditInsert,
+    mockChainIndexUpsert,
     mockDispatchWebhookEvent,
     mockLogger,
     mockFrom,
     anchorsTable,
     auditTable,
+    chainIndexTable,
     updateChain,
     selectChain,
   };
@@ -95,7 +102,7 @@ vi.mock('../config.js', () => ({
 }));
 
 vi.mock('../chain/client.js', () => ({
-  chainClient: { submitFingerprint: mockSubmitFingerprint },
+  getInitializedChainClient: () => ({ submitFingerprint: mockSubmitFingerprint }),
 }));
 
 vi.mock('../webhooks/delivery.js', () => ({
@@ -110,6 +117,8 @@ vi.mock('../utils/db.js', () => ({
           return anchorsTable;
         case 'audit_events':
           return { insert: mockAuditInsert };
+        case 'anchor_chain_index':
+          return { upsert: mockChainIndexUpsert };
         default:
           return {};
       }
@@ -156,6 +165,7 @@ describe('processAnchor', () => {
     mockSingle.mockResolvedValue({ data: MOCK_ANCHOR, error: null });
     mockSubmitFingerprint.mockResolvedValue(MOCK_RECEIPT);
     mockUpdateEq.mockResolvedValue({ error: null });
+    mockChainIndexUpsert.mockResolvedValue({ error: null });
     mockAuditInsert.mockResolvedValue({ error: null });
     mockDispatchWebhookEvent.mockResolvedValue(undefined);
   });
@@ -398,6 +408,76 @@ describe('processAnchor', () => {
     });
   });
 
+  // ---- Chain index upsert (P7-TS-13) ----
+
+  describe('chain index upsert', () => {
+    it('upserts chain index entry after SECURED update', async () => {
+      await processAnchor('anchor-001');
+
+      expect(mockChainIndexUpsert).toHaveBeenCalledOnce();
+      expect(mockChainIndexUpsert).toHaveBeenCalledWith(
+        {
+          fingerprint_sha256: MOCK_ANCHOR.fingerprint,
+          chain_tx_id: MOCK_RECEIPT.receiptId,
+          chain_block_height: MOCK_RECEIPT.blockHeight,
+          chain_block_timestamp: MOCK_RECEIPT.blockTimestamp,
+          confirmations: MOCK_RECEIPT.confirmations,
+          anchor_id: 'anchor-001',
+        },
+        { onConflict: 'fingerprint_sha256,chain_tx_id' },
+      );
+    });
+
+    it('still returns true when chain index upsert fails (non-fatal)', async () => {
+      mockChainIndexUpsert.mockResolvedValue({
+        error: { message: 'index write failed' },
+      });
+
+      const result = await processAnchor('anchor-001');
+
+      expect(result).toBe(true);
+    });
+
+    it('logs a warning when chain index upsert fails', async () => {
+      mockChainIndexUpsert.mockResolvedValue({
+        error: { message: 'index write failed' },
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ anchorId: 'anchor-001' }),
+        expect.stringContaining('chain index'),
+      );
+    });
+
+    it('does not upsert chain index when anchor is not found', async () => {
+      mockSingle.mockResolvedValue({ data: null, error: null });
+
+      await processAnchor('nonexistent');
+
+      expect(mockChainIndexUpsert).not.toHaveBeenCalled();
+    });
+
+    it('does not upsert chain index when chain submission fails', async () => {
+      mockSubmitFingerprint.mockRejectedValue(new Error('timeout'));
+
+      await processAnchor('anchor-001');
+
+      expect(mockChainIndexUpsert).not.toHaveBeenCalled();
+    });
+
+    it('does not upsert chain index when DB update fails', async () => {
+      mockUpdateEq.mockResolvedValue({
+        error: { message: 'constraint violation' },
+      });
+
+      await processAnchor('anchor-001');
+
+      expect(mockChainIndexUpsert).not.toHaveBeenCalled();
+    });
+  });
+
   // ---- HARDENING-4: Webhook dispatch ----
 
   describe('webhook dispatch', () => {
@@ -540,6 +620,7 @@ describe('processPendingAnchors', () => {
     mockSingle.mockResolvedValue({ data: MOCK_ANCHOR, error: null });
     mockSubmitFingerprint.mockResolvedValue(MOCK_RECEIPT);
     mockUpdateEq.mockResolvedValue({ error: null });
+    mockChainIndexUpsert.mockResolvedValue({ error: null });
     mockAuditInsert.mockResolvedValue({ error: null });
   });
 
