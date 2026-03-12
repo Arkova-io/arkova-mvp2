@@ -96,7 +96,29 @@ Internal code/DB may use technical names (e.g., `file_fingerprint_sha256`, `chai
 - File fingerprinting (`generateFingerprint`) runs in the browser only — never server-side.
 - `generateFingerprint` must never be imported or called in `services/worker/`.
 - The Gemini AI Integration Specification in Drive describes server-side document processing — it violates this rule and is NOT authoritative. Do not reference it.
-- Future AI pipeline: client-side OCR (PDF.js + Tesseract.js), server-side LLM on extracted text only.
+
+#### Constitution 4A — AI Metadata Exception
+
+The foundational guarantee (documents never leave the device) remains absolute for **document bytes and raw OCR text**. A narrow exception exists for **PII-stripped structured metadata**:
+
+1. **Client-side OCR** (PDF.js + Tesseract.js in a Web Worker) extracts raw text from the document on the user's device.
+2. **Client-side PII stripping** removes all personally identifiable information (SSN, student IDs, DOB, email addresses, phone numbers, names matched against recipient fields) before anything leaves the browser.
+3. **PII-stripped structured metadata** (credential type, issuer, dates, field labels — never raw OCR text, never document bytes) plus the document fingerprint may be sent to the server.
+4. **Server-side AI** (Gemini Flash or equivalent via `IAIProvider`) processes only the PII-stripped metadata. The server never receives, stores, or processes the original document, its raw OCR output, or any PII.
+
+**What MUST stay client-only:**
+- Document bytes (PDF, image, etc.)
+- Raw OCR text output
+- Any text containing PII (pre-stripping)
+- File fingerprinting (`generateFingerprint`)
+
+**What MAY flow to server (post-stripping only):**
+- Credential type classification
+- Issuer name, issue/expiry dates
+- Field labels and anonymized structure
+- Document fingerprint (SHA-256 hash)
+
+This exception is gated behind the `ENABLE_AI_EXTRACTION` feature flag (default: `false`). PII stripping is mandatory and cannot be disabled — there is no "raw mode" bypass.
 
 ### 1.7 Testing
 
@@ -385,7 +407,7 @@ When a doc describes something that is partially implemented or a known gap exis
 
 ### Story Documentation (`docs/stories/`)
 
-Story docs live in `docs/stories/` and are grouped by priority level (one file per group). The index (`00_stories_index.md`) lists all 56 stories with status, group doc reference, and bug cross-references.
+Story docs live in `docs/stories/` and are grouped by priority level (one file per group). The index (`00_stories_index.md`) lists all 116 stories with status, group doc reference, and bug cross-references.
 
 | File | Group | Stories |
 |------|-------|---------|
@@ -399,6 +421,8 @@ Story docs live in `docs/stories/` and are grouped by priority level (one file p
 | `08_p7_go_live.md` | P7 Go-Live | 13 |
 | `09_p45_verification_api.md` | P4.5 Verification API | 13 |
 | `10_deferred_hardening.md` | DH Deferred Hardening | 12 |
+| `11_mvp_launch_gaps.md` | MVP Launch Gaps | 27 |
+| `12_p8_ai_intelligence.md` | P8 AI Intelligence | 19 |
 
 When a story's status changes:
 1. Update the story's section in its group doc (Status field, Completion Gaps, Remaining Work)
@@ -468,8 +492,9 @@ npx supabase db reset
 | P7 Go-Live | 9/13 | 2/13 | 2/13 | 69% | <!-- 13 stories: P7-TS-01 through P7-TS-13, P7-TS-04 and P7-TS-06 not enumerated below (no individual scope) --> |
 | P4.5 Verification API | 0/13 | 0/13 | 13/13 | 0% |
 | DH Deferred Hardening | 1/12 | 0/12 | 11/12 | 8% |
-| MVP Launch Gaps | 0/14 | 0/14 | 14/14 | 0% |
-| **Total** | **41/84** | **3/84** | **40/84** | **~52%** |
+| MVP Launch Gaps | 0/27 | 0/27 | 27/27 | 0% |
+| P8 AI Intelligence | 0/19 | 0/19 | 19/19 | 0% |
+| **Total** | **41/116** | **3/116** | **72/116** | **~38%** |
 
 ### Critical Blockers (resolve before production)
 
@@ -557,13 +582,13 @@ All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled
 
 DH-01 Feature flag hot-reload · DH-02 Advisory lock for bulk_create_anchors · ~~DH-03 KMS operational docs~~ (COMPLETE — `docs/confluence/14_kms_operations.md`) · DH-04 Webhook circuit breaker · DH-05 Chain index cache TTL · DH-06 ConfirmAnchorModal server-side quota error handling · DH-07 MempoolFeeEstimator request timeout · DH-08 Rate limiting for check_anchor_quota · DH-09 UtxoProvider retry logic · DH-10 useEntitlements realtime subscription · DH-11 Worker RPC structured logging · DH-12 Webhook dead letter queue
 
-### MVP Launch Gaps — 0/14 NOT STARTED
+### MVP Launch Gaps — 0/27 NOT STARTED (2 REMOVED)
 
-14 stories identified during the 2026-03-12 full audit. These represent gaps between the current codebase and a fully testable MVP on Bitcoin Signet testnet. See `docs/stories/11_mvp_launch_gaps.md` for full details, and `docs/audit/2026-03-12_full_audit.md` for the audit document.
+27 active stories (2 removed as superseded by P8). See `docs/stories/11_mvp_launch_gaps.md` for full details.
 
 | ID | Priority | Description |
 |----|----------|-------------|
-| MVP-01 | CRITICAL | Worker production deployment (Railway/Fly.io/Render) |
+| MVP-01 | CRITICAL | Worker production deployment (GCP Cloud Run) |
 | MVP-02 | HIGH | Global toast/notification system (Sonner) |
 | MVP-03 | HIGH | Legal pages (Privacy, Terms, Contact — dead links) |
 | MVP-04 | HIGH | Brand assets (logo, favicon, OG meta tags) |
@@ -577,8 +602,27 @@ DH-01 Feature flag hot-reload · DH-02 Advisory lock for bulk_create_anchors · 
 | MVP-12 | LOW | Dark mode toggle |
 | MVP-13 | LOW | Organization logo upload |
 | MVP-14 | LOW | Embeddable verification widget |
+| MVP-16 | MEDIUM | Block explorer deep links |
+| MVP-17 | MEDIUM | Credential template metadata enhancement |
+| MVP-18 | MEDIUM | Enhanced metadata display |
+| ~~MVP-19~~ | — | ~~AI Auto-Descriptions~~ — REMOVED (superseded by P8-S4/S5) |
+| MVP-20 | LOW | LinkedIn badge integration |
+| MVP-21 | MEDIUM | Individual self-verification flow |
+| ~~MVP-22~~ | — | ~~AI Fraud Detection~~ — REMOVED (superseded by P8-S7/S8/S9) |
+| MVP-23 | MEDIUM | Batch anchor processing |
+| MVP-24 | HIGH | Credits schema + monthly allocations |
+| MVP-25 | MEDIUM | Credits tracking + scheduling |
+| MVP-26 | HIGH | GCP Cloud Run deployment |
+| MVP-27 | HIGH | GCP Secret Manager integration |
+| MVP-28 | MEDIUM | GCP Cloud Scheduler |
+| MVP-29 | HIGH | GCP Cloud KMS integration |
+| MVP-30 | MEDIUM | GCP CI/CD pipeline |
 
 **Bugs linked:** BUG-AUDIT-01 (→MVP-02), BUG-AUDIT-02 (→MVP-03), BUG-AUDIT-03 (→MVP-04).
+
+### P8 AI Intelligence — 0/19 NOT STARTED
+
+19 stories for AI-powered document intelligence. Phased: Phase I blockers (P8-S1 through P8-S6, P8-S13), Phase 1.5 (P8-S7 through P8-S12), Phase II (P8-S14 through P8-S19). Architecture: client-side OCR → PII stripping → metadata-only to server → Gemini Flash via IAIProvider. Constitution 4A amendment governs data flow. See `docs/stories/12_p8_ai_intelligence.md` for full details.
 
 ### Orphaned Code (built but never wired)
 
