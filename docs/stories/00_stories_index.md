@@ -30,7 +30,8 @@ For a new developer joining the project, read in this order:
 | P6 | Verification | 6 | 5 | 1 | 0 | [07_p6_verification.md](./07_p6_verification.md) |
 | P7 | Go-Live | 13 | 9 | 2 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 0 | 0 | 13 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
-| **Total** | | **58** | **40** | **3** | **15** | |
+| DH | Deferred Hardening | 12 | 0 | 0 | 12 | [10_deferred_hardening.md](./10_deferred_hardening.md) |
+| **Total** | | **70** | **40** | **3** | **27** | |
 
 ### All Stories by ID
 
@@ -92,6 +93,18 @@ For a new developer joining the project, read in this order:
 | P4.5-TS-11 | API Key Scope Display | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-12 | Feature Flag Middleware | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | P4.5-TS-13 | Rate Limit Load Tests | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
+| DH-01 | Feature Flag Kill-Switch Hot-Reload | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-02 | Advisory Lock for Migration 0049 Concurrency | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-03 | KMS Operational Documentation | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-04 | Outbound Webhook Circuit Breaker | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-05 | Chain Index Lookup Cache TTL | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-06 | ConfirmAnchorModal Server-Side Quota Error Handling | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-07 | MempoolFeeEstimator Request Timeout | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-08 | Rate Limiting for check_anchor_quota RPC | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-09 | UtxoProvider Retry Logic | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-10 | useEntitlements Realtime Subscription | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-11 | Worker RPC Logging Structured Format | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-12 | Webhook Delivery Dead Letter Queue | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 
 ## Bug Cross-Reference
 
@@ -153,3 +166,4 @@ Each story doc follows a consistent template:
 | 2026-03-11 ~11:30 PM EST | P7-TS-11 created and marked COMPLETE. Signet wallet utilities (wallet.ts, 13 tests) + CLI scripts (generate-keypair, check-balance). P7 now 7/11. Overall: 38 complete. |
 | 2026-03-11 ~11:45 PM EST | P7-TS-12 created and marked COMPLETE. UTXO provider pattern (utxo-provider.ts) with RPC + Mempool.space backends. 35 tests. P7-TS-13 (fingerprint indexing) created as NOT STARTED. P7 now 8/13. Overall: 39 complete, 3 partial, 16 not started. |
 | 2026-03-12 ~3:30 AM EST | CRIT-2 code complete. P7-TS-13 promoted NOT STARTED → COMPLETE (SupabaseChainIndexLookup + migration 0050). BitcoinChainClient with provider abstractions (SigningProvider, FeeEstimator, UtxoProvider). Async factory (initChainClient/getInitializedChainClient). 408 worker tests, 727 total. P7 now 9/13 complete, 2 partial, 2 not started. Overall: 40 complete, 3 partial, 15 not started (~74%). |
+| 2026-03-12 ~5:00 AM EST | Added Deferred Hardening group (DH-01 through DH-12). 12 stories from CodeRabbit PR #26 review, all NOT STARTED. Added 10_deferred_hardening.md. Updated completion summary to 70 total stories. |
