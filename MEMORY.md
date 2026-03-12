@@ -28,7 +28,7 @@
 ### What's NOT Blocked
 
 These areas are production-ready or very close:
-- Database layer (50 migrations, RLS on all tables, audit trail immutable)
+- Database layer (49 migrations, RLS on all tables, audit trail immutable)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance (`IssueCredentialForm` — real Supabase insert + Zod + audit log)
 - Individual anchor creation (`SecureDocumentDialog` — fixed, real Supabase insert)
@@ -89,7 +89,7 @@ services/worker/                   ← Express worker (anchoring jobs, Stripe we
 services/worker/src/chain/         ← ChainClient interface + MockChainClient + SignetChainClient
 services/worker/src/stripe/        ← Stripe SDK + webhook verification + handlers
 services/worker/src/webhooks/      ← Outbound webhook delivery engine (HMAC, backoff, retries)
-supabase/migrations/               ← 50 migrations (0001-0050, 0033 + 0049 skipped)
+supabase/migrations/               ← 49 migrations (0001-0050, 0033 skipped)
 supabase/seed.sql                  ← Demo data (admin_demo, user_demo, beta_admin)
 docs/confluence/                   ← 14 docs (00-13): architecture, data model, security, etc.
 docs/stories/                      ← Story docs (10 group files + index)

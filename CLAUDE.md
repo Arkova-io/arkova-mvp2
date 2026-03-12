@@ -288,7 +288,7 @@ services/worker/
     webhooks/delivery.ts                     ← Outbound webhook delivery engine
     utils/                                   ← DB client, logger, rate limiter, correlation ID
 supabase/
-  migrations/                                ← 49 files (0001–0050, 0033 + 0049 intentionally skipped)
+  migrations/                                ← 49 files (0001–0050, 0033 skipped)
   seed.sql                                   ← Demo data
   config.toml                                ← Local Supabase config
 docs/confluence/                             ← Architecture, data model, security, audit, etc.
@@ -448,7 +448,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 49 files, versions 0001–0050 (0033, 0049 intentionally skipped). Last: `0050_create_anchor_chain_index.sql`.
+**Current migration inventory:** 49 files, versions 0001–0050 (0033 skipped). Last: `0050_create_anchor_chain_index.sql`.
 
 ---
 
@@ -769,5 +769,5 @@ CORS_ALLOWED_ORIGINS=*
 
 ---
 
-_Directive version: 2026-03-12 (PR #26 review) | Repo: ArkovaCarson | 50 migrations | 727+ tests_
+_Directive version: 2026-03-12 (PR #26 review) | Repo: ArkovaCarson | 49 migrations | 700+ tests_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_
