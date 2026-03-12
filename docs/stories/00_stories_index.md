@@ -32,7 +32,7 @@ For a new developer joining the project, read in this order:
 | P4.5 | Verification API | 13 | 0 | 0 | 13 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
 | DH | Deferred Hardening | 12 | 0 | 0 | 12 | [10_deferred_hardening.md](./10_deferred_hardening.md) |
 | MVP | Launch Gaps | 14 | 0 | 0 | 14 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
-| **Total** | | **84** | **40** | **3** | **41** | |
+| **Total** | | **84** | **41** | **3** | **40** | |
 
 ### All Stories by ID
 
@@ -96,7 +96,7 @@ For a new developer joining the project, read in this order:
 | P4.5-TS-13 | Rate Limit Load Tests | NOT STARTED | [P4.5](./09_p45_verification_api.md) | — |
 | DH-01 | Feature Flag Kill-Switch Hot-Reload | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 | DH-02 | Advisory Lock for Migration 0049 Concurrency | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
-| DH-03 | KMS Operational Documentation | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
+| DH-03 | KMS Operational Documentation | COMPLETE | [DH](./10_deferred_hardening.md) | — |
 | DH-04 | Outbound Webhook Circuit Breaker | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 | DH-05 | Chain Index Lookup Cache TTL | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 | DH-06 | ConfirmAnchorModal Server-Side Quota Error Handling | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
@@ -182,3 +182,4 @@ Each story doc follows a consistent template:
 | 2026-03-11 ~11:45 PM EST | P7-TS-12 created and marked COMPLETE. UTXO provider pattern (utxo-provider.ts) with RPC + Mempool.space backends. 35 tests. P7-TS-13 (fingerprint indexing) created as NOT STARTED. P7 now 8/13. Overall: 39 complete, 3 partial, 16 not started. |
 | 2026-03-12 ~3:30 AM EST | CRIT-2 code complete. P7-TS-13 promoted NOT STARTED → COMPLETE (SupabaseChainIndexLookup + migration 0050). BitcoinChainClient with provider abstractions (SigningProvider, FeeEstimator, UtxoProvider). Async factory (initChainClient/getInitializedChainClient). 408 worker tests, 727 total. P7 now 9/13 complete, 2 partial, 2 not started. Overall: 40 complete, 3 partial, 15 not started (~74%). |
 | 2026-03-12 ~5:00 AM EST | Added Deferred Hardening group (DH-01 through DH-12). 12 stories from CodeRabbit PR #26 review, all NOT STARTED. Added 10_deferred_hardening.md. Updated completion summary to 70 total stories. |
+| 2026-03-12 ~6:30 AM EST | MVP Launch Gap Audit: Added 14 MVP stories (MVP-01 through MVP-14), 3 new bugs (BUG-AUDIT-01/02/03). DH-03 promoted NOT STARTED → COMPLETE. Total: 84 stories (41 complete, 3 partial, 40 not started). |

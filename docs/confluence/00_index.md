@@ -48,6 +48,7 @@ This directory contains 15 architecture and design documents for the Arkova plat
 |------|-------------|
 | `docs/audit/2026-03-12_full_audit.md` | Full 7-deliverable MVP audit: backlog vs codebase, UI/UX review, gap analysis, 14 launch gap stories |
 | `docs/stories/11_mvp_launch_gaps.md` | 14 MVP launch gap stories (MVP-01 through MVP-14) identified during audit |
+| `docs/NEXT_STEPS.md` | 3-phase execution plan: production launch, polish, growth |
 
 ---
 
