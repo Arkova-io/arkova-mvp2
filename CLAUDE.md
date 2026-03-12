@@ -398,6 +398,7 @@ Story docs live in `docs/stories/` and are grouped by priority level (one file p
 | `07_p6_verification.md` | P6 Verification | 6 |
 | `08_p7_go_live.md` | P7 Go-Live | 13 |
 | `09_p45_verification_api.md` | P4.5 Verification API | 13 |
+| `10_deferred_hardening.md` | DH Deferred Hardening | 12 |
 
 When a story's status changes:
 1. Update the story's section in its group doc (Status field, Completion Gaps, Remaining Work)
@@ -466,7 +467,8 @@ npx supabase db reset
 | P6 Verification | 5/6 | 1/6 | 0 | 83% |
 | P7 Go-Live | 9/13 | 2/13 | 2/13 | 69% |
 | P4.5 Verification API | 0/13 | 0/13 | 13/13 | 0% |
-| **Total** | **40/58** | **3/58** | **15/58** | **~74%** |
+| DH Deferred Hardening | 0/12 | 0/12 | 12/12 | 0% |
+| **Total** | **40/70** | **3/70** | **27/70** | **~61%** |
 
 ### Critical Blockers (resolve before production)
 
@@ -474,7 +476,7 @@ npx supabase db reset
 |----|-------|----------|--------|
 | ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-10. Real Supabase insert replacing setTimeout simulation. Commit a38b485.~~ |
 | CRIT-2 | Bitcoin chain client — code complete, operational items remain | **HIGH** | **CODE COMPLETE.** BitcoinChainClient (renamed from SignetChainClient) with provider abstractions: `SigningProvider` (WIF + KMS), `FeeEstimator` (static + mempool), `UtxoProvider` (RPC + Mempool.space). `SupabaseChainIndexLookup` for O(1) verification (migration 0050). Async factory (`initChainClient()` / `getInitializedChainClient()`). Wallet utilities + CLI scripts. 408 worker tests across 17 files. **Remaining operational items:** Signet E2E broadcast (awaiting UTXO confirmation), AWS KMS key provisioning (mainnet), mainnet treasury funding. |
-| CRIT-3 | No Stripe checkout flow | **HIGH** | Pricing UI + useBilling hook + checkout pages + checkout/portal worker endpoints all implemented (b1f798a). Webhook handlers work. **Remaining:** entitlement enforcement, plan change/downgrade. |
+| CRIT-3 | Stripe checkout — partial | **HIGH** | Pricing UI + useBilling hook + checkout pages + checkout/portal worker endpoints all implemented (b1f798a). Webhook handlers work. Entitlement enforcement partially done: `useEntitlements` hook (client-side quota check, fail-closed), `check_anchor_quota()` RPC + server-side quota in `bulk_create_anchors()` (migration 0049), `ConfirmAnchorModal` quota gate, `UpgradePrompt` component. **Remaining:** plan change/downgrade flows. |
 | ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. OnboardingRolePage, OnboardingOrgPage, ReviewPendingPage wired into App.tsx. Commit a38b485.~~ |
 | ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. onDownloadProofJson wired in RecordDetailPage + AssetDetailView. Commit a38b485.~~ |
 | ~~CRIT-6~~ | ~~`CSVUploadWizard` uses simulated processing~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-10. Connected to csvParser + useBulkAnchors hook. Commit a38b485.~~ |
@@ -533,7 +535,7 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 ### P7 Go-Live — 9/13 COMPLETE, 2/13 PARTIAL, 2/13 NOT STARTED
 
 - P7-TS-01: ✅ Billing schema (migration 0016). BillingOverview.tsx wired in PricingPage with useBilling data.
-- P7-TS-02: ⚠️ PARTIAL — Pricing UI (PricingPage, PricingCard, BillingOverview), useBilling hook, checkout success/cancel pages all implemented. Stripe webhook handlers handle checkout.session.completed + subscription lifecycle. Worker checkout + billing portal endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade flows.
+- P7-TS-02: ⚠️ PARTIAL — Pricing UI (PricingPage, PricingCard, BillingOverview), useBilling hook, checkout success/cancel pages all implemented. Stripe webhook handlers handle checkout.session.completed + subscription lifecycle. Worker checkout + billing portal endpoints wired (b1f798a). 74 tests. Entitlement enforcement partially done: `useEntitlements` hook (fail-closed), `check_anchor_quota()` RPC + server-side quota in `bulk_create_anchors()` (migration 0049), `ConfirmAnchorModal` quota gate, `UpgradePrompt` component. **Remaining:** plan change/downgrade flows.
 - P7-TS-03: ✅ Stripe webhook signature verification works. Mock mode for tests.
 - P7-TS-05: ⚠️ PARTIAL (CODE COMPLETE — operational items remain) — `BitcoinChainClient` (renamed from SignetChainClient) with provider abstractions: `SigningProvider` (WIF + KMS), `FeeEstimator` (static + mempool), `UtxoProvider` (RPC + Mempool.space). Async factory (`initChainClient()` / `getInitializedChainClient()`). `SupabaseChainIndexLookup` for O(1) verification. Migration 0050 creates `anchor_chain_index` table. 408 worker tests across 17 files. **Remaining operational:** Signet E2E broadcast, AWS KMS key provisioning, mainnet treasury funding.
 - P7-TS-07: ✅ COMPLETE — PDF + JSON proof package downloads both wired. Fixed in CRIT-5 (commit a38b485).
@@ -547,6 +549,12 @@ All foundational work done: schema (enums, tables, RLS), validators (Zod), audit
 ### P4.5 Verification API — 0/13 NOT STARTED
 
 All 13 stories behind `ENABLE_VERIFICATION_API=false`. Intentional — scheduled for post-launch.
+
+### DH Deferred Hardening — 0/12 NOT STARTED
+
+12 stories identified during CodeRabbit review of PR #26. All deferred to post-launch hardening. See `docs/stories/10_deferred_hardening.md` for full details.
+
+DH-01 Feature flag hot-reload · DH-02 Advisory lock for bulk_create_anchors · DH-03 KMS operational docs (HIGH — blocks mainnet) · DH-04 Webhook circuit breaker · DH-05 Chain index cache TTL · DH-06 ConfirmAnchorModal server-side quota error handling · DH-07 MempoolFeeEstimator request timeout · DH-08 Rate limiting for check_anchor_quota · DH-09 UtxoProvider retry logic · DH-10 useEntitlements realtime subscription · DH-11 Worker RPC structured logging · DH-12 Webhook dead letter queue
 
 ### Orphaned Code (built but never wired)
 
@@ -587,7 +595,7 @@ All of the following are done. Details in MEMORY.md completed sprints.
 | AWS KMS signing | CRIT-2 | Key provisioning for mainnet signing. SignetChainClient done, mainnet needs KMS. |
 | Signet node connectivity test | CRIT-2 | Verify SignetChainClient against a real Signet node. |
 | Mainnet treasury funding | CRIT-2 | Fund the production treasury wallet. |
-| Entitlement enforcement | CRIT-3 | Gate features by subscription plan after checkout. |
+| Entitlement enforcement | CRIT-3 | PARTIALLY DONE. useEntitlements hook + server-side quota (migration 0049) + ConfirmAnchorModal gate + UpgradePrompt. Remaining: single-anchor UI enforcement in SecureDocumentDialog, plan change/downgrade. |
 | Plan change/downgrade | CRIT-3 | Handle subscription upgrades, downgrades, cancellations. |
 
 ### Pre-Launch (after blockers resolved)
@@ -761,5 +769,5 @@ CORS_ALLOWED_ORIGINS=*
 
 ---
 
-_Directive version: 2026-03-12 (doc audit) | Repo: ArkovaCarson | 48 migrations | 682+ tests_
+_Directive version: 2026-03-12 (PR #26 review) | Repo: ArkovaCarson | 50 migrations | 727+ tests_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

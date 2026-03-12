@@ -18,7 +18,7 @@
 | ID | Issue | Owner | Status |
 |----|-------|-------|--------|
 | ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Real Supabase insert. Commit a38b485.~~ |
-| CRIT-2 | Bitcoin chain client — partial | Specialist | **PARTIAL.** SignetChainClient implemented (`bitcoinjs-lib`, OP_RETURN `ARKV` prefix). Factory updated. Wallet utilities (P7-TS-11): `wallet.ts`, CLI scripts, 13 tests. UTXO provider (P7-TS-12): `RpcUtxoProvider` + `MempoolUtxoProvider`, factory, 35 tests. 147 chain tests total (6 files). **Remaining:** AWS KMS signing (mainnet), Signet node connectivity test, mainnet treasury funding. |
+| CRIT-2 | Bitcoin chain client — CODE COMPLETE | Specialist | **CODE COMPLETE.** BitcoinChainClient with provider abstractions: SigningProvider (WIF + KMS), FeeEstimator (static + mempool), UtxoProvider (RPC + Mempool.space). SupabaseChainIndexLookup + migration 0050. Async factory (initChainClient/getInitializedChainClient). 408 worker tests across 17 files. **Remaining (operational only):** Signet E2E broadcast, AWS KMS key provisioning, mainnet treasury funding. |
 | CRIT-3 | Stripe checkout — partial | Carson/Prajal | **PARTIAL.** Pricing UI + useBilling hook + checkout/portal worker endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade. |
 | ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired RoleSelector, OrgOnboardingForm, ManualReviewGate. Commit a38b485.~~ |
 | ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired onDownloadProofJson. Commit a38b485.~~ |
@@ -28,13 +28,13 @@
 ### What's NOT Blocked
 
 These areas are production-ready or very close:
-- Database layer (48 migrations, RLS on all tables, audit trail immutable)
+- Database layer (50 migrations, RLS on all tables, audit trail immutable)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance (`IssueCredentialForm` — real Supabase insert + Zod + audit log)
 - Individual anchor creation (`SecureDocumentDialog` — fixed, real Supabase insert)
 - Public verification portal (5-section display, `get_public_anchor` RPC, verification event logging)
 - CI/CD (secret scanning, dep scanning, typecheck, lint, copy lint, tests)
-- Worker test coverage (363 tests, 80%+ on all critical paths)
+- Worker test coverage (408 tests, 80%+ on all critical paths)
 - Webhook delivery engine (HMAC signing, exponential backoff, retry cron)
 - Webhook settings UI (two-phase dialog, server-side secret generation)
 - Stripe webhook handlers (checkout.session.completed + subscription lifecycle)
@@ -89,10 +89,10 @@ services/worker/                   ← Express worker (anchoring jobs, Stripe we
 services/worker/src/chain/         ← ChainClient interface + MockChainClient + SignetChainClient
 services/worker/src/stripe/        ← Stripe SDK + webhook verification + handlers
 services/worker/src/webhooks/      ← Outbound webhook delivery engine (HMAC, backoff, retries)
-supabase/migrations/               ← 48 migrations (0001-0048, 0033 skipped)
+supabase/migrations/               ← 50 migrations (0001-0050, 0033 + 0049 skipped)
 supabase/seed.sql                  ← Demo data (admin_demo, user_demo, beta_admin)
 docs/confluence/                   ← 14 docs (00-13): architecture, data model, security, etc.
-docs/stories/                      ← Story docs (9 group files + index)
+docs/stories/                      ← Story docs (10 group files + index)
 e2e/                               ← Playwright E2E specs + fixtures
 ```
 
@@ -137,27 +137,30 @@ e2e/                               ← Playwright E2E specs + fixtures
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-12 ~2:30 AM EST):** Documentation update sprint. Updated all project docs with current test counts (369 worker, 688 total, 153 chain-specific across 6 files), Signet treasury funding status, and UTXO provider integration details. Files updated: `docs/stories/08_p7_go_live.md` (P7-TS-05, P7-TS-11, P7-TS-12 entries), `docs/confluence/10_anchoring_worker.md` (coverage, chain integration, change log), `CLAUDE.md` (CRIT-2 blocker + P7-TS-05 story entry). All 688 tests green. Signet treasury still awaiting first UTXO confirmation.
+**Last session (2026-03-12 ~5:30 AM EST):** PR #26 review/fix sprint. Addressed 26 CodeRabbit review comments: 14 fixed in code (commit dd2c2f0 — fail-closed useEntitlements, UpgradePrompt, structured logging, ConfirmAnchorModal quota gate, useBulkAnchors quota check, etc.), 12 deferred as new stories (DH-01 through DH-12 in `docs/stories/10_deferred_hardening.md`). Updated stories index with DH group (70 total stories). Migration 0049 (entitlement quota enforcement) + migration 0050 (anchor_chain_index) both in PR #26. CRIT-2 marked CODE COMPLETE — all code done, only operational items remain (Signet E2E broadcast, AWS KMS provisioning, mainnet funding). CRIT-3 partially advanced with entitlement enforcement (useEntitlements hook + check_anchor_quota RPC + server-side quota in bulk_create_anchors).
 
 **Current state:**
-- 688 total tests (369 worker + 319 frontend) + 116 E2E/load tests
-- All worker critical paths at 80%+ coverage (17 test files, 369 tests)
-- 153 chain-specific tests across 6 files (signet 33, utxo-provider 34, wallet 13, client 9, mock 18, anchor 46)
+- 727 total tests (408 worker + 319 frontend) + 116 E2E/load tests
+- All worker critical paths at 80%+ coverage (17 test files, 408 tests)
+- 167 chain-specific tests across 7 files (signet 47, utxo-provider 34, wallet 13, client 28, mock 18, anchor 27)
 - Worker hardening sprint COMPLETE (6/6 tasks, 5 bugs found/fixed)
 - Vite 6.4.1 + vitest 3 + esbuild 0.25.12 (CVE patched, 0 npm vulnerabilities)
-- SignetChainClient + UTXO providers + wallet utilities all implemented
+- BitcoinChainClient + provider abstractions + UTXO providers + wallet utilities all implemented
+- SupabaseChainIndexLookup + migration 0050 for O(1) fingerprint verification
+- Entitlement enforcement: useEntitlements hook (client) + check_anchor_quota RPC + server-side quota in bulk_create_anchors (migration 0049)
 - Stripe checkout/portal endpoints wired with JWT auth
 - Webhook delivery engine complete with HMAC signing + exponential backoff
 - Signet treasury address: `mx1zmGtQTghi4GWcJaV1oPwJ5TKhGfFpjs` — funded 500,636 sats, awaiting confirmation
+- PR #26 open on `feat/crit2-complete-provider-abstractions-chain-index` — CI running, CodeRabbit re-review pending
 
 **Remaining production blockers (5 items):**
 1. AWS KMS signing for mainnet Bitcoin
 2. Signet E2E connectivity test — treasury funded, awaiting UTXO confirmation for first real OP_RETURN broadcast
 3. Mainnet treasury funding
-4. Entitlement enforcement (restrict features by billing plan)
+4. Entitlement enforcement — partially done (useEntitlements + server-side quota). Remaining: ConfirmAnchorModal UI gate for single anchors, plan change/downgrade flows.
 5. Plan change/downgrade flows
 
-**Next session should:** Check UTXO confirmation status, run real Signet E2E broadcast if confirmed, or pick up entitlement enforcement (CRIT-3).
+**Next session should:** Merge PR #26 if CI green + CodeRabbit approved. Then: check UTXO confirmation status, run real Signet E2E broadcast if confirmed, or pick up remaining entitlement enforcement (CRIT-3).
 
 **Completed sprints (archived):**
 All sprint details moved to Claude project memory. Summary:
@@ -175,6 +178,9 @@ All sprint details moved to Claude project memory. Summary:
 - P7-TS-12 UTXO Provider (2026-03-11): RpcUtxoProvider + MempoolUtxoProvider, factory, 35 tests
 - Signet Test Fixes (2026-03-12): Fixed 6 failures, 101 chain tests, 363 worker total
 - Broadcast Test Coverage (2026-03-12): PR #24, 6 new broadcast tests, anchoring worker docs
+- CRIT-2 Code Complete (2026-03-12): All 8 steps done. BitcoinChainClient + provider abstractions + SupabaseChainIndexLookup + migration 0050. 408 worker tests.
+- CRIT-3 Entitlement Enforcement (2026-03-12): migration 0049 (check_anchor_quota + bulk_create_anchors quota), useEntitlements hook, ConfirmAnchorModal quota gate, UpgradePrompt component
+- PR #26 CodeRabbit Review (2026-03-12): 14 fixes committed (dd2c2f0), 12 deferred as DH-01 through DH-12 in docs/stories/10_deferred_hardening.md
 
 ---
 
