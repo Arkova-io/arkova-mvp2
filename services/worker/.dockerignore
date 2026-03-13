@@ -10,5 +10,4 @@ coverage
 tests
 __tests__
 vitest.config.ts
-tsconfig.json
 .DS_Store
