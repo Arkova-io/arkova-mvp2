@@ -85,7 +85,7 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --platform managed \
-            --no-allow-unauthenticated \
+            --allow-unauthenticated \
             --port 3001 \
             --cpu 1 \
             --memory 512Mi \
