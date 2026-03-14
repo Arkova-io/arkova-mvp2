@@ -144,7 +144,10 @@
       "Bash(do echo:*)",
       "Bash(python3:*)",
       "Bash(gh run:*)",
-      "WebFetch(domain:arkova-26-diin7f2dc-carsons-projects-1179ca27.vercel.app)"
+      "WebFetch(domain:arkova-26-diin7f2dc-carsons-projects-1179ca27.vercel.app)",
+      "WebFetch(domain:mempool.space)",
+      "WebFetch(domain:www.simpleproof.com)",
+      "Bash(npm audit:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

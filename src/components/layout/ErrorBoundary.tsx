@@ -9,6 +9,7 @@ import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Shield, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sentry } from '@/lib/sentry';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -30,7 +31,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log to console in development; Sentry integration can be added here later
+    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     console.error('[ErrorBoundary] Uncaught error:', error, errorInfo);
   }
 
