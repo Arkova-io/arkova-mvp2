@@ -1,5 +1,5 @@
 # Arkova Documentation Index
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-13_
 
 ## Reading Guide
 
@@ -28,7 +28,7 @@ This directory contains 15 architecture and design documents for the Arkova plat
 |---|------|-------------|
 | 00 | `00_index.md` | This file — reading guide, test accounts, document catalog |
 | 01 | `01_architecture_overview.md` | System architecture, tech stack, deployment topology, Constitution summary |
-| 02 | `02_data_model.md` | Complete database schema — 20 tables, 6 enums, all columns, constraints, triggers, ER diagram |
+| 02 | `02_data_model.md` | Complete database schema — 22 tables, 6 enums, all columns, constraints, triggers, ER diagram |
 | 03 | `03_security_rls.md` | Row Level Security policies, FORCE RLS, privileged field protection |
 | 04 | `04_audit_events.md` | Append-only audit trail design, immutability triggers, event categories |
 | 05 | `05_retention_legal_hold.md` | Legal hold mechanics, retention policies, soft delete behavior |
@@ -55,15 +55,16 @@ This directory contains 15 architecture and design documents for the Arkova plat
 
 ## Test Accounts (Seed Data)
 
-These accounts are created by `supabase/seed.sql` and available after `supabase db reset`.
+These accounts are created by `supabase/seed.sql` and available after `supabase db reset`. They are also loaded in the production Supabase instance.
 
 | Email | Password | Role | Org | Use For |
 |-------|----------|------|-----|---------|
-| `admin_demo@arkova.local` | `demo_password_123` | ORG_ADMIN | Arkova | Org admin flows, credential issuance, member management, webhook config |
-| `user_demo@arkova.local` | `demo_password_123` | INDIVIDUAL | None | Individual user flows, personal anchoring, vault dashboard |
-| `beta_admin@betacorp.local` | `demo_password_123` | ORG_ADMIN | Beta Corp | Cross-org isolation testing, RLS verification |
+| `admin@umich-demo.arkova.io` | `Demo1234!` | ORG_ADMIN | UMich Registrar | Org admin flows, credential issuance, member management, webhook config |
+| `registrar@umich-demo.arkova.io` | `Demo1234!` | ORG_MEMBER | UMich Registrar | Org member flows, limited access |
+| `admin@midwest-medical.arkova.io` | `Demo1234!` | ORG_ADMIN | Midwest Medical Board | Cross-org isolation testing, RLS verification |
+| `individual@demo.arkova.io` | `Demo1234!` | INDIVIDUAL | None | Individual user flows, personal anchoring, vault dashboard |
 
-### Quick Start
+### Quick Start (Local)
 
 ```bash
 # Reset to seed data
@@ -77,6 +78,10 @@ npm run dev
 
 # Login at http://localhost:5173 with any account above
 ```
+
+### Production
+
+The production site is deployed at `https://arkova-carson.vercel.app` connected to production Supabase (`vzwyaatejekddvltxyye`). All 51 migrations applied, seed data loaded, Stripe Price IDs configured.
 
 ---
 

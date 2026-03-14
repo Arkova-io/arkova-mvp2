@@ -1,6 +1,6 @@
 # MEMORY.md — Arkova Living Project State
 
-> **Last updated:** 2026-03-13
+> **Last updated:** 2026-03-12
 > **Purpose:** Living context for AI-assisted development sessions. CLAUDE.md has rules and story status. This file has decisions, blockers, sprint state, and institutional knowledge.
 > **Update frequency:** After every significant session or decision. If you learn something during a task, update this file before closing out.
 
@@ -19,7 +19,7 @@
 |----|-------|-------|--------|
 | ~~CRIT-1~~ | ~~`SecureDocumentDialog` fakes anchor creation~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Real Supabase insert. Commit a38b485.~~ |
 | CRIT-2 | Bitcoin chain client — CODE COMPLETE | Specialist | **CODE COMPLETE.** BitcoinChainClient with provider abstractions: SigningProvider (WIF + KMS, 98%+ coverage), FeeEstimator (static + mempool), UtxoProvider (RPC + Mempool.space). SupabaseChainIndexLookup + migration 0050. Async factory. KMS operational docs (`14_kms_operations.md`). 455 worker tests across 19 files. **Remaining (operational only):** Signet E2E broadcast (manual), AWS KMS key provisioning (follow 14_kms_operations.md), mainnet treasury funding. |
-| CRIT-3 | Stripe checkout — partial | Carson/Prajal | **PARTIAL.** Pricing UI + useBilling hook + checkout/portal worker endpoints wired (b1f798a). 74 tests. Stripe Price IDs set in production plans table. **Remaining:** plan change/downgrade flows only. |
+| CRIT-3 | Stripe checkout — partial | Carson/Prajal | **PARTIAL.** Pricing UI + useBilling hook + checkout/portal worker endpoints wired (b1f798a). 74 tests. **Remaining:** entitlement enforcement, plan change/downgrade. |
 | ~~CRIT-4~~ | ~~Onboarding routes are placeholders~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired RoleSelector, OrgOnboardingForm, ManualReviewGate. Commit a38b485.~~ |
 | ~~CRIT-5~~ | ~~Proof export JSON download is no-op~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Wired onDownloadProofJson. Commit a38b485.~~ |
 | ~~CRIT-6~~ | ~~CSVUploadWizard uses simulated processing~~ | ~~Prajal~~ | ~~**RESOLVED 2026-03-10.** Connected to csvParser + useBulkAnchors. Commit a38b485.~~ |
@@ -28,8 +28,7 @@
 ### What's NOT Blocked
 
 These areas are production-ready or very close:
-- **Production Supabase fully deployed** (51 migrations applied, seed data loaded, Stripe Price IDs set, Vercel env vars configured)
-- Database layer (51 migrations, RLS on all tables, audit trail immutable)
+- Database layer (49 migrations, RLS on all tables, audit trail immutable)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance (`IssueCredentialForm` — real Supabase insert + Zod + audit log)
 - Individual anchor creation (`SecureDocumentDialog` — fixed, real Supabase insert)
@@ -90,8 +89,8 @@ services/worker/                   ← Express worker (anchoring jobs, Stripe we
 services/worker/src/chain/         ← ChainClient interface + MockChainClient + SignetChainClient
 services/worker/src/stripe/        ← Stripe SDK + webhook verification + handlers
 services/worker/src/webhooks/      ← Outbound webhook delivery engine (HMAC, backoff, retries)
-supabase/migrations/               ← 51 migrations (0001-0051, 0033 skipped). ALL applied to production.
-supabase/seed.sql                  ← Demo data (4 users, 2 orgs, 8 anchors). Applied to production 2026-03-13.
+supabase/migrations/               ← 49 migrations (0001-0050, 0033 skipped)
+supabase/seed.sql                  ← Demo data (admin_demo, user_demo, beta_admin)
 docs/confluence/                   ← 15 docs (00-14): architecture, data model, security, KMS ops, etc.
 docs/stories/                      ← Story docs (10 group files + index)
 e2e/                               ← Playwright E2E specs + fixtures
@@ -138,25 +137,16 @@ e2e/                               ← Playwright E2E specs + fixtures
 
 > When ending a session, write what the next session needs to know here. Clear old notes when they're no longer relevant.
 
-**Last session (2026-03-13):** Production database deployment complete.
-
-**What was done (2026-03-13):**
-- All 51 migrations (0001-0051) applied to production Supabase (`vzwyaatejekddvltxyye`) via MCP `apply_migration`
-- Stripe Price IDs set in production `plans` table: Free=`price_1TAbTvBBeICNeQqromP2OWMx`, Individual=`price_1TAbO3BBeICNeQqrG1cPbHly`, Professional=`price_1TAbkHBBeICNeQqrft39hR10`
-- Seed data loaded to production: 4 auth users, 2 orgs, 4 profiles, 3 memberships, 8 anchors, 14 audit events, 5 switchboard flags
-- `database.types.ts` regenerated from production schema via MCP `generate_typescript_types` (22 tables, 16 functions, 6 enums)
-- TypeScript check passes clean with new types
-- Vercel env vars set by Carson: `VITE_SUPABASE_URL=https://vzwyaatejekddvltxyye.supabase.co`, `VITE_SUPABASE_ANON_KEY` (production anon key)
-- Vercel redeployed with production env vars
-- `get_public_anchor('ARK-2024-00091')` verified working on production — returns Phase 1.5 frozen schema
+**Last session (2026-03-12 ~6:00 AM EST):** CRIT-2 Operational Readiness sprint. KMS signing coverage: 39 tests added in signing-provider.test.ts (98%+ coverage with v8 ignore on AWS SDK boundary). Added signing-provider.ts 80% threshold to vitest.config.ts. Created `docs/confluence/14_kms_operations.md` (key provisioning, IAM policy, rotation, DR) — unblocks DH-03. Updated 00_index.md (15 docs). 455 worker tests across 19 files (was 408/17). Signet integration tests: 8 tests constructing + signing real Bitcoin Signet transactions. E2E silent skip anti-pattern fixed.
 
 **Current state:**
-- Production Supabase: ACTIVE_HEALTHY, Postgres 17.6.1, us-east-2
-- Production Vercel: READY at `arkova-carson.vercel.app` with production Supabase env vars
 - 765 total tests (455 worker + 310 frontend) + 116 E2E/load tests
 - All worker critical paths at 80%+ coverage (19 test files, 455 tests)
+- signing-provider.ts coverage: 98.41% statements, 94.59% branches, 100% functions, 98.41% lines
+- 206 chain-specific tests across 8 files (signet 47, signet.integration 8, utxo-provider 34, wallet 13, client 28, mock 18, anchor 27, signing-provider 39)
+- KMS operational docs complete (14_kms_operations.md)
 - Signet treasury address: `mx1zmGtQTghi4GWcJaV1oPwJ5TKhGfFpjs` — funded 500,636 sats
-- `database.types.ts` changed locally but NOT YET committed/pushed
+- PR #26 open on `feat/crit2-complete-provider-abstractions-chain-index`
 
 ## Mainnet Readiness Checklist
 
@@ -169,20 +159,19 @@ e2e/                               ← Playwright E2E specs + fixtures
 | 5 | Fund mainnet treasury | **NOT STARTED** | Send BTC to the derived mainnet address. Minimum: enough for ~1000 OP_RETURN transactions (~0.01 BTC at current fee rates). |
 | 6 | Set production env vars | **NOT STARTED** | `BITCOIN_NETWORK=mainnet`, `KMS_KEY_ID=<key>`, `KMS_REGION=us-east-1`, `ENABLE_PROD_NETWORK_ANCHORING=true` |
 | 7 | CloudTrail monitoring | **NOT STARTED** | Enable CloudWatch alarms for `kms:ScheduleKeyDeletion` and `kms:DisableKey` on the treasury key. See 14_kms_operations.md DR section. |
-| 8 | Supabase production project | **COMPLETE** | Production Supabase `vzwyaatejekddvltxyye` (Postgres 17.6.1, us-east-2). All 51 migrations applied. Seed data loaded. Stripe Price IDs set. |
-| 9 | DNS + custom domain | **NOT STARTED** | `app.arkova.io` or equivalent. Configure Vercel custom domain. Currently at `arkova-carson.vercel.app`. |
-| 10 | Seed data strip | **N/A FOR NOW** | Demo users loaded for testing. Strip before public launch. |
+| 8 | Supabase production project | **NOT STARTED** | Provision production-tier Supabase project. Run all 49 migrations. |
+| 9 | DNS + custom domain | **NOT STARTED** | `app.arkova.io` or equivalent. Configure Vercel custom domain. |
+| 10 | Seed data strip | **NOT STARTED** | Remove demo users (admin_demo, user_demo, beta_admin) from production seed. |
 | 11 | Entitlement plan change/downgrade | **NOT STARTED** | Handle subscription upgrades, downgrades, cancellations (CRIT-3 remaining work). |
 | 12 | SOC 2 evidence collection | **NOT STARTED** | Begin at production launch. CI logs, RLS test results, audit events as evidence. |
 
-**Remaining production blockers (2 code items + operational):**
-1. **Plan change/downgrade flows** — CRIT-3 remaining code work
-2. **AWS KMS + mainnet funding** — operational, follows 14_kms_operations.md
-3. **DNS + custom domain** — `app.arkova.io` or equivalent
-4. **Worker env vars on Cloud Run** — `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FRONTEND_URL`
-5. **Key rotation** — Stripe live key + Supabase service role key if previously exposed
+**Remaining production blockers (3 code items + operational):**
+1. **Signet E2E broadcast** — manual, requires WIF (Step 1 above)
+2. **Plan change/downgrade flows** — CRIT-3 remaining code work
+3. **AWS KMS + mainnet funding** — operational, follows 14_kms_operations.md
+4. **Supabase production + DNS** — infrastructure provisioning
 
-**Next session should:** Commit + push `database.types.ts` to trigger fresh Vercel build. Verify live site login works with demo accounts. Set up Cloud Run worker env vars. Register Stripe webhook endpoint. Then: CRIT-3 plan change/downgrade flows or MVP launch gap stories (MVP-02 toast system, MVP-04 brand assets).
+**Next session should:** Commit all pending changes (KMS tests, vitest threshold, 14_kms_operations.md, 00_index.md, signing-provider.ts v8 ignore). Push to PR #26. Merge if CI green. Then: Signet E2E broadcast (manual with WIF) or CRIT-3 plan change/downgrade flows.
 
 **Completed sprints (archived):**
 All sprint details moved to Claude project memory. Summary:
@@ -204,7 +193,6 @@ All sprint details moved to Claude project memory. Summary:
 - CRIT-3 Entitlement Enforcement (2026-03-12): migration 0049 (check_anchor_quota + bulk_create_anchors quota), useEntitlements hook, ConfirmAnchorModal quota gate, UpgradePrompt component
 - PR #26 CodeRabbit Review (2026-03-12): 14 fixes committed (dd2c2f0), 12 deferred as DH-01 through DH-12 in docs/stories/10_deferred_hardening.md
 - CRIT-2 Operational Readiness (2026-03-12): KMS signing 39 tests (98%+ coverage), vitest threshold, 14_kms_operations.md (DH-03 unblocked), 00_index.md updated (15 docs), signet integration tests (8), E2E silent skip fix. 455 worker tests across 19 files.
-- Production DB Deployment (2026-03-13): All 51 migrations applied to production Supabase via MCP. Stripe Price IDs set. Seed data loaded (4 users, 2 orgs, 8 anchors, 14 audit events). `database.types.ts` regenerated from production. Vercel env vars configured. Site redeployed.
 
 ---
 

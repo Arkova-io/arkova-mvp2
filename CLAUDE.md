@@ -1,24 +1,55 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-12 (MVP launch gap audit)
+> **Version:** 2026-03-14 (methodology upgrade — mandates + handoff)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
-> **Companion file:** `MEMORY.md` (living state — decisions, blockers, sprint context)
+> **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
-Claude Code reads this file automatically before every task. It contains the rules, the repo map, and the current story status. If something conflicts with MEMORY.md, this file wins on rules; MEMORY.md wins on current state.
+Claude Code reads this file automatically before every task. It contains the rules, the repo map, and the current story status. If something conflicts with HANDOFF.md, this file wins on rules; HANDOFF.md wins on current state.
 
 ---
 
-## 0. READ FIRST — EVERY SESSION
+## 0. MANDATORY METHODOLOGY — APPLIES BEFORE ALL OTHER RULES
+
+> **These four mandates override everything below. No exceptions. No shortcuts.**
+
+### ARCHITECT MANDATE
+You must use your `sequential-thinking` MCP tool to brainstorm and validate architecture before writing any code. Break complex problems into manageable steps. Do not jump to implementation — think first, plan the approach, identify risks, then execute.
+
+### TDD MANDATE
+All code must follow Test-Driven Development (Red-Green-Refactor):
+1. **Red:** Write a failing test that defines the desired behavior.
+2. **Green:** Write the minimum code to make the test pass.
+3. **Refactor:** Clean up the code while keeping tests green.
+No production code without a corresponding test written first.
+
+### SECURITY MANDATE
+You must manually check for PII leakage, command injection, and vulnerable dependencies before finalizing any file. Act as your own Code Reviewer. Specifically:
+- Scan for hardcoded secrets, API keys, PII in logs or error messages.
+- Check for command injection, SQL injection, XSS, and path traversal.
+- Verify dependencies are not known-vulnerable (`npm audit`).
+- Confirm RLS policies cover new tables/columns.
+- This is in addition to (not a replacement for) Constitution Section 1.4.
+
+### TOOLING MANDATE
+Always use the Playwright MCP tool to verify frontend UI changes. After any component, page, or styling change:
+- Navigate to the affected page.
+- Take a snapshot or screenshot to confirm the change renders correctly.
+- Verify no visual regressions on adjacent components.
+
+---
+
+## 0.1. READ FIRST — EVERY SESSION
 
 ```
-1. CLAUDE.md          ← You are here. Rules, Constitution, story status.
-2. MEMORY.md          ← Living state. Blockers, decisions, sprint context, handoff notes.
-3. docs/confluence/01_architecture_overview.md  ← If it exists.
-4. The relevant agents.md in any folder you are about to edit.
-5. The story card from the Technical Backlog for the story you are implementing.
+1. CLAUDE.md          ← You are here. Rules, Mandates, Constitution, story status.
+2. HANDOFF.md         ← Living state. Phase 3/4 tracking, blockers, decisions.
+3. ARCHIVE_memory.md  ← Historical context from prior phases.
+4. docs/confluence/01_architecture_overview.md  ← If it exists.
+5. The relevant agents.md in any folder you are about to edit.
+6. The story card from the Technical Backlog for the story you are implementing.
 ```
 
-If a folder contains an `agents.md`, read it before touching anything. If you learn something important during your work, update that folder's `agents.md` AND the "Session Handoff Notes" section of MEMORY.md.
+If a folder contains an `agents.md`, read it before touching anything. If you learn something important during your work, update that folder's `agents.md` AND the "Current State" section of HANDOFF.md.
 
 ---
 
@@ -489,7 +520,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 50 files, versions 0001–0051 (0033 skipped). Last: `0051_enable_pgvector_and_institution_ground_truth.sql`.
+**Current migration inventory:** 50 files, versions 0001–0051 (0033 skipped). Last: `0051_enable_pgvector_and_institution_ground_truth.sql`. All 51 migrations applied to production Supabase (`vzwyaatejekddvltxyye`) on 2026-03-13.
 
 ---
 
@@ -509,10 +540,10 @@ npx supabase db reset
 | P7 Go-Live | 9/13 | 2/13 | 2/13 | 69% | <!-- 13 stories: P7-TS-01 through P7-TS-13, P7-TS-04 and P7-TS-06 not enumerated below (no individual scope) --> |
 | P4.5 Verification API | 0/13 | 0/13 | 13/13 | 0% |
 | DH Deferred Hardening | 1/12 | 0/12 | 11/12 | 8% |
-| MVP Launch Gaps | 0/27 | 0/27 | 27/27 | 0% |
+| MVP Launch Gaps | 1/27 | 0/27 | 26/27 | 4% |
 | P8 AI Intelligence | 0/19 | 0/19 | 19/19 | 0% |
 | INFRA Edge & Ingress | 0/8 | 0/8 | 8/8 | 0% |
-| **Total** | **41/124** | **3/124** | **80/124** | **~35%** |
+| **Total** | **42/124** | **3/124** | **79/124** | **~36%** |
 
 ### Critical Blockers (resolve before production)
 
@@ -673,6 +704,10 @@ All of the following are done. Details in MEMORY.md completed sprints.
 - ✅ SignetChainClient (bitcoinjs-lib OP_RETURN, `ARKV` prefix)
 - ✅ P7-TS-11 Signet wallet setup (wallet.ts, CLI scripts, 13 tests)
 - ✅ P7-TS-12 UTXO provider pattern (RPC + Mempool.space backends, 35 tests)
+- ✅ Production Supabase deployed (51 migrations, seed data, Stripe Price IDs set)
+- ✅ database.types.ts regenerated from production (22 tables, 16 functions, 6 enums) — PR #29
+- ✅ Phase 0 tooling (edge scaffolding, tunnel config, Sentry/CF deps, scripts) — PR #29
+- ✅ MVP-04 brand assets (ArkovaLogo, favicon.svg, OG meta tags) — PR #30
 
 ### Current: Remaining Production Blockers
 
@@ -691,7 +726,7 @@ All of the following are done. Details in MEMORY.md completed sprints.
 | Worker deployment | MVP-01 | CRITICAL | Deploy Express worker to production host. Blocks all anchor processing. |
 | Toast system | MVP-02 | HIGH | Global Sonner toasts — actions currently give no feedback (BUG-AUDIT-01). |
 | Legal pages | MVP-03 | HIGH | /privacy, /terms, /contact are dead links (BUG-AUDIT-02). |
-| Brand assets | MVP-04 | HIGH | Logo, favicon, OG tags — placeholder Shield icon (BUG-AUDIT-03). |
+| ~~Brand assets~~ | ~~MVP-04~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-14. ArkovaLogo component, favicon.svg, OG meta tags. PR #30.~~ |
 | Error boundary | MVP-05 | HIGH | React error boundary + 404 page. |
 | Stripe plan change | MVP-11 | HIGH | Upgrades, downgrades, cancellations (CRIT-3 remaining). |
 
@@ -699,7 +734,8 @@ All of the following are done. Details in MEMORY.md completed sprints.
 
 | Task | Detail |
 |------|--------|
-| Supabase production | Provision production-tier project. |
+| ~~Supabase production~~ | ~~DONE 2026-03-13. Project `vzwyaatejekddvltxyye` provisioned, 51 migrations applied, seed data loaded, Stripe Price IDs configured.~~ |
+| ~~Vercel production~~ | ~~DONE 2026-03-13. `arkova-carson.vercel.app` deployed with production Supabase env vars.~~ |
 | DNS + custom domain | `app.arkova.io` or equivalent. |
 | Seed data strip | Remove demo users. |
 | Marketing website | MVP-10: arkova.ai public site with pricing, features, CTA. |

@@ -2,13 +2,15 @@
  * Arkova Edge Workers — Entry Point
  *
  * Routes requests to the appropriate edge worker handler.
- * All workers are stubs until their INFRA stories are started.
+ * Handles both HTTP fetch and Queue message consumption.
  *
  * ADR: docs/confluence/15_zero_trust_edge_architecture.md
  */
 
+import type { Env, BatchQueueMessage } from './env';
+
 export default {
-  async fetch(request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/report')) {
@@ -21,10 +23,15 @@ export default {
       return handler.fetch(request, env, ctx);
     }
 
+    if (url.pathname.startsWith('/crawl')) {
+      const { default: handler } = await import('./cloudflare-crawler');
+      return handler.fetch(request, env, ctx);
+    }
+
     return new Response('arkova-edge: no matching route', { status: 404 });
   },
 
-  async queue(batch: MessageBatch<unknown>, env: unknown, ctx: ExecutionContext): Promise<void> {
+  async queue(batch: MessageBatch<BatchQueueMessage>, env: Env, ctx: ExecutionContext): Promise<void> {
     const { default: handler } = await import('./batch-queue');
     return handler.queue(batch, env, ctx);
   },

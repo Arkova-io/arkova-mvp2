@@ -1,5 +1,5 @@
 # Arkova Story Documentation Index
-_Last updated: 2026-03-12 ~11:30 AM EST_
+_Last updated: 2026-03-13_
 
 ## Overview
 
@@ -229,3 +229,4 @@ Each story doc follows a consistent template:
 | 2026-03-12 ~5:00 AM EST | Added Deferred Hardening group (DH-01 through DH-12). 12 stories from CodeRabbit PR #26 review, all NOT STARTED. Added 10_deferred_hardening.md. Updated completion summary to 70 total stories. |
 | 2026-03-12 ~6:30 AM EST | MVP Launch Gap Audit: Added 14 MVP stories (MVP-01 through MVP-14), 3 new bugs (BUG-AUDIT-01/02/03). DH-03 promoted NOT STARTED → COMPLETE. Total: 84 stories (41 complete, 3 partial, 40 not started). |
 | 2026-03-12 ~11:30 AM EST | Added P8 AI Intelligence group (19 stories, P8-S1 through P8-S19). Removed MVP-19 (superseded by P8-S4/S5) and MVP-22 (superseded by P8-S7/S8/S9). Renamed MVP-23 → Batch Anchor Processing, MVP-24 → Credits Schema + Monthly Allocations. MVP count 29→27. Total: 116 stories (41 complete, 3 partial, 72 not started). |
+| 2026-03-13 | Production database deployment: all 51 migrations applied to production Supabase, Stripe Price IDs set, seed data loaded, `database.types.ts` regenerated, Vercel env vars configured and redeployed. No story status changes — infrastructure milestone. |

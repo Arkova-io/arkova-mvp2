@@ -11,6 +11,7 @@ import 'dotenv/config';
 import express from 'express';
 import cron from 'node-cron';
 import { config } from './config.js';
+import { initSentry, Sentry } from './utils/sentry.js';
 import { logger } from './utils/logger.js';
 import { db } from './utils/db.js';
 import { processPendingAnchors } from './jobs/anchor.js';
@@ -19,6 +20,9 @@ import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './stripe/client.js';
 import { processWebhookRetries } from './webhooks/delivery.js';
 import { rateLimiters } from './utils/rateLimit.js';
+
+// Initialize Sentry BEFORE Express app — PII scrubbing mandatory (Constitution 1.4 + 1.6)
+initSentry(config.sentryDsn, config.nodeEnv);
 
 const app = express();
 
@@ -284,6 +288,9 @@ app.post('/jobs/process-anchors', async (_req, res) => {
     res.status(500).json({ error: 'Processing failed' });
   }
 });
+
+// Sentry Express error handler — must be after all routes, before other error handlers
+Sentry.setupExpressErrorHandler(app);
 
 // Scheduled jobs
 function setupScheduledJobs(chainInitialized: boolean): void {
