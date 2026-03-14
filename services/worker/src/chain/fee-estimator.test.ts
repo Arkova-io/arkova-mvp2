@@ -40,7 +40,9 @@ import {
 
 // ---- Helpers ----
 
-function okFeeResponse(fees: Record<string, number> = { halfHourFee: 12 }) {
+const DEFAULT_FEES: Record<string, number> = { halfHourFee: 12 };
+
+function okFeeResponse(fees: Record<string, number> = DEFAULT_FEES) {
   return new Response(JSON.stringify(fees), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
