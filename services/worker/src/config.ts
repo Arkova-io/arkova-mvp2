@@ -20,6 +20,8 @@ const ConfigSchema = z.object({
   // Database
   supabaseUrl: z.string().url(),
   supabaseServiceKey: z.string().min(1),
+  /** JWT secret for local token verification — eliminates network call to Supabase auth */
+  supabaseJwtSecret: z.string().min(1).optional(),
 
   // Stripe
   stripeSecretKey: z.string().min(1),
@@ -79,6 +81,7 @@ function loadConfig(): Config {
     logLevel: process.env.LOG_LEVEL,
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseJwtSecret: process.env.SUPABASE_JWT_SECRET,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     bitcoinNetwork: process.env.BITCOIN_NETWORK,

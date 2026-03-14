@@ -114,6 +114,19 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
+// Mock auth.ts — delegates to mockSupabaseGetUser for test controllability
+vi.mock('./auth.js', () => ({
+  verifyAuthToken: async (token: string) => {
+    if (!token) return null;
+    try {
+      const result = await mockSupabaseGetUser(token);
+      return result?.data?.user?.id ?? null;
+    } catch {
+      return null;
+    }
+  },
+}));
+
 vi.mock('dotenv/config', () => ({}));
 
 // Bypass rate limiters in tests so requests aren't 429'd
