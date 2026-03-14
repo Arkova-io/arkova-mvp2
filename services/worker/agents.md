@@ -1,5 +1,5 @@
 # agents.md — services/worker
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-14_
 
 ## What This Folder Contains
 
@@ -18,6 +18,7 @@ Express-based worker service handling privileged server-side operations: anchor 
 | 2026-03-11 | SONARQUBE | SonarQube remediation: S2068 credential fixes across test files, S6437 ReDoS regex replacements, S8215 Express disclosure fix, S2004 deeply nested mock flattening in load tests, security hotspot reviews (pseudorandom, CORS, CSRF, regex anchoring). All worker type errors resolved. |
 | 2026-03-11 | P7-TS-11 | Wallet utilities: `chain/wallet.ts` (generateSignetKeypair, addressFromWif, isValidSignetWif), CLI scripts, 13 tests. |
 | 2026-03-12 | P7-TS-12 | UTXO provider abstraction: `chain/utxo-provider.ts` (RpcUtxoProvider + MempoolUtxoProvider + factory), 35 tests. Broadcast tests added to signet.test.ts (3) and utxo-provider.test.ts (3). Integrated into SignetChainClient + getChainClient(). 363 total worker tests. |
+| 2026-03-14 | H3-01 | Deleted dead `src/jobs/webhook.ts` + `src/jobs/webhook.test.ts` (superseded by `webhooks/delivery.ts`). Removed `webhook.ts` coverage entry from `vitest.config.ts`. |
 | 2026-03-12 | INFRA-01 | **Zero Trust Docker transformation.** Dockerfile converted to multi-process (Express + cloudflared sidecar). `entrypoint.sh` process manager created. `tunnel-config.yml` reference spec. `config.ts` extended with `cloudflareTunnelToken` + `sentryDsn`. `scripts/deploy-tunnel.sh` deployment script. NO ports exposed — all ingress via Cloudflare Tunnel. ADR-002: `docs/confluence/15_zero_trust_edge_architecture.md`. |
 
 ## Test Coverage Status (Final — HARDENING-5)
@@ -37,7 +38,7 @@ Express-based worker service handling privileged server-side operations: anchor 
 | `src/index.ts` | `index.test.ts` | 17 | 80%+ | H5 |
 | `src/stripe/mock.ts` | `mock.test.ts` | 9 | 80%+ | H5 |
 | `src/jobs/report.ts` | `report.test.ts` | 19 | 80%+ | H5 |
-| `src/jobs/webhook.ts` | `webhook.test.ts` | 12 | 80%+ | H5 |
+| ~~`src/jobs/webhook.ts`~~ | ~~deleted~~ | — | — | H3-01: dead code, superseded by `webhooks/delivery.ts` |
 | `src/utils/correlationId.ts` | `correlationId.test.ts` | 12 | 80%+ | H5 |
 | `src/utils/rateLimit.ts` | `rateLimit.test.ts` | 18 | 80%+ | H5 |
 | `src/chain/signet.ts` | `signet.test.ts` | 33 | 80%+ | P7-TS-05+12 |

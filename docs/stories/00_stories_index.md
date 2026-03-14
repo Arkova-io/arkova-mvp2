@@ -31,10 +31,10 @@ For a new developer joining the project, read in this order:
 | P7 | Go-Live | 13 | 9 | 2 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 0 | 0 | 13 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
 | DH | Deferred Hardening | 12 | 1 | 0 | 11 | [10_deferred_hardening.md](./10_deferred_hardening.md) |
-| MVP | Launch Gaps | 27 | 3 | 1 | 23 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
+| MVP | Launch Gaps | 27 | 4 | 0 | 23 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
 | P8 | AI Intelligence | 19 | 0 | 0 | 19 | [12_p8_ai_intelligence.md](./12_p8_ai_intelligence.md) |
 | INFRA | Infrastructure & Edge | 8 | 0 | 5 | 3 | [13_infrastructure_edge.md](./13_infrastructure_edge.md) |
-| **Total** | | **124** | **45** | **9** | **70** | |
+| **Total** | | **124** | **46** | **8** | **70** | |
 
 ### All Stories by ID
 
@@ -109,7 +109,7 @@ For a new developer joining the project, read in this order:
 | DH-11 | Worker RPC Logging Structured Format | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 | DH-12 | Webhook Delivery Dead Letter Queue | NOT STARTED | [DH](./10_deferred_hardening.md) | — |
 | MVP-01 | Worker Production Deployment | NOT STARTED | [MVP](./11_mvp_launch_gaps.md) | — |
-| MVP-02 | Toast/Notification System | PARTIAL | [MVP](./11_mvp_launch_gaps.md) | BUG-AUDIT-01 |
+| MVP-02 | Toast/Notification System | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | ~~BUG-AUDIT-01~~ RESOLVED |
 | MVP-03 | Legal Pages (Privacy, Terms, Contact) | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | ~~BUG-AUDIT-02~~ FIXED |
 | MVP-04 | Brand Assets (Logo, Favicon, OG Tags) | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | ~~BUG-AUDIT-03~~ FIXED |
 | MVP-05 | Error Boundary + 404 Page | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | — |
@@ -175,12 +175,13 @@ See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs (inc
 |--------|----------|-----------------|---------|
 | CRIT-2 | HIGH | P7-TS-05 | Bitcoin chain client CODE COMPLETE — operational items only (AWS KMS provisioning, mainnet funding). Signet E2E broadcast verified (TX b8e381df). |
 | CRIT-3 | HIGH | P7-TS-02 | Stripe checkout PARTIAL — checkout/portal/webhooks done. Remaining: plan change/downgrade flows (→ MVP-11). |
-| BUG-AUDIT-01 | HIGH | MVP-02 | Toast system PARTIAL — Sonner wired, toasts in useProfile + useOrganization + useBulkAnchors. Missing: useAnchors, useCredentialTemplates, useRevokeAnchor, useInviteMember. |
+| ~~BUG-AUDIT-01~~ | ~~HIGH~~ | ~~MVP-02~~ | ~~RESOLVED 2026-03-14 — All mutation hooks now have toast notifications (PR #36 + copy.ts constants).~~ |
 
 ### Resolved Bugs
 
 | Bug ID | Severity | Resolution | Summary |
 |--------|----------|------------|---------|
+| BUG-AUDIT-01 | HIGH | RESOLVED 2026-03-14 (PR #36) | Toast system incomplete — all mutation hooks now have toast notifications |
 | CRIT-1 | HIGH | FIXED 2026-03-10 (a38b485) | SecureDocumentDialog fakes anchor creation |
 | CRIT-4 | MEDIUM | FIXED 2026-03-10 (a38b485) | Onboarding routes render DashboardPage placeholder |
 | CRIT-5 | MEDIUM | FIXED 2026-03-10 (a38b485) | JSON proof download is no-op (PDF works) |
