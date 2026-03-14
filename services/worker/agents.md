@@ -1,5 +1,5 @@
 # agents.md — services/worker
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-14_
 
 ## What This Folder Contains
 
@@ -37,7 +37,7 @@ Express-based worker service handling privileged server-side operations: anchor 
 | `src/index.ts` | `index.test.ts` | 17 | 80%+ | H5 |
 | `src/stripe/mock.ts` | `mock.test.ts` | 9 | 80%+ | H5 |
 | `src/jobs/report.ts` | `report.test.ts` | 19 | 80%+ | H5 |
-| `src/jobs/webhook.ts` | `webhook.test.ts` | 12 | 80%+ | H5 |
+| ~~`src/jobs/webhook.ts`~~ | ~~deleted~~ | — | — | H3-01: dead code, superseded by `webhooks/delivery.ts` |
 | `src/utils/correlationId.ts` | `correlationId.test.ts` | 12 | 80%+ | H5 |
 | `src/utils/rateLimit.ts` | `rateLimit.test.ts` | 18 | 80%+ | H5 |
 | `src/chain/signet.ts` | `signet.test.ts` | 33 | 80%+ | P7-TS-05+12 |

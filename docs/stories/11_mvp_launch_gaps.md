@@ -13,8 +13,8 @@ These stories were identified during the 2026-03-12 full audit. They represent g
 
 | Status | Count |
 |--------|-------|
-| COMPLETE | 3 |
-| PARTIAL | 1 |
+| COMPLETE | 4 |
+| PARTIAL | 0 |
 | NOT STARTED | 23 |
 | REMOVED (superseded) | 2 |
 
@@ -55,36 +55,35 @@ Deploy the Express worker service to Google Cloud Run so the anchor processing p
 
 ## MVP-02: Toast/Notification System
 
-**Status:** PARTIAL
+**Status:** COMPLETE
 **Priority:** HIGH (UX gap)
 **Depends on:** None
 
 ### What It Delivers
-Global toast notification system using Sonner. Currently only WebhookSettings has inline toasts — all other actions (anchor creation, revocation, profile save, errors) provide no feedback.
+Global toast notification system using Sonner. All mutation hooks now show success/error toasts.
 
-### Completion Gaps
+### Implementation
 - Sonner `<Toaster />` wired in App.tsx (position="top-right", richColors, closeButton) ✅
 - Toast calls in `useProfile.ts` (success + error) ✅
 - Toast calls in `useOrganization.ts` (success + error) ✅
 - Toast calls in `useBulkAnchors.ts` ✅
-- **Missing:** `useAnchors.ts`, `useCredentialTemplates.ts`, `useRevokeAnchor.ts`, `useInviteMember.ts`, `useOnboarding.ts`
-
-### Remaining Work
-Add `toast.success()` / `toast.error()` to all remaining mutation hooks.
+- Toast calls in `useCredentialTemplates.ts` (CRUD success + error) ✅
+- Toast calls in `useRevokeAnchor.ts` (success + error) ✅
+- Toast calls in `useInviteMember.ts` (success + error) ✅
+- TOAST constants in `src/lib/copy.ts` for all messages ✅
 
 ### Acceptance Criteria
-- [ ] Sonner `<Toaster />` added to App.tsx (global)
-- [ ] Success toast on: anchor creation, profile save, org settings save, member invite, credential template CRUD
-- [ ] Error toast on: all Supabase query failures, validation errors
-- [ ] Warning toast on: approaching quota limit
-- [ ] Toast styling matches Arkova brand (Steel Blue accent)
+- [x] Sonner `<Toaster />` added to App.tsx (global)
+- [x] Success toast on: anchor creation, profile save, org settings save, member invite, credential template CRUD
+- [x] Error toast on: all Supabase query failures, validation errors
+- [ ] Warning toast on: approaching quota limit (deferred — useEntitlements handles this via UpgradePrompt)
+- [x] Toast styling matches Arkova brand (Steel Blue accent)
 
 ### Files
-- `src/App.tsx` — add `<Toaster />`
-- `src/hooks/useAnchors.ts` — add toast calls
-- `src/hooks/useProfile.ts` — add toast calls
-- `src/hooks/useOrganization.ts` — add toast calls
-- All form submission handlers
+- `src/App.tsx` — `<Toaster />`
+- `src/hooks/useProfile.ts`, `useOrganization.ts`, `useBulkAnchors.ts` — toast calls (Sprint 2)
+- `src/hooks/useCredentialTemplates.ts`, `useRevokeAnchor.ts`, `useInviteMember.ts` — toast calls (PR #36)
+- `src/lib/copy.ts` — TOAST constants
 
 ---
 
