@@ -20,6 +20,7 @@ import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './stripe/client.js';
 import { processWebhookRetries } from './webhooks/delivery.js';
 import { rateLimiters } from './utils/rateLimit.js';
+import { verifyAuthToken } from './auth.js';
 
 // Initialize Sentry BEFORE Express app — PII scrubbing mandatory (Constitution 1.4 + 1.6)
 initSentry(config.sentryDsn, config.nodeEnv);
@@ -98,10 +99,10 @@ function setCorsHeaders(req: express.Request, res: express.Response): boolean {
 
 /**
  * Extracts the authenticated user ID from the Authorization header.
- * Verifies the JWT against Supabase to ensure the caller is who they claim.
  *
- * TODO: For production, verify the JWT signature using the Supabase JWT secret
- * instead of making a network call. This is a security-critical path.
+ * Uses verifyAuthToken from auth.ts which supports:
+ * 1. Local JWT verification (when SUPABASE_JWT_SECRET is set) — no network call
+ * 2. Supabase auth.getUser() fallback — when JWT secret is not configured
  */
 async function extractAuthUserId(req: express.Request): Promise<string | null> {
   const authHeader = req.headers.authorization;
@@ -114,23 +115,7 @@ async function extractAuthUserId(req: express.Request): Promise<string | null> {
     return null;
   }
 
-  try {
-    // Verify the token by calling Supabase auth.getUser()
-    // This validates the JWT and returns the authenticated user
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabaseClient = createClient(config.supabaseUrl, config.supabaseServiceKey);
-    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-
-    if (error || !user) {
-      logger.warn({ error }, 'Invalid or expired auth token');
-      return null;
-    }
-
-    return user.id;
-  } catch (error) {
-    logger.error({ error }, 'Failed to verify auth token');
-    return null;
-  }
+  return verifyAuthToken(token, config, logger);
 }
 
 // CORS preflight for billing routes
