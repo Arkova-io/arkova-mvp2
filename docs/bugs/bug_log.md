@@ -1,29 +1,29 @@
 # Arkova Bug Log
-_Last updated: 2026-03-15 ~12:00 PM EST | Active bugs: 22 (5 existing + 17 UAT) | Resolved: 15_
+_Last updated: 2026-03-16 ~11:30 AM EST | Active bugs: 1 (CRIT-2 operational) | Resolved: 36 (15 prior + 17 UAT + 4 audit)_
 
 ## UAT Bug Bounty — 2026-03-15
 
-17 bugs discovered during comprehensive UAT testing. Full report: [uat_2026_03_15.md](./uat_2026_03_15.md). Sprint plans: [14_uat_sprints.md](../stories/14_uat_sprints.md).
+17 bugs discovered during comprehensive UAT testing. **All 17 resolved** in Sprint 5 (PR #47) and Sprint 6 (PR #48). Full report: [uat_2026_03_15.md](./uat_2026_03_15.md). Sprint plans: [14_uat_sprints.md](../stories/14_uat_sprints.md).
 
 | ID | Severity | Summary | Sprint | Status |
 |----|----------|---------|--------|--------|
-| BUG-UAT-01 | CRITICAL | Mobile sidebar does not auto-collapse | 5 | OPEN |
-| BUG-UAT-02 | CRITICAL | Console auth errors on every page load | 5 | OPEN |
-| BUG-UAT-03 | CRITICAL | `/billing` route inaccessible | 5 | OPEN |
-| BUG-UAT-04 | HIGH | Header always says "Dashboard" | 5 | OPEN |
-| BUG-UAT-05 | HIGH | "Help" sidebar link dead end | 5 | OPEN |
-| BUG-UAT-06 | HIGH | User avatar dropdown does nothing | 5 | OPEN |
-| BUG-UAT-07 | HIGH | Record card status badges overlap dates | 5 | OPEN |
-| BUG-UAT-08 | HIGH | Org records table missing columns | 5 | OPEN |
-| BUG-UAT-09 | HIGH | Redundant profile API calls (8+/load) | 5 | OPEN |
-| BUG-UAT-10 | MEDIUM | Secure Document button overlaps subtitle | 6 | OPEN |
-| BUG-UAT-11 | MEDIUM | Stat cards stacked vertically on desktop | 6 | OPEN |
-| BUG-UAT-12 | MEDIUM | Tablet viewport clips content | 6 | OPEN |
-| BUG-UAT-13 | MEDIUM | Account Type dual labels confusing | 6 | OPEN |
-| BUG-UAT-14 | MEDIUM | Seed data visible in prod-like env | 6 | OPEN |
-| BUG-UAT-15 | LOW | No "Forgot Password" link | 6 | OPEN |
-| BUG-UAT-16 | LOW | No loading states during data fetch | 6 | OPEN |
-| BUG-UAT-17 | LOW | QR code URL shows localhost | 6 | OPEN |
+| BUG-UAT-01 | CRITICAL | Mobile sidebar does not auto-collapse | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-02 | CRITICAL | Console auth errors on every page load | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-03 | CRITICAL | `/billing` route inaccessible | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-04 | HIGH | Header always says "Dashboard" | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-05 | HIGH | "Help" sidebar link dead end | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-06 | HIGH | User avatar dropdown does nothing | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-07 | HIGH | Record card status badges overlap dates | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-08 | HIGH | Org records table missing columns | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-09 | HIGH | Redundant profile API calls (8+/load) | 5 | ~~RESOLVED~~ PR #47 |
+| BUG-UAT-10 | MEDIUM | Secure Document button overlaps subtitle | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-11 | MEDIUM | Stat cards stacked vertically on desktop | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-12 | MEDIUM | Tablet viewport clips content | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-13 | MEDIUM | Account Type dual labels confusing | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-14 | MEDIUM | Seed data visible in prod-like env | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-15 | LOW | No "Forgot Password" link | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-16 | LOW | No loading states during data fetch | 6 | ~~RESOLVED~~ PR #48 |
+| BUG-UAT-17 | LOW | QR code URL shows localhost | 6 | ~~RESOLVED~~ PR #48 |
 
 ---
 
@@ -56,10 +56,6 @@ _For each bug: what it means in plain English and why it matters._
 | ID | Severity | Story | Summary | Status |
 |----|----------|-------|---------|--------|
 | CRIT-2 | HIGH | P7-TS-05 | Bitcoin chain client — CODE COMPLETE, operational items remaining | CODE COMPLETE |
-| CRIT-3 | HIGH | P7-TS-02 | Stripe checkout flow incomplete | PARTIAL — UI + tests + checkout/portal endpoints done (b1f798a), entitlements remain |
-| BUG-AUDIT-01 | HIGH | MVP-02 | No global toast/notification system — actions give no feedback | OPEN |
-| BUG-AUDIT-02 | HIGH | MVP-03 | Dead footer links (/privacy, /terms, /contact) return 404 | OPEN |
-| BUG-AUDIT-03 | HIGH | MVP-04 | No favicon, logo, or OG meta tags — placeholder Shield icon | OPEN |
 
 ## Resolved Bugs Summary
 
@@ -1035,11 +1031,11 @@ Sonner `<Toaster />` is not installed globally in `App.tsx`. Individual componen
 
 #### Resolution
 
-**Status:** OPEN — requires MVP-02 implementation (add Sonner `<Toaster />` globally + toast calls in all hooks/handlers)
+**Status:** RESOLVED 2026-03-14 — All mutation hooks have toast notifications (PRs #36, #37, #40). Sonner `<Toaster />` installed globally.
 
 #### Regression Test
 
-- None yet
+- Toast integration tests in useProfile, useOrganization, useBulkAnchors, useAnchors, useCredentialTemplates, useRevokeAnchor, useInviteMember
 
 ---
 
