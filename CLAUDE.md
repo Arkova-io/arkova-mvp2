@@ -10,7 +10,7 @@ Claude Code reads this file automatically before every task. It contains the rul
 
 ## 0. MANDATORY METHODOLOGY — APPLIES BEFORE ALL OTHER RULES
 
-> **These four mandates override everything below. No exceptions. No shortcuts.**
+> **These five mandates override everything below. No exceptions. No shortcuts.**
 
 ### ARCHITECT MANDATE
 You must use your `sequential-thinking` MCP tool to brainstorm and validate architecture before writing any code. Break complex problems into manageable steps. Do not jump to implementation — think first, plan the approach, identify risks, then execute.
@@ -35,6 +35,17 @@ Always use the Playwright MCP tool to verify frontend UI changes. After any comp
 - Navigate to the affected page.
 - Take a snapshot or screenshot to confirm the change renders correctly.
 - Verify no visual regressions on adjacent components.
+
+### UAT MANDATE
+Every prompt that involves UI/frontend work (component changes, page updates, styling, routing, layout) **must conclude with a UAT verification step** before finalizing. This means:
+1. **Start the dev server** (via `preview_start` or equivalent).
+2. **Navigate to every affected page** at both desktop (1280px) and mobile (375px) viewports.
+3. **Take screenshots** or snapshots to confirm changes render correctly.
+4. **Check for regressions** on adjacent pages that share modified components (e.g., if AppShell changes, verify Dashboard, Records, and Org pages).
+5. **Log any new bugs found** during UAT in `docs/bugs/` with full reproduction steps.
+6. If authentication is required and unavailable in the dev environment, verify structure via accessibility snapshots and document the limitation.
+
+UAT is not optional. A task is not complete until UAT screenshots confirm the changes work at both viewport sizes.
 
 ---
 
@@ -257,6 +268,7 @@ npm run gen:types         # if schema changed
 Update `docs/confluence/` page if schema/security/API changed. Update the story doc in `docs/stories/` if story status changed (e.g., PARTIAL → COMPLETE). Update `agents.md` in modified folders. Update MEMORY.md "Session Handoff Notes" section.
 
 - [ ] If you changed a user-facing flow: E2E spec exists and passes (`npm run test:e2e`)
+- [ ] **UAT verification complete** (per UAT Mandate): Playwright screenshots at desktop + mobile confirm changes render correctly. Any new bugs logged in `docs/bugs/`.
 
 ### Bug Documentation (Mandatory)
 
@@ -282,6 +294,7 @@ If a bug is found and fixed in the same session, still log it — the documentat
 - Seed data click-through still works
 - Confluence docs updated if applicable
 - No regressions
+- **UAT verified** — Playwright screenshots at desktop (1280px) and mobile (375px) confirm UI changes render correctly
 
 ---
 
