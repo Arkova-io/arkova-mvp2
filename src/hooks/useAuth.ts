@@ -30,8 +30,20 @@ export function useAuth(): AuthState & AuthActions {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session — suppress known GoTrue oauth_client_id errors
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Known Supabase GoTrue issue: stale session contains fields the server
+        // doesn't recognize (e.g. oauth_client_id). Clear the corrupt session
+        // so subsequent requests don't re-trigger the error.
+        if (error.message?.includes('oauth_client_id')) {
+          supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -43,7 +55,14 @@ export function useAuth(): AuthState & AuthActions {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Ignore SIGNED_OUT events triggered by our own corrupt-session cleanup
+      if (event === 'SIGNED_OUT' && !session) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

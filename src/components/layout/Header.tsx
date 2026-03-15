@@ -4,6 +4,7 @@
  * Top navigation bar with user menu.
  */
 
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ROUTES } from '@/lib/routes';
+import { NAV_LABELS, BILLING_LABELS } from '@/lib/copy';
+
+/** Map pathname to a display title for the header */
+function getPageTitle(pathname: string): string {
+  if (pathname === ROUTES.DASHBOARD) return NAV_LABELS.DASHBOARD;
+  if (pathname === ROUTES.RECORDS || pathname.startsWith('/records/')) return NAV_LABELS.MY_RECORDS;
+  if (pathname === ROUTES.ORGANIZATION) return NAV_LABELS.ORGANIZATION;
+  if (pathname === ROUTES.SETTINGS || pathname.startsWith('/settings/')) return NAV_LABELS.SETTINGS;
+  if (pathname === ROUTES.HELP) return NAV_LABELS.HELP;
+  if (pathname === ROUTES.BILLING || pathname.startsWith('/billing/')) return BILLING_LABELS.PAGE_TITLE;
+  return NAV_LABELS.DASHBOARD;
+}
 
 interface HeaderProps {
   user?: {
@@ -30,14 +44,17 @@ interface HeaderProps {
 }
 
 export function Header({ user, profile, profileLoading, onSignOut }: Readonly<HeaderProps>) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const displayName = profile?.full_name || user?.email || 'User';
   const initials = getInitials(displayName);
+  const pageTitle = getPageTitle(location.pathname);
 
   return (
     <header className="flex h-full w-full items-center justify-between bg-background">
-      {/* Page title area - can be dynamic */}
+      {/* Page title */}
       <div>
-        <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
+        <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
       </div>
 
       {/* User menu */}
@@ -75,11 +92,11 @@ export function Header({ user, profile, profileLoading, onSignOut }: Readonly<He
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
             <User className="mr-2 h-4 w-4" />
             Profile
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
