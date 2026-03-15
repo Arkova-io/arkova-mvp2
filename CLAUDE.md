@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-14 (methodology upgrade — mandates + handoff)
+> **Version:** 2026-03-16 (UF Sprint B complete — UF-02, UF-05, UF-06, UF-07 COMPLETE)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
@@ -587,7 +587,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 54 files, versions 0001–0054 (0033 skipped). Last: `0054_public_template_and_pending_anchor.sql` (UF-01/UF-04). Migrations 0001–0053 applied to production. Migration 0054 pending production application.
+**Current migration inventory:** 55 files, versions 0001–0055 (0033 skipped). Last: `0055_public_search.sql` (UF-02). Migrations 0001–0055 all applied to production.
 
 ---
 
@@ -611,8 +611,8 @@ npx supabase db reset
 | P8 AI Intelligence | 4/19 | 0 | 15/19 | 21% |
 | INFRA Edge & Ingress | 5/8 | 1/8 | 2/8 | 63% |
 | UAT Bug Fix Sprints | 17/17 | 0 | 0 | 100% |
-| UF User Flow Gaps | 2/10 | 0/10 | 8/10 | 20% |
-| **Total** | **101/151** | **1/151** | **49/151** | **~67%** |
+| UF User Flow Gaps | 6/10 | 0/10 | 4/10 | 60% |
+| **Total** | **105/151** | **1/151** | **45/151** | **~70%** |
 
 ### Critical Blockers (resolve before production)
 
@@ -770,17 +770,17 @@ Remaining 15 stories NOT STARTED. Architecture: client-side OCR → PII strippin
 | ID | Priority | Description | Status |
 |----|----------|-------------|--------|
 | ~~UF-01~~ | ~~CRITICAL~~ | ~~Template-based credential rendering (CredentialRenderer component)~~ | ✅ COMPLETE — CredentialRenderer (3 modes), useCredentialTemplate hook, get_public_template RPC (migration 0054). 20 tests. |
-| UF-02 | HIGH | Public credential discovery + search (/search, /issuer/:orgId) | NOT STARTED |
+| ~~UF-02~~ | ~~HIGH~~ | ~~Public credential discovery + search (/search, /issuer/:orgId)~~ | ✅ COMPLETE — SearchPage + IssuerRegistryPage, search_public_issuers + get_public_issuer_registry RPCs, migration 0055. |
 | UF-03 | HIGH | Individual recipient credential inbox (/my-credentials, anchor_recipients table) | NOT STARTED |
 | ~~UF-04~~ | ~~CRITICAL~~ | ~~Anchor status lifecycle UX (PENDING → SECURED visibility + messaging)~~ | ✅ COMPLETE — Enhanced success screens (SecureDocumentDialog + IssueCredentialForm), pulsing amber PENDING badges (OrgRegistryTable), public verification includes PENDING with "Anchoring In Progress" banner. Migration 0054 updates get_public_anchor. |
-| UF-05 | HIGH | Credential metadata entry in issuance forms (dynamic fields from template) | NOT STARTED |
-| UF-06 | HIGH | Usage/quota tracking dashboard (UsageWidget, proactive warnings) | NOT STARTED |
-| UF-07 | HIGH | Enhanced public verification display (issuer info, revocation details, proof download) | NOT STARTED |
+| ~~UF-05~~ | ~~HIGH~~ | ~~Credential metadata entry in issuance forms (dynamic fields from template)~~ | ✅ COMPLETE — Dynamic form fields from template schema, MetadataFieldRenderer, seed template schemas (DIPLOMA, CERTIFICATE, LICENSE). |
+| ~~UF-06~~ | ~~HIGH~~ | ~~Usage/quota tracking dashboard (UsageWidget, proactive warnings)~~ | ✅ COMPLETE — UsageWidget component, usage progress bar on Dashboard + PricingPage, 80%/100% warning toasts, credit balance display. |
+| ~~UF-07~~ | ~~HIGH~~ | ~~Enhanced public verification display (issuer info, revocation details, proof download)~~ | ✅ COMPLETE — RevocationDetails component, VerifierProofDownload, issuer section with public registry link, mobile-optimized layout. |
 | UF-08 | MEDIUM | Post-issuance actions + share flow (copy link, share sheet) | NOT STARTED |
 | UF-09 | MEDIUM | Org context + navigation polish (breadcrumbs, org name, auth redirect toast) | NOT STARTED |
 | UF-10 | MEDIUM | Onboarding completion + empty state guidance (getting started checklist) | NOT STARTED |
 
-**Build order:** ~~Sprint A: UF-01 + UF-04~~ (DONE) → Sprint B: UF-05, UF-02, UF-06, UF-07 → Sprint C: UF-03, UF-08, UF-09, UF-10
+**Build order:** ~~Sprint A: UF-01 + UF-04~~ (DONE) → ~~Sprint B: UF-05, UF-02, UF-06, UF-07~~ (DONE) → **Sprint C (next): UF-03, UF-08, UF-09, UF-10**
 
 ---
 
@@ -1027,5 +1027,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-16 (UF Sprint A — UF-01 + UF-04 complete) | Repo: ArkovaCarson | 54 migrations | 1,091+ tests | 151 stories (101 complete, 67%)_
+_Directive version: 2026-03-16 (UF Sprint B — UF-02, UF-05, UF-06, UF-07 complete) | Repo: ArkovaCarson | 55 migrations | 1,160+ tests | 151 stories (105 complete, 70%)_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

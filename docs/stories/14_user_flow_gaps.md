@@ -1,6 +1,6 @@
 # User Flow Gap Stories
 
-_Last updated: 2026-03-16 ~1:00 PM EST_
+_Last updated: 2026-03-16 (UF Sprint B complete — PR #61)_
 
 ## Group Overview
 
@@ -14,9 +14,9 @@ These stories address **critical user flow gaps** identified 2026-03-16. The cur
 
 | Status | Count |
 |--------|-------|
-| COMPLETE | 2 |
+| COMPLETE | 6 |
 | PARTIAL | 0 |
-| NOT STARTED | 8 |
+| NOT STARTED | 4 |
 
 ---
 
@@ -102,9 +102,10 @@ Anchor `metadata` then stores actual values:
 
 ## UF-02: Public Credential Discovery + Search
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **Priority:** HIGH (discoverability gap)
 **Depends on:** P5-TS-05 (public_id — COMPLETE), P2-TS-05 (is_public_profile — COMPLETE)
+**Completed:** 2026-03-16 (Sprint B, PR #61)
 
 ### Problem
 
@@ -123,20 +124,20 @@ A public search interface at `/search` that allows:
 
 ### Acceptance Criteria
 
-- [ ] New `/search` public route (no auth required)
-- [ ] Search form with: text input, search type selector (ID / Issuer / Recipient)
-- [ ] **By ID:** redirect to `/verify/{publicId}` on match, "not found" on miss
-- [ ] **By Issuer:** full-text search on `organizations.name` WHERE profile is public → shows org card with credential count + link to issuer's public registry
-- [ ] **By Recipient (future):** search `anchors.metadata->>'recipient_name'` for public anchors — Phase 2 enhancement, show as "coming soon" in UI
-- [ ] New `search_public_issuers(p_query text)` SECURITY DEFINER RPC: returns org `id`, `name`, count of public anchors, only for orgs where `profiles.is_public_profile = true`
-- [ ] Issuer result card links to `/issuer/{orgId}` (new route) showing that org's public credential registry
-- [ ] New `/issuer/:orgId` public route showing: org name, description, list of public SECURED anchors with credential type + issued date + verify link
-- [ ] New `get_public_issuer_registry(p_org_id uuid)` SECURITY DEFINER RPC: returns org info + list of public anchors (public_id, credential_type, filename, issued_at, status) — only SECURED status, only for public-profile orgs
-- [ ] Search results paginated (20 per page)
-- [ ] Empty states: "No issuers found", "No credentials found"
-- [ ] Follows Nordic Vault design: `bg-mesh-gradient` background, `glass-card` result cards, `animate-in-view` stagger
-- [ ] No internal IDs exposed (only `public_id` and org names)
-- [ ] Rate limited: anonymous search capped at 30 req/min per IP
+- [x] New `/search` public route (no auth required)
+- [x] Search form with: text input, search type selector (ID / Issuer / Recipient)
+- [x] **By ID:** redirect to `/verify/{publicId}` on match, "not found" on miss
+- [x] **By Issuer:** full-text search on `organizations.name` WHERE profile is public → shows org card with credential count + link to issuer's public registry
+- [x] **By Recipient (future):** search `anchors.metadata->>'recipient_name'` for public anchors — Phase 2 enhancement, show as "coming soon" in UI
+- [x] New `search_public_issuers(p_query text)` SECURITY DEFINER RPC: returns org `id`, `name`, count of public anchors, only for orgs where `profiles.is_public_profile = true`
+- [x] Issuer result card links to `/issuer/{orgId}` (new route) showing that org's public credential registry
+- [x] New `/issuer/:orgId` public route showing: org name, description, list of public SECURED anchors with credential type + issued date + verify link
+- [x] New `get_public_issuer_registry(p_org_id uuid)` SECURITY DEFINER RPC: returns org info + list of public anchors (public_id, credential_type, filename, issued_at, status) — only SECURED status, only for public-profile orgs
+- [x] Search results paginated (20 per page)
+- [x] Empty states: "No issuers found", "No credentials found"
+- [x] Follows Nordic Vault design: `bg-mesh-gradient` background, `glass-card` result cards, `animate-in-view` stagger
+- [x] No internal IDs exposed (only `public_id` and org names)
+- [x] Rate limited: anonymous search capped at 30 req/min per IP
 
 ### Schema Notes
 
@@ -287,9 +288,10 @@ Clear status communication throughout the anchor lifecycle:
 
 ## UF-05: Credential Metadata Entry in Issuance Forms
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **Priority:** HIGH (data quality gap)
 **Depends on:** UF-01 (template rendering — uses same field schema)
+**Completed:** 2026-03-16 (Sprint B, PR #61)
 
 ### Problem
 
@@ -304,16 +306,16 @@ Dynamic metadata form fields driven by the credential template's `default_metada
 
 ### Acceptance Criteria
 
-- [ ] `IssueCredentialForm`: when user selects `credential_type`, fetch matching template from `credential_templates`
-- [ ] Render dynamic form fields based on template's `default_metadata.fields` array
-- [ ] Supported field types: `text` (input), `date` (date picker), `number` (number input), `select` (dropdown with options)
-- [ ] Required fields marked with asterisk, validated before submit
-- [ ] Collected metadata stored in anchor's `metadata` JSONB column on insert
-- [ ] `SecureDocumentDialog` (individual flow): optional metadata fields (no template required, free-form key-value pairs)
-- [ ] Recipient name/email field added (feeds into UF-03 recipient tracking)
-- [ ] File preview shown before confirmation: filename, file size, fingerprint preview (first 16 chars)
-- [ ] Pre-built template field schemas seeded for common types: DIPLOMA (institution, degree, graduation_date, honors), CERTIFICATE (issuing_body, cert_number, expiry_date), LICENSE (license_number, jurisdiction, expiry_date)
-- [ ] Tests: form renders fields from template, validates required fields, submits metadata correctly
+- [x] `IssueCredentialForm`: when user selects `credential_type`, fetch matching template from `credential_templates`
+- [x] Render dynamic form fields based on template's `default_metadata.fields` array
+- [x] Supported field types: `text` (input), `date` (date picker), `number` (number input), `select` (dropdown with options)
+- [x] Required fields marked with asterisk, validated before submit
+- [x] Collected metadata stored in anchor's `metadata` JSONB column on insert
+- [x] `SecureDocumentDialog` (individual flow): optional metadata fields (no template required, free-form key-value pairs)
+- [x] Recipient name/email field added (feeds into UF-03 recipient tracking)
+- [x] File preview shown before confirmation: filename, file size, fingerprint preview (first 16 chars)
+- [x] Pre-built template field schemas seeded for common types: DIPLOMA (institution, degree, graduation_date, honors), CERTIFICATE (issuing_body, cert_number, expiry_date), LICENSE (license_number, jurisdiction, expiry_date)
+- [x] Tests: form renders fields from template, validates required fields, submits metadata correctly
 
 ### Files
 
@@ -328,9 +330,10 @@ Dynamic metadata form fields driven by the credential template's `default_metada
 
 ## UF-06: Usage/Quota Tracking Dashboard
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **Priority:** HIGH (billing UX gap)
 **Depends on:** MVP-24 (credits schema — COMPLETE), P7-TS-02 (billing — COMPLETE)
+**Completed:** 2026-03-16 (Sprint B, PR #61)
 
 ### Problem
 
@@ -342,15 +345,15 @@ A usage tracking widget visible on the dashboard and billing page showing curren
 
 ### Acceptance Criteria
 
-- [ ] `UsageWidget` component: progress bar showing "X of Y records used this month" with color coding (green <50%, amber 50-80%, red >80%)
-- [ ] Widget shown on DashboardPage (sidebar or top of page)
-- [ ] Widget shown on PricingPage/BillingOverview
-- [ ] Warning toast at 80% usage: "You've used 80% of your monthly records. Upgrade for more."
-- [ ] Warning toast at 100%: "Monthly record limit reached. Upgrade to continue securing documents."
-- [ ] Credit balance shown if credits system active (MVP-24): "42 credits remaining"
-- [ ] Usage resets visible: "Resets on [next billing date]"
-- [ ] Free plan: clearly shows "3 of 3 records used — upgrade for more" with upgrade CTA
-- [ ] Tests: widget renders correctly at 0%, 50%, 80%, 100% usage
+- [x] `UsageWidget` component: progress bar showing "X of Y records used this month" with color coding (green <50%, amber 50-80%, red >80%)
+- [x] Widget shown on DashboardPage (sidebar or top of page)
+- [x] Widget shown on PricingPage/BillingOverview
+- [x] Warning toast at 80% usage: "You've used 80% of your monthly records. Upgrade for more."
+- [x] Warning toast at 100%: "Monthly record limit reached. Upgrade to continue securing documents."
+- [x] Credit balance shown if credits system active (MVP-24): "42 credits remaining"
+- [x] Usage resets visible: "Resets on [next billing date]"
+- [x] Free plan: clearly shows "3 of 3 records used — upgrade for more" with upgrade CTA
+- [x] Tests: widget renders correctly at 0%, 50%, 80%, 100% usage
 
 ### Files
 
@@ -364,9 +367,10 @@ A usage tracking widget visible on the dashboard and billing page showing curren
 
 ## UF-07: Enhanced Public Verification Display
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **Priority:** HIGH (verifier experience)
 **Depends on:** UF-01 (template rendering), UF-04 (PENDING status)
+**Completed:** 2026-03-16 (Sprint B, PR #61)
 
 ### Problem
 
@@ -383,14 +387,14 @@ Rich verification display using CredentialRenderer (UF-01) with issuer branding,
 
 ### Acceptance Criteria
 
-- [ ] PublicVerification.tsx shows: issuer org name prominently, credential type badge, CredentialRenderer output (from UF-01)
-- [ ] REVOKED anchors show revocation reason and revocation date (from `revocation_reason` and `revoked_at` fields)
-- [ ] Proof package download available to public verifiers: JSON proof (existing) + simplified PDF summary
-- [ ] Issuer section links to issuer's public registry (UF-02) if org profile is public
-- [ ] Fingerprint displayed with copy button + helpful tooltip ("This is the document's unique digital fingerprint")
-- [ ] ExplorerLink shown for SECURED anchors with tooltip ("View the Bitcoin network receipt for this anchor")
-- [ ] Mobile-optimized layout for verification pages (verifiers often check on phone)
-- [ ] Tests: verify all display states (SECURED, PENDING, REVOKED) render correctly with full data
+- [x] PublicVerification.tsx shows: issuer org name prominently, credential type badge, CredentialRenderer output (from UF-01)
+- [x] REVOKED anchors show revocation reason and revocation date (from `revocation_reason` and `revoked_at` fields)
+- [x] Proof package download available to public verifiers: JSON proof (existing) + simplified PDF summary
+- [x] Issuer section links to issuer's public registry (UF-02) if org profile is public
+- [x] Fingerprint displayed with copy button + helpful tooltip ("This is the document's unique digital fingerprint")
+- [x] ExplorerLink shown for SECURED anchors with tooltip ("View the Bitcoin network receipt for this anchor")
+- [x] Mobile-optimized layout for verification pages (verifiers often check on phone)
+- [x] Tests: verify all display states (SECURED, PENDING, REVOKED) render correctly with full data
 
 ### Files
 
@@ -534,9 +538,9 @@ UF-10 (Onboarding Guidance)    ←── independent
 ```
 
 **Recommended build order:**
-1. **Sprint A (Critical):** UF-01, UF-04 (parallel — foundational)
-2. **Sprint B (High):** UF-05, UF-02, UF-06, UF-07 (parallel after UF-01)
-3. **Sprint C (Medium):** UF-03, UF-08, UF-09, UF-10 (parallel after Sprint B)
+1. ~~**Sprint A (Critical):** UF-01, UF-04 (parallel — foundational)~~ DONE (2026-03-16, PR #60)
+2. ~~**Sprint B (High):** UF-05, UF-02, UF-06, UF-07 (parallel after UF-01)~~ DONE (2026-03-16, PR #61)
+3. **Sprint C (Medium):** UF-03, UF-08, UF-09, UF-10 (parallel after Sprint B) — NEXT
 
 ---
 
@@ -546,3 +550,5 @@ UF-10 (Onboarding Guidance)    ←── independent
 |------|--------|
 | 2026-03-16 | Initial creation — 3 stories identified from user flow gap analysis |
 | 2026-03-16 | Expanded to 10 stories after full 8-flow UAT walkthrough. Added: UF-04 (PENDING status), UF-05 (metadata entry), UF-06 (usage tracking), UF-07 (verification display), UF-08 (share flow), UF-09 (nav polish), UF-10 (onboarding guidance) |
+| 2026-03-16 | Sprint A COMPLETE (PR #60): UF-01 + UF-04. Migration 0054 applied to production. |
+| 2026-03-16 | Sprint B COMPLETE (PR #61): UF-02, UF-05, UF-06, UF-07. Migration 0055 applied to production. 556 total frontend tests. All review comments addressed. |
