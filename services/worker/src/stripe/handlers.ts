@@ -200,15 +200,14 @@ export async function handleSubscriptionUpdated(event: StripeEvent): Promise<voi
       .eq('stripe_price_id', currentPriceId)
       .maybeSingle();
 
-    if (matchedPlan) {
-      newPlanId = matchedPlan.id;
-    }
+    // Explicitly set plan_id even if null (price exists but no matching plan in DB)
+    newPlanId = matchedPlan?.id ?? null;
   }
 
-  // Get existing subscription to check for plan change
+  // Get existing subscription to check for plan change and cancellation transition
   const { data: existingSub } = await db
     .from('subscriptions')
-    .select('user_id, plan_id')
+    .select('user_id, plan_id, cancel_at_period_end')
     .eq('stripe_subscription_id', subscription.id)
     .maybeSingle();
 
@@ -220,7 +219,8 @@ export async function handleSubscriptionUpdated(event: StripeEvent): Promise<voi
     cancel_at_period_end: subscription.cancel_at_period_end,
   };
 
-  if (newPlanId) {
+  // Always update plan_id when we resolved a price (even if null — clears stale value)
+  if (currentPriceId) {
     updatePayload.plan_id = newPlanId;
   }
 
@@ -250,8 +250,9 @@ export async function handleSubscriptionUpdated(event: StripeEvent): Promise<voi
     );
   }
 
-  // Log audit event if subscription set to cancel at period end
-  if (subscription.cancel_at_period_end && existingSub?.user_id) {
+  // Log audit event only on transition to cancel_at_period_end (false → true)
+  const cancelTransition = subscription.cancel_at_period_end && !existingSub?.cancel_at_period_end;
+  if (cancelTransition && existingSub?.user_id) {
     await db.from('audit_events').insert({
       event_type: 'payment.subscription_cancel_scheduled',
       event_category: 'ADMIN',

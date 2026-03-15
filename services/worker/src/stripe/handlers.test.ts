@@ -606,11 +606,12 @@ describe('handleSubscriptionUpdated', () => {
     // Should still update subscription
     expect(subscriptionsUpdate.update).toHaveBeenCalled();
     // Should not include plan_id in update (no price to resolve)
-    const updateArg = subscriptionsUpdate.update.mock.calls[0][0];
-    expect(updateArg).not.toHaveProperty('plan_id');
+    expect(subscriptionsUpdate.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ plan_id: expect.anything() }),
+    );
   });
 
-  it('handles unresolvable price (no matching plan in DB)', async () => {
+  it('handles unresolvable price (sets plan_id to null)', async () => {
     const event = makeStripeEvent('customer.subscription.updated', {
       id: 'sub_test_001',
       customer: 'cus_test_001',
@@ -625,9 +626,10 @@ describe('handleSubscriptionUpdated', () => {
 
     await handleSubscriptionUpdated(event);
 
-    // Should still update without plan_id
-    const updateArg = subscriptionsUpdate.update.mock.calls[0][0];
-    expect(updateArg).not.toHaveProperty('plan_id');
+    // Should update with plan_id explicitly set to null
+    expect(subscriptionsUpdate.update).toHaveBeenCalledWith(
+      expect.objectContaining({ plan_id: null }),
+    );
   });
 });
 
