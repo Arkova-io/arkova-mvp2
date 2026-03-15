@@ -352,3 +352,60 @@ export function isValidFilename(filename: string): boolean {
   }
   return true;
 }
+
+// =============================================================================
+// METADATA VALIDATION (UF-05)
+// =============================================================================
+
+interface TemplateFieldDef {
+  key: string;
+  label: string;
+  type: 'text' | 'date' | 'number' | 'select';
+  required?: boolean;
+  options?: string[];
+}
+
+/** Validate a single field value by type. Returns error message or null. */
+function validateFieldType(value: string, field: TemplateFieldDef): string | null {
+  switch (field.type) {
+    case 'number':
+      return Number.isNaN(Number(value)) ? `${field.label} must be a number` : null;
+    case 'date':
+      return Number.isNaN(Date.parse(value)) ? `${field.label} must be a valid date` : null;
+    case 'select':
+      if (field.options && !field.options.includes(value)) {
+        return `${field.label} must be one of: ${field.options.join(', ')}`;
+      }
+      return null;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Validate metadata values against a template's field definitions.
+ * Returns a map of field key → error message for invalid fields.
+ * Empty map means all valid.
+ */
+export function validateMetadataAgainstTemplate(
+  values: Record<string, string>,
+  fields: TemplateFieldDef[],
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  for (const field of fields) {
+    const value = values[field.key]?.trim() ?? '';
+
+    if (field.required && !value) {
+      errors[field.key] = `${field.label} is required`;
+      continue;
+    }
+
+    if (!value) continue;
+
+    const typeError = validateFieldType(value, field);
+    if (typeError) errors[field.key] = typeError;
+  }
+
+  return errors;
+}

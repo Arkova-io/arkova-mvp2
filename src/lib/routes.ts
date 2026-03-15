@@ -18,6 +18,8 @@ export const ROUTES = {
   TERMS: '/terms',
   CONTACT: '/contact',
   EMBED_VERIFY: '/embed/verify/:publicId',
+  SEARCH: '/search',
+  ISSUER_REGISTRY: '/issuer/:orgId',
 
   // Onboarding routes (auth required, pre-setup)
   ONBOARDING_ROLE: '/onboarding/role',
@@ -72,4 +74,9 @@ export function verifyPath(publicId: string): string {
 /** Build a record detail URL for a given record ID */
 export function recordDetailPath(id: string): string {
   return `/records/${id}`;
+}
+
+/** Build an issuer registry URL for a given org ID */
+export function issuerRegistryPath(orgId: string): string {
+  return `/issuer/${orgId}`;
 }
