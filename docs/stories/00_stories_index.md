@@ -36,8 +36,8 @@ For a new developer joining the project, read in this order:
 | INFRA | Infrastructure & Edge | 8 | 5 | 1 | 2 | [13_infrastructure_edge.md](./13_infrastructure_edge.md) |
 | UAT | Bug Fix Sprints (5+6) | 17 | 17 | 0 | 0 | [14_uat_sprints.md](./14_uat_sprints.md) |
 | UF | User Flow Gaps | 10 | 10 | 0 | 0 | [14_user_flow_gaps.md](./14_user_flow_gaps.md) |
-| GEO | GEO & SEO Optimization | 12 | 2 | 2 | 8 | [15_geo_seo.md](./15_geo_seo.md) |
-| **Total** | | **163** | **111** | **3** | **49** | |
+| GEO | GEO & SEO Optimization | 12 | 3 | 3 | 6 | [15_geo_seo.md](./15_geo_seo.md) |
+| **Total** | | **163** | **115** | **4** | **44** | |
 
 ### All Stories by ID
 

@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-16 (UF Sprint B complete — UF-02, UF-05, UF-06, UF-07 COMPLETE)
+> **Version:** 2026-03-15 (CLAUDE.md audit — docs synced, GEO stories added)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
@@ -362,14 +362,27 @@ services/worker/
     stripe/handlers.ts                       ← Webhook event handlers
     stripe/mock.ts                           ← Mock Stripe for tests
     webhooks/delivery.ts                     ← Outbound webhook delivery engine
-    utils/                                   ← DB client, logger, rate limiter, correlation ID
-services/edge/                               ← NEW — Cloudflare Worker scripts (ADR-002)
+    ai/types.ts                              ← IAIProvider interface + shared AI types
+    ai/factory.ts                            ← Provider factory (AI_PROVIDER env routing)
+    ai/cloudflare-fallback.ts                ← CF Workers AI fallback (Nemotron)
+    ai/mock.ts                               ← Mock AI provider for tests
+    api/verify-anchor.ts                     ← Public anchor verification by fingerprint
+    utils/                                   ← DB client, logger, rate limiter, correlation ID, sentry
+services/edge/                               ← Cloudflare Worker scripts (ADR-002)
   wrangler.toml                              ← Edge worker config (bindings, routes)
   tsconfig.json                              ← Edge-specific TypeScript config
   src/
+    index.ts                                 ← Edge worker entry point (route dispatcher)
+    env.ts                                   ← Typed Cloudflare Worker environment bindings
     report-generator.ts                      ← PDF report generation worker (R2 storage)
+    report-logic.ts                          ← Report content generation + R2 key builder
     batch-queue.ts                           ← Queue consumer for batch anchors
+    batch-queue-logic.ts                     ← Throttled batch processing logic
     ai-fallback.ts                           ← CloudflareAIProvider (Workers AI)
+    cloudflare-crawler.ts                    ← University directory ingestion (P8-S7)
+    crawler-logic.ts                         ← HTML parsing + ground truth records
+    mcp-server.ts                            ← Remote MCP server (P8-S19, Streamable HTTP)
+    mcp-tools.ts                             ← MCP tool definitions (verify + search)
 wrangler.toml                                ← Root config (R2 bucket, queue, AI bindings)
 supabase/
   migrations/                                ← 56 files (0001–0056, 0033 skipped)
@@ -510,7 +523,7 @@ _Last updated: [date] | Story: [story ID]_
 
 ### Document Standards
 
-All docs live in `docs/confluence/` and are numbered 00–13 (14 files total). The index (`00_index.md`) lists all documents with descriptions and a suggested reading order.
+All docs live in `docs/confluence/` and are numbered 00–15 (18 files total). The index (`00_index.md`) lists all documents with descriptions and a suggested reading order.
 
 Every doc must include:
 - `_Last updated: [date] | Story: [story ID]_` line below the title
@@ -523,7 +536,7 @@ When a doc describes something that is partially implemented or a known gap exis
 
 ### Story Documentation (`docs/stories/`)
 
-Story docs live in `docs/stories/` and are grouped by priority level (one file per group). The index (`00_stories_index.md`) lists all 116 stories with status, group doc reference, and bug cross-references.
+Story docs live in `docs/stories/` and are grouped by priority level (one file per group). The index (`00_stories_index.md`) lists all 163 stories with status, group doc reference, and bug cross-references.
 
 | File | Group | Stories |
 |------|-------|---------|
@@ -539,6 +552,10 @@ Story docs live in `docs/stories/` and are grouped by priority level (one file p
 | `10_deferred_hardening.md` | DH Deferred Hardening | 12 |
 | `11_mvp_launch_gaps.md` | MVP Launch Gaps | 27 |
 | `12_p8_ai_intelligence.md` | P8 AI Intelligence | 19 |
+| `13_infrastructure_edge.md` | INFRA Edge & Ingress | 8 |
+| `14_uat_sprints.md` | UAT Bug Fix Sprints (5+6) | 17 |
+| `14_user_flow_gaps.md` | UF User Flow Gaps | 10 |
+| `15_geo_seo.md` | GEO & SEO Optimization | 12 |
 
 When a story's status changes:
 1. Update the story's section in its group doc (Status field, Completion Gaps, Remaining Work)
@@ -613,8 +630,8 @@ npx supabase db reset
 | INFRA Edge & Ingress | 5/8 | 1/8 | 2/8 | 63% |
 | UAT Bug Fix Sprints | 17/17 | 0 | 0 | 100% |
 | UF User Flow Gaps | 10/10 | 0 | 0 | 100% |
-| GEO SEO Optimization | 2/12 | 2/12 | 8/12 | 17% |
-| **Total** | **111/163** | **3/163** | **49/163** | **~68%** |
+| GEO SEO Optimization | 3/12 | 3/12 | 6/12 | 25% |
+| **Total** | **115/163** | **4/163** | **44/163** | **~71%** |
 
 ### Critical Blockers (resolve before production)
 

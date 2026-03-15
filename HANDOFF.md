@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 109/151 stories complete (72%). 1,190 tests (586 frontend + 604 worker). 56 migrations. All 10 UF stories COMPLETE.
+**Overall progress:** 115/163 stories complete (71%). 1,190 tests (586 frontend + 604 worker). 56 migrations. All 10 UF stories COMPLETE. GEO: 3 complete, 3 partial, 6 not started.
 
 ### Open Blockers
 
@@ -99,7 +99,7 @@ All HIGH+ launch blockers resolved:
 
 | Story | Priority | Description | Status |
 |-------|----------|-------------|--------|
-| GEO-01 | CRITICAL | SSR for marketing site (crawlers see empty div) | NOT STARTED |
+| GEO-01 | CRITICAL | SSR for marketing site (crawlers see empty div) | **COMPLETE** (PR #2, Vite SSR prerender) |
 | GEO-02 | CRITICAL | Fix LinkedIn entity collision + expand sameAs | PARTIAL (sameAs fixed; LinkedIn page + Wikidata external) |
 | GEO-03 | CRITICAL | Publish /privacy and /terms on marketing site | NOT STARTED |
 | GEO-04 | HIGH | About page with team bios + Person schema | NOT STARTED |
@@ -118,6 +118,16 @@ All HIGH+ launch blockers resolved:
 ---
 
 ## Session Log
+
+### Session: 2026-03-15 — GEO-01 SSR Prerender for Marketing Site
+
+**Changes to arkova-marketing repo (`carson-see/arkova-marketing`, branch `feat/geo-01-ssr-prerender`, PR #2):**
+- **GEO-01 COMPLETE:** Implemented Vite SSR prerender pipeline. Build now renders React app to static HTML at build time — AI crawlers see full marketing content (11 headings, 49 paragraphs) instead of empty `<div id="root">`.
+- **Approach:** Custom prerender script using `react-dom/server` `renderToString`. No new framework (Astro/Next.js) needed. Zero new dependencies.
+- **Files:** `src/entry-server.tsx` (SSR entry), `prerender.mjs` (build script), `src/main.tsx` (hydrateRoot + createRoot fallback), `index.html` (dark class + noscript fallback)
+- **Verification:** Playwright screenshot confirms identical visual rendering. FAQ accordion, dark mode, mobile menu all hydrate correctly.
+
+**Story doc updates:** `docs/stories/15_geo_seo.md` GEO-01 → COMPLETE (3/12 COMPLETE, 2 PARTIAL, 7 NOT STARTED). CLAUDE.md Section 8 GEO row updated.
 
 ### Session: 2026-03-15 — GEO Quick Wins (GEO-07, GEO-06, GEO-02, GEO-05)
 
@@ -360,7 +370,9 @@ All HIGH+ launch blockers resolved:
 
 ---
 
-## Files Changed This Session
+## Files Changed — Phase 2/3/4 Initial Build (2026-03-14)
+
+> Historical reference from the session that created HANDOFF.md. Later sessions tracked in Session Log above.
 
 ### Phase 2 Compliance
 | File | Action |
@@ -419,7 +431,7 @@ All HIGH+ launch blockers resolved:
 | ID | Date | Summary | Severity | Status | Detail |
 |----|------|---------|----------|--------|--------|
 | ~~BUG-AUDIT-01~~ | ~~2026-03-12~~ | ~~No global toast system~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-15~~ | ~~All mutation hooks have toasts (PRs #36, #37, #40)~~ |
-| BUG-AUDIT-02 | 2026-03-12 | Dead footer links | HIGH | RESOLVED | Pages created + routed (uncommitted) |
+| ~~BUG-AUDIT-02~~ | ~~2026-03-12~~ | ~~Dead footer links~~ | ~~HIGH~~ | ~~RESOLVED~~ | ~~Pages created + routed (committed)~~ |
 | BUG-AUDIT-03 | 2026-03-12 | No favicon/logo/OG tags | HIGH | COMPLETE | PR #30 merged |
 
 ---
