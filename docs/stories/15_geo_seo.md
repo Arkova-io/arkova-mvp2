@@ -1,5 +1,5 @@
 # GEO & SEO Optimization Stories
-_Last updated: 2026-03-15 | 0/12 stories — ALL NOT STARTED_
+_Last updated: 2026-03-15 | 2/12 COMPLETE, 1/12 PARTIAL, 9/12 NOT STARTED_
 
 ## Group Overview
 
@@ -15,9 +15,9 @@ The GEO audit report lives at `GEO-AUDIT-REPORT.md` in the repo root. Detailed s
 
 | Status | Count |
 |--------|-------|
-| COMPLETE | 0 |
-| PARTIAL | 0 |
-| NOT STARTED | 12 |
+| COMPLETE | 2 |
+| PARTIAL | 1 |
+| NOT STARTED | 9 |
 
 ---
 
@@ -58,7 +58,7 @@ As an AI crawler (GPTBot, ClaudeBot, PerplexityBot), I need the marketing site c
 
 ## GEO-02: Fix LinkedIn Entity Collision + Expand sameAs
 
-**Status:** NOT STARTED
+**Status:** PARTIAL (sameAs URLs updated in schema; LinkedIn company page creation + Wikidata entry are external tasks)
 **Priority:** CRITICAL (active harm to entity recognition)
 **Dependencies:** None
 **Estimated Points:** 3
@@ -161,7 +161,7 @@ As an AI model evaluating source credibility, I need to know who is behind Arkov
 
 ## GEO-05: Enhanced Schema Markup (WebSite, speakable, AggregateOffer)
 
-**Status:** NOT STARTED
+**Status:** PARTIAL (WebSite schema deployed; speakable + AggregateOffer still pending)
 **Priority:** HIGH
 **Dependencies:** GEO-02 (sameAs fix)
 **Estimated Points:** 3
@@ -196,7 +196,7 @@ As a search engine or AI assistant, I need comprehensive structured data to unde
 
 ## GEO-06: Deploy Upgraded llms.txt
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (2026-03-15 — deployed to arkova-marketing repo, Vercel auto-deploys)
 **Priority:** HIGH
 **Dependencies:** None
 **Estimated Points:** 1
@@ -230,7 +230,7 @@ As an AI system discovering Arkova's capabilities, I need a properly structured 
 
 ## GEO-07: Fix Broken og:image + Complete Meta Tags
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (2026-03-15 — og:image→arkova-logo.png, og:site_name, twitter:site/@arkaboratory, twitter:image, description 153 chars)
 **Priority:** HIGH
 **Dependencies:** None
 **Estimated Points:** 1
