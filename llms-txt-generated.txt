@@ -9,7 +9,7 @@ Arkova Technologies, Inc. builds infrastructure for verifiable credentials. Orga
 - Website: https://arkova.ai
 - App: https://app.arkova.io
 - Contact: hello@arkova.ai
-- LinkedIn: https://www.linkedin.com/company/arkova
+- LinkedIn: https://www.linkedin.com/company/arkovatech
 
 ## How It Works
 
