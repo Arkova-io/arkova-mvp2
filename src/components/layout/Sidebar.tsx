@@ -15,6 +15,7 @@ import {
   Building2,
   Settings,
   HelpCircle,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
   X,
@@ -22,6 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
 import { ROUTES } from '@/lib/routes';
+import { NAV_LABELS, BILLING_LABELS } from '@/lib/copy';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -38,14 +40,15 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, to: ROUTES.DASHBOARD },
-  { label: 'My Records', icon: FileText, to: ROUTES.RECORDS },
-  { label: 'Organization', icon: Building2, to: ROUTES.ORGANIZATION },
+  { label: NAV_LABELS.DASHBOARD, icon: LayoutDashboard, to: ROUTES.DASHBOARD },
+  { label: NAV_LABELS.MY_RECORDS, icon: FileText, to: ROUTES.RECORDS },
+  { label: NAV_LABELS.ORGANIZATION, icon: Building2, to: ROUTES.ORGANIZATION },
 ];
 
 const secondaryNavItems: NavItem[] = [
-  { label: 'Settings', icon: Settings, to: ROUTES.SETTINGS },
-  { label: 'Help', icon: HelpCircle, to: ROUTES.HELP },
+  { label: BILLING_LABELS.PAGE_TITLE, icon: CreditCard, to: ROUTES.BILLING },
+  { label: NAV_LABELS.SETTINGS, icon: Settings, to: ROUTES.SETTINGS },
+  { label: NAV_LABELS.HELP, icon: HelpCircle, to: ROUTES.HELP },
 ];
 
 interface SidebarProps {
@@ -63,7 +66,7 @@ export function Sidebar({ className, mobileOpen, onMobileClose }: Readonly<Sideb
     if (mobileOpen && onMobileClose) {
       onMobileClose();
     }
-    // Only trigger on pathname change, not on callbacks
+    // Only trigger on pathname change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
@@ -78,21 +81,23 @@ export function Sidebar({ className, mobileOpen, onMobileClose }: Readonly<Sideb
       {/* Logo + close button (mobile) */}
       <div className={cn(
         'flex h-16 items-center border-b px-4',
-        collapsed ? 'justify-center' : 'gap-3'
+        collapsed ? 'justify-center' : 'justify-between'
       )}>
-        <ArkovaLogo size={36} />
-        {!collapsed && (
-          <span className="text-lg font-semibold text-sidebar-foreground">
-            Arkova
-          </span>
-        )}
+        <div className={cn('flex items-center', !collapsed && 'gap-3')}>
+          <ArkovaLogo size={36} />
+          {!collapsed && (
+            <span className="text-lg font-semibold text-sidebar-foreground">
+              Arkova
+            </span>
+          )}
+        </div>
         {/* Mobile close button */}
         {mobileOpen && onMobileClose && !collapsed && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onMobileClose}
-            className="ml-auto md:hidden"
+            className="md:hidden shrink-0"
             aria-label="Close navigation"
           >
             <X className="h-4 w-4" />

@@ -23,8 +23,10 @@ import {
   Loader2,
   FileDown,
   CalendarIcon,
+  GraduationCap,
   X,
 } from 'lucide-react';
+import { CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
 import { useExportAnchors } from '@/hooks/useExportAnchors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,13 +216,6 @@ export function OrgRegistryTable({
     (a) => selectedIds.has(a.id) && a.status !== 'REVOKED'
   ).length;
 
-  const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return '-';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -338,10 +333,10 @@ export function OrgRegistryTable({
                 />
               </TableHead>
               <TableHead>Document</TableHead>
-              <TableHead className="hidden md:table-cell">Fingerprint</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="hidden sm:table-cell">Size</TableHead>
-              <TableHead className="hidden lg:table-cell">Created</TableHead>
+              <TableHead className="hidden sm:table-cell">Created</TableHead>
+              <TableHead className="hidden md:table-cell">Type</TableHead>
+              <TableHead className="hidden lg:table-cell">Fingerprint</TableHead>
               <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -393,11 +388,6 @@ export function OrgRegistryTable({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <code className="text-xs text-muted-foreground">
-                        {formatFingerprint(anchor.fingerprint, 8, 4)}
-                      </code>
-                    </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>
                         <StatusIcon className="mr-1 h-3 w-3" />
@@ -405,10 +395,22 @@ export function OrgRegistryTable({
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {formatFileSize(anchor.file_size)}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {formatDate(anchor.created_at)}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {anchor.credential_type ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <GraduationCap className="h-3 w-3" />
+                          {CREDENTIAL_TYPE_LABELS[anchor.credential_type as keyof typeof CREDENTIAL_TYPE_LABELS] ?? anchor.credential_type}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <code className="text-xs text-muted-foreground">
+                        {formatFingerprint(anchor.fingerprint, 8, 4)}
+                      </code>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

@@ -8,7 +8,7 @@
  * @see MVP-07
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -36,12 +36,16 @@ export function AppShell({
 }: Readonly<AppShellProps>) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const handleCloseMobile = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <Sidebar
         mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        onMobileClose={handleCloseMobile}
       />
 
       {/* Main content area */}

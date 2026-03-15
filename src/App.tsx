@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
 import { Toaster } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile, ProfileProvider } from '@/hooks/useProfile';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { RouteGuard } from '@/components/auth/RouteGuard';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
@@ -77,6 +77,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ProfileProvider>
         <Toaster position="top-right" richColors closeButton />
         <Routes>
           {/* Public routes — no auth required */}
@@ -268,6 +269,7 @@ export function App() {
           {/* 404 — catch-all for unknown routes */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </ProfileProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );

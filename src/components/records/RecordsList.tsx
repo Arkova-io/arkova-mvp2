@@ -113,30 +113,28 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <p className="text-sm font-medium truncate">
-            {record.filename}
-          </p>
+        <p className="text-sm font-medium truncate mb-1">
+          {record.filename}
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={status.variant} className="shrink-0">
             <StatusIcon className="mr-1 h-3 w-3" />
             {status.label}
           </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground font-mono truncate">
-            {record.fingerprint.slice(0, 16)}...{record.fingerprint.slice(-8)}
-          </p>
           {record.credentialType && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground shrink-0">
               <GraduationCap className="h-3 w-3" />
               {CREDENTIAL_TYPE_LABELS[record.credentialType as keyof typeof CREDENTIAL_TYPE_LABELS] ?? record.credentialType}
             </span>
           )}
+          <p className="text-xs text-muted-foreground font-mono truncate">
+            {record.fingerprint.slice(0, 16)}...{record.fingerprint.slice(-8)}
+          </p>
         </div>
       </div>
 
-      <div className="text-right hidden sm:block shrink-0">
-        <p className="text-sm text-muted-foreground">
+      <div className="text-right hidden sm:block shrink-0 ml-4">
+        <p className="text-sm text-muted-foreground whitespace-nowrap">
           {formatDate(record.createdAt)}
         </p>
         <p className="text-xs text-muted-foreground">

@@ -1,11 +1,16 @@
 /**
- * Profile Hook
+ * Profile Hook + Provider
  *
  * Fetches and manages the current user's profile from the database.
- * Also computes the routing destination based on auth and profile state.
+ * Uses React Context so the profile is fetched ONCE and shared across
+ * all components that call useProfile().
+ *
+ * Usage:
+ *   Wrap your app in <ProfileProvider> (done in App.tsx).
+ *   Then call useProfile() in any component to get profile state.
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { createElement, createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { logAuditEvent } from '../lib/auditLog';
@@ -45,7 +50,36 @@ interface ProfileActions {
   updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>>) => Promise<boolean>;
 }
 
+type ProfileContextValue = ProfileState & ProfileActions;
+
+const ProfileContext = createContext<ProfileContextValue | null>(null);
+
+/**
+ * Provider component — wrap your app in this. Fetches profile once
+ * and shares state with all useProfile() consumers.
+ */
+export function ProfileProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const value = useProfileInternal();
+  return createElement(ProfileContext.Provider, { value }, children);
+}
+
+/**
+ * Hook to access profile state. Must be used inside <ProfileProvider>.
+ * Throws if used outside provider — wrap your app in <ProfileProvider>.
+ */
 export function useProfile(): ProfileState & ProfileActions {
+  const context = useContext(ProfileContext);
+  if (!context) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
+}
+
+/**
+ * Internal implementation — the actual profile fetching logic.
+ * Only called once by ProfileProvider; shared via context.
+ */
+function useProfileInternal(): ProfileState & ProfileActions {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
