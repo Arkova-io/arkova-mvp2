@@ -25,6 +25,7 @@ interface AppShellProps {
   } | null;
   profileLoading?: boolean;
   onSignOut: () => void;
+  orgName?: string | null;
 }
 
 export function AppShell({
@@ -33,6 +34,7 @@ export function AppShell({
   profile,
   profileLoading,
   onSignOut,
+  orgName,
 }: Readonly<AppShellProps>) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -46,6 +48,7 @@ export function AppShell({
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={handleCloseMobile}
+        orgName={orgName}
       />
 
       {/* Main content area */}

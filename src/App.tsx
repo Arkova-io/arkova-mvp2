@@ -42,6 +42,7 @@ import { ApiKeySettingsPage } from '@/pages/ApiKeySettingsPage';
 import { EmbedVerifyPage } from '@/pages/EmbedVerifyPage';
 import { SearchPage } from '@/pages/SearchPage';
 import { IssuerRegistryPage } from '@/pages/IssuerRegistryPage';
+import { MyCredentialsPage } from '@/pages/MyCredentialsPage';
 import { ROUTES, MAIN_APP_DESTINATIONS, destinationToRoute } from '@/lib/routes';
 
 /**
@@ -168,6 +169,16 @@ export function App() {
               <AuthGuard>
                 <RouteGuard allow={MAIN_APP_DESTINATIONS}>
                   <MyRecordsPage />
+                </RouteGuard>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path={ROUTES.MY_CREDENTIALS}
+            element={
+              <AuthGuard>
+                <RouteGuard allow={MAIN_APP_DESTINATIONS}>
+                  <MyCredentialsPage />
                 </RouteGuard>
               </AuthGuard>
             }

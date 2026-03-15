@@ -6,6 +6,7 @@
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Breadcrumbs } from './Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,7 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, BILLING_LABELS } from '@/lib/copy';
+import { NAV_LABELS, BILLING_LABELS, MY_CREDENTIALS_LABELS } from '@/lib/copy';
 
 /** Map pathname to a display title for the header */
 function getPageTitle(pathname: string): string {
@@ -28,6 +29,7 @@ function getPageTitle(pathname: string): string {
   if (pathname === ROUTES.SETTINGS || pathname.startsWith('/settings/')) return NAV_LABELS.SETTINGS;
   if (pathname === ROUTES.HELP) return NAV_LABELS.HELP;
   if (pathname === ROUTES.BILLING || pathname.startsWith('/billing/')) return BILLING_LABELS.PAGE_TITLE;
+  if (pathname === ROUTES.MY_CREDENTIALS) return MY_CREDENTIALS_LABELS.PAGE_TITLE;
   return NAV_LABELS.DASHBOARD;
 }
 
@@ -52,8 +54,9 @@ export function Header({ user, profile, profileLoading, onSignOut }: Readonly<He
 
   return (
     <header className="flex h-full w-full items-center justify-between bg-background">
-      {/* Page title */}
-      <div>
+      {/* Page title + breadcrumbs */}
+      <div className="min-w-0">
+        <Breadcrumbs />
         <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
       </div>
 

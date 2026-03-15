@@ -26,6 +26,7 @@ export const ROUTES = {
   ONBOARDING_ORG: '/onboarding/org',
 
   // Authenticated routes
+  MY_CREDENTIALS: '/my-credentials',
   DASHBOARD: '/dashboard',
   RECORDS: '/records',
   RECORD_DETAIL: '/records/:id',
