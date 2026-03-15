@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateFingerprint, verifyFingerprint, formatFingerprint } from './fileHasher';
+import { generateFingerprint, verifyFingerprint, formatFingerprint, hashEmail } from './fileHasher';
 
 describe('generateFingerprint', () => {
   beforeEach(() => {
@@ -91,5 +91,37 @@ describe('formatFingerprint', () => {
     const shortHash = 'abc123';
     const formatted = formatFingerprint(shortHash, 10, 10);
     expect(formatted).toBe('abc123');
+  });
+});
+
+describe('hashEmail', () => {
+  it('should produce a 64-character hex hash', async () => {
+    const hash = await hashEmail('test@example.com');
+    expect(hash).toHaveLength(64);
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('should produce consistent hashes for same email', async () => {
+    const hash1 = await hashEmail('test@example.com');
+    const hash2 = await hashEmail('test@example.com');
+    expect(hash1).toBe(hash2);
+  });
+
+  it('should normalize email to lowercase', async () => {
+    const hash1 = await hashEmail('Test@Example.COM');
+    const hash2 = await hashEmail('test@example.com');
+    expect(hash1).toBe(hash2);
+  });
+
+  it('should trim whitespace', async () => {
+    const hash1 = await hashEmail('  test@example.com  ');
+    const hash2 = await hashEmail('test@example.com');
+    expect(hash1).toBe(hash2);
+  });
+
+  it('should produce different hashes for different emails', async () => {
+    const hash1 = await hashEmail('alice@example.com');
+    const hash2 = await hashEmail('bob@example.com');
+    expect(hash1).not.toBe(hash2);
   });
 });

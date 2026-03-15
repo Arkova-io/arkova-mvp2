@@ -51,6 +51,7 @@ import { MetadataFieldRenderer } from '@/components/credentials/MetadataFieldRen
 import { supabase } from '@/lib/supabase';
 import { validateAnchorCreate, CREDENTIAL_TYPES } from '@/lib/validators';
 import { logAuditEvent } from '@/lib/auditLog';
+import { hashEmail } from '@/lib/fileHasher';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useCredentialTemplate } from '@/hooks/useCredentialTemplate';
@@ -249,6 +250,18 @@ export function IssueCredentialForm({
         publicId: inserted.public_id!,
       });
 
+      // Insert recipient record if email provided (UF-03)
+      const emailTrimmed = recipientEmail.trim();
+      if (emailTrimmed) {
+        const emailHash = await hashEmail(emailTrimmed);
+        await supabase
+          .from('anchor_recipients')
+          .insert({
+            anchor_id: inserted.id,
+            recipient_email_hash: emailHash,
+          });
+      }
+
       logAuditEvent({
         eventType: 'CREDENTIAL_ISSUED',
         eventCategory: 'ANCHOR',
@@ -281,6 +294,7 @@ export function IssueCredentialForm({
     profile,
     credentialType,
     label,
+    recipientEmail,
     onSuccess,
     validateMetadata,
     buildMetadata,

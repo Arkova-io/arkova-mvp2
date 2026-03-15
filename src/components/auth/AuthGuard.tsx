@@ -5,11 +5,13 @@
  * Redirects to login if user is not authenticated.
  */
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../lib/routes';
+import { NAV_POLISH_LABELS } from '../../lib/copy';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -19,6 +21,15 @@ interface AuthGuardProps {
 export function AuthGuard({ children, fallback }: Readonly<AuthGuardProps>) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const toastShown = useRef(false);
+
+  // Show toast when redirecting unauthenticated user (UF-09)
+  useEffect(() => {
+    if (!loading && !user && !fallback && !toastShown.current) {
+      toastShown.current = true;
+      toast.info(NAV_POLISH_LABELS.AUTH_REDIRECT_TOAST);
+    }
+  }, [loading, user, fallback]);
 
   if (loading) {
     return (

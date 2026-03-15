@@ -58,6 +58,48 @@ export type Database = {
           },
         ]
       }
+      anchor_recipients: {
+        Row: {
+          id: string
+          anchor_id: string
+          recipient_email_hash: string
+          recipient_user_id: string | null
+          claimed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          anchor_id: string
+          recipient_email_hash: string
+          recipient_user_id?: string | null
+          claimed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          anchor_id?: string
+          recipient_email_hash?: string
+          recipient_user_id?: string | null
+          claimed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anchor_recipients_anchor_id_fkey"
+            columns: ["anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anchor_recipients_recipient_user_id_fkey"
+            columns: ["recipient_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anchor_proofs: {
         Row: {
           anchor_id: string
@@ -1179,6 +1221,26 @@ export type Database = {
         Returns: undefined
       }
       generate_public_id: { Args: never; Returns: string }
+      get_my_credentials: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          recipient_id: string
+          anchor_id: string
+          claimed_at: string | null
+          recipient_created_at: string
+          public_id: string
+          filename: string
+          fingerprint: string
+          status: string
+          credential_type: string
+          metadata: Json
+          issued_at: string | null
+          expires_at: string | null
+          created_at: string
+          org_name: string | null
+          org_id: string | null
+        }[]
+      }
       get_flag: {
         Args: { p_default?: boolean; p_flag_key: string }
         Returns: boolean

@@ -19,11 +19,12 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, BILLING_LABELS } from '@/lib/copy';
+import { NAV_LABELS, BILLING_LABELS, MY_CREDENTIALS_LABELS, NAV_POLISH_LABELS } from '@/lib/copy';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -42,6 +43,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { label: NAV_LABELS.DASHBOARD, icon: LayoutDashboard, to: ROUTES.DASHBOARD },
   { label: NAV_LABELS.MY_RECORDS, icon: FileText, to: ROUTES.RECORDS },
+  { label: MY_CREDENTIALS_LABELS.NAV_LABEL, icon: Inbox, to: ROUTES.MY_CREDENTIALS },
   { label: NAV_LABELS.ORGANIZATION, icon: Building2, to: ROUTES.ORGANIZATION },
 ];
 
@@ -55,9 +57,10 @@ interface SidebarProps {
   className?: string;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  orgName?: string | null;
 }
 
-export function Sidebar({ className, mobileOpen, onMobileClose }: Readonly<SidebarProps>) {
+export function Sidebar({ className, mobileOpen, onMobileClose, orgName }: Readonly<SidebarProps>) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
@@ -104,6 +107,18 @@ export function Sidebar({ className, mobileOpen, onMobileClose }: Readonly<Sideb
           </Button>
         )}
       </div>
+
+      {/* Org context (UF-09) */}
+      {orgName && !collapsed && (
+        <div className="px-4 py-2 border-b">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {NAV_POLISH_LABELS.MANAGING_ORG}
+          </p>
+          <p className="text-sm font-medium text-sidebar-foreground truncate">
+            {orgName}
+          </p>
+        </div>
+      )}
 
       {/* Main Navigation */}
       <nav className="flex-1 space-y-1 p-3">

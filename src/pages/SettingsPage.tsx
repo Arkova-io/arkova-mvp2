@@ -19,8 +19,9 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS } from '@/lib/copy';
+import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS, NAV_POLISH_LABELS, SHARE_LABELS } from '@/lib/copy';
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ export function SettingsPage() {
   const handleCopy = useCallback(async (value: string, label: string) => {
     await navigator.clipboard.writeText(value);
     setCopied(label);
+    toast.success(SHARE_LABELS.COPIED_TOAST);
     setTimeout(() => setCopied(null), 2000);
   }, []);
 
@@ -248,10 +250,10 @@ export function SettingsPage() {
                 )}
                 <div>
                   <p className="text-sm font-medium">Public Profile</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground max-w-md">
                     {profile?.is_public_profile
-                      ? 'Your profile is visible on verified records'
-                      : 'Your profile is hidden on verified records'}
+                      ? NAV_POLISH_LABELS.PUBLIC_PROFILE_DESC_ON
+                      : NAV_POLISH_LABELS.PUBLIC_PROFILE_DESC_OFF}
                   </p>
                 </div>
               </div>
@@ -268,8 +270,8 @@ export function SettingsPage() {
 
         {/* Sign Out */}
         <div className="flex justify-end">
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign Out
+          <Button variant="outline" onClick={handleSignOut} className="text-destructive hover:text-destructive">
+            {NAV_POLISH_LABELS.SIGN_OUT}
           </Button>
         </div>
       </div>

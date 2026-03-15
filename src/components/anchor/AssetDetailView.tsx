@@ -20,6 +20,7 @@ import {
   Calendar,
   Hash,
   Lock,
+  Share2,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
@@ -28,11 +29,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from './FileUpload';
+import { ShareSheet } from './ShareSheet';
 import { AnchorLifecycleTimeline } from './AnchorLifecycleTimeline';
 import { CredentialRenderer } from '@/components/credentials/CredentialRenderer';
 import { useCredentialTemplate } from '@/hooks/useCredentialTemplate';
 import { formatFingerprint } from '@/lib/fileHasher';
-import { LIFECYCLE_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
+import { LIFECYCLE_LABELS, CREDENTIAL_TYPE_LABELS, SHARE_LABELS } from '@/lib/copy';
 import { verifyPath } from '@/lib/routes';
 
 interface AnchorRecord {
@@ -95,6 +97,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
   const [copied, setCopied] = useState(false);
   const [verificationState, setVerificationState] = useState<VerificationState>('idle');
   const [showVerifyDropzone, setShowVerifyDropzone] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Fetch template for credential rendering (UF-01)
   const { template } = useCredentialTemplate(anchor.credentialType, anchor.orgId);
@@ -158,6 +161,12 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             View and verify your secured document
           </p>
         </div>
+        {anchor.publicId && (
+          <Button variant="outline" onClick={() => setShareOpen(true)}>
+            <Share2 className="mr-2 h-4 w-4" />
+            {SHARE_LABELS.SHARE_BUTTON}
+          </Button>
+        )}
       </div>
 
       {/* Certificate Card */}
@@ -403,6 +412,16 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
           )}
         </CardContent>
       </Card>
+
+      {/* Share Sheet (UF-08) */}
+      {anchor.publicId && (
+        <ShareSheet
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          publicId={anchor.publicId}
+          filename={anchor.filename}
+        />
+      )}
 
       {/* Actions */}
       {anchor.status === 'SECURED' && (onDownloadProof || onDownloadProofJson) && (

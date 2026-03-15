@@ -20,13 +20,16 @@ import {
   MoreHorizontal,
   Eye,
   Download,
+  Copy,
   Loader2,
   FileDown,
   CalendarIcon,
   GraduationCap,
   X,
 } from 'lucide-react';
-import { CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
+import { CREDENTIAL_TYPE_LABELS, SHARE_LABELS } from '@/lib/copy';
+import { verifyPath } from '@/lib/routes';
+import { toast } from 'sonner';
 import { useExportAnchors } from '@/hooks/useExportAnchors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -428,6 +431,19 @@ export function OrgRegistryTable({
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
+                          {anchor.public_id && (
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                const baseUrl = import.meta.env.VITE_APP_URL || location.origin;
+                                const url = `${baseUrl}${verifyPath(anchor.public_id!)}`;
+                                await navigator.clipboard.writeText(url);
+                                toast.success(SHARE_LABELS.COPIED_TOAST);
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              {SHARE_LABELS.COPY_LINK}
+                            </DropdownMenuItem>
+                          )}
                           {anchor.status === 'SECURED' && (
                             <DropdownMenuItem onClick={() => onDownloadProof?.(anchor)}>
                               <Download className="mr-2 h-4 w-4" />

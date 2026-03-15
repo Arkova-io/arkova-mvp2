@@ -56,7 +56,7 @@ export function OrganizationPage() {
   // Individual users without an org see a placeholder
   if (!profileLoading && profile && !profile.org_id) {
     return (
-      <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>
+      <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut} orgName={organization?.display_name}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
             <Building2 className="h-8 w-8 text-muted-foreground" />
@@ -72,7 +72,7 @@ export function OrganizationPage() {
   }
 
   return (
-    <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>
+    <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut} orgName={organization?.display_name}>
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Organization</h1>

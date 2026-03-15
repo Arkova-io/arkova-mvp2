@@ -37,9 +37,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ROUTES, recordDetailPath } from '@/lib/routes';
-import { IDENTITY_LABELS, RECORDS_LIST_LABELS } from '@/lib/copy';
+import { IDENTITY_LABELS, RECORDS_LIST_LABELS, ONBOARDING_GUIDANCE_LABELS } from '@/lib/copy';
 import { CreditUsageWidget } from '@/components/dashboard/CreditUsageWidget';
 import { UsageWidget } from '@/components/billing/UsageWidget';
+import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
+import { useOrganization } from '@/hooks/useOrganization';
 
 const PAGE_SIZES = [10, 25, 50] as const;
 type StatusFilter = 'ALL' | 'PENDING' | 'SECURED' | 'REVOKED' | 'EXPIRED';
@@ -50,6 +52,7 @@ export function DashboardPage() {
   const { profile, loading: profileLoading, updateProfile } = useProfile();
   const { records, loading: recordsLoading, refreshAnchors } = useAnchors();
   const { revokeAnchor, error: revokeError, clearError: clearRevokeError } = useRevokeAnchor();
+  const { organization } = useOrganization(profile?.org_id);
   const [secureDialogOpen, setSecureDialogOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
@@ -160,6 +163,7 @@ export function DashboardPage() {
       profile={profile}
       profileLoading={profileLoading}
       onSignOut={handleSignOut}
+      orgName={organization?.display_name}
     >
       {/* Welcome section */}
       <div className="mb-8">
@@ -201,6 +205,20 @@ export function DashboardPage() {
         <UsageWidget />
         <CreditUsageWidget />
       </div>
+
+      {/* Getting started checklist (UF-10) */}
+      {profile?.role && (
+        <div className="mb-8">
+          <GettingStartedChecklist
+            role={profile.role as 'ORG_ADMIN' | 'INDIVIDUAL'}
+            context={{
+              hasRecords: records.length > 0,
+              hasTemplates: false, // Will be checked by checklist internally in future
+              hasBillingPlan: false, // Will be checked by checklist internally in future
+            }}
+          />
+        </div>
+      )}
 
       {/* Privacy toggle */}
       <Card className="mb-8">
@@ -298,9 +316,15 @@ export function DashboardPage() {
         <CardContent className="pt-0">
           {!loading && !hasRecords ? (
             <EmptyState
-              title="No records yet"
-              description="Secure your first document to create a permanent, tamper-proof record. Your documents never leave your device."
-              actionLabel="Secure Document"
+              title={profile?.role === 'ORG_ADMIN'
+                ? ONBOARDING_GUIDANCE_LABELS.EMPTY_ORG_RECORDS
+                : ONBOARDING_GUIDANCE_LABELS.EMPTY_INDIVIDUAL_RECORDS}
+              description={profile?.role === 'ORG_ADMIN'
+                ? ONBOARDING_GUIDANCE_LABELS.EMPTY_ORG_RECORDS_DESC
+                : ONBOARDING_GUIDANCE_LABELS.EMPTY_INDIVIDUAL_RECORDS_DESC}
+              actionLabel={profile?.role === 'ORG_ADMIN'
+                ? ONBOARDING_GUIDANCE_LABELS.EMPTY_ORG_RECORDS_CTA
+                : ONBOARDING_GUIDANCE_LABELS.EMPTY_INDIVIDUAL_RECORDS_CTA}
               onAction={() => setSecureDialogOpen(true)}
             />
           ) : !loading && isFiltering && !hasFilteredResults ? (

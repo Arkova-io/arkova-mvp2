@@ -36,6 +36,23 @@ export async function verifyFingerprint(
 }
 
 /**
+ * Hash an email address for privacy-preserving recipient matching.
+ * Uses SHA-256 of lowercased, trimmed email. Both client (issuance)
+ * and worker (auto-linking on signup) must use this same algorithm.
+ *
+ * @param email - The email address to hash
+ * @returns Promise<string> - Hex-encoded SHA-256 hash
+ */
+export async function hashEmail(email: string): Promise<string> {
+  const normalized = email.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Format fingerprint for display (truncated with ellipsis)
  *
  * @param fingerprint - Full 64-character hex fingerprint

@@ -4,3 +4,4 @@ export { ManualReviewGate } from './ManualReviewGate';
 export { EmailConfirmation } from './EmailConfirmation';
 export { OnboardingStepper } from './OnboardingStepper';
 export type { OnboardingStep } from './OnboardingStepper';
+export { GettingStartedChecklist } from './GettingStartedChecklist';

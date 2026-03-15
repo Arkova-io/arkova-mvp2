@@ -552,6 +552,94 @@ export const VERIFICATION_DISPLAY_LABELS = {
 } as const;
 
 // =============================================================================
+// MY CREDENTIALS / RECIPIENT INBOX (UF-03)
+// =============================================================================
+
+export const MY_CREDENTIALS_LABELS = {
+  PAGE_TITLE: 'My Credentials',
+  PAGE_SUBTITLE: 'Credentials issued to you by organizations.',
+  NAV_LABEL: 'My Credentials',
+  EMPTY_TITLE: 'No credentials yet',
+  EMPTY_DESC: 'When organizations issue credentials to your email address, they will appear here.',
+  ISSUED_BY: 'Issued by',
+  RECEIVED_ON: 'Received',
+  VIEW_CREDENTIAL: 'View',
+  VERIFY_CREDENTIAL: 'Verify',
+  CLAIMED: 'Claimed',
+  UNCLAIMED: 'Pending',
+  CREDENTIAL_COUNT: '{count} credentials',
+} as const;
+
+// =============================================================================
+// SHARE FLOW (UF-08)
+// =============================================================================
+
+export const SHARE_LABELS = {
+  SHARE_BUTTON: 'Share',
+  SHARE_TITLE: 'Share Credential',
+  SHARE_DESCRIPTION: 'Share the verification link for this credential.',
+  COPY_LINK: 'Copy Verification Link',
+  LINK_COPIED: 'Verification link copied to clipboard',
+  COPIED_TOAST: 'Copied to clipboard',
+  QR_CODE: 'QR Code',
+  QR_DESCRIPTION: 'Scan to verify this credential',
+  EMAIL_SHARE: 'Share via Email',
+  EMAIL_SUBJECT: 'Verify my credential on Arkova',
+  CLOSE: 'Close',
+} as const;
+
+// =============================================================================
+// NAVIGATION POLISH (UF-09)
+// =============================================================================
+
+export const NAV_POLISH_LABELS = {
+  MANAGING_ORG: 'Managing',
+  BREADCRUMB_HOME: 'Dashboard',
+  BREADCRUMB_RECORDS: 'My Records',
+  BREADCRUMB_ORGANIZATION: 'Organization',
+  BREADCRUMB_SETTINGS: 'Settings',
+  BREADCRUMB_BILLING: 'Billing',
+  BREADCRUMB_HELP: 'Help',
+  BREADCRUMB_CREDENTIAL_TEMPLATES: 'Credential Templates',
+  BREADCRUMB_WEBHOOKS: 'Webhooks',
+  BREADCRUMB_API_KEYS: 'API Keys',
+  AUTH_REDIRECT_TOAST: 'Please sign in to access that page',
+  SIGN_OUT: 'Sign Out',
+  PUBLIC_PROFILE_DESC_ON: 'When enabled, your organization name appears in public search results and your credential registry is visible. Your email and internal data are never exposed.',
+  PUBLIC_PROFILE_DESC_OFF: 'Your organization is not visible in public search results.',
+} as const;
+
+// =============================================================================
+// ONBOARDING GUIDANCE (UF-10)
+// =============================================================================
+
+export const ONBOARDING_GUIDANCE_LABELS = {
+  WELCOME_TITLE: 'Welcome to Arkova',
+  WELCOME_SUBTITLE: 'Get started in a few simple steps.',
+  CHECKLIST_TITLE: 'Getting Started',
+  CHECKLIST_DISMISS: 'Skip setup',
+  // ORG_ADMIN steps
+  STEP_TEMPLATE: 'Create a credential template',
+  STEP_TEMPLATE_DESC: 'Define the fields for your credentials.',
+  STEP_ISSUE: 'Issue your first credential',
+  STEP_ISSUE_DESC: 'Secure a document and create a verifiable record.',
+  STEP_BILLING: 'Set up billing',
+  STEP_BILLING_DESC: 'Choose a plan to unlock more records.',
+  // INDIVIDUAL steps
+  STEP_SECURE: 'Secure your first document',
+  STEP_SECURE_DESC: 'Create a permanent, tamper-proof record.',
+  STEP_SHARE: 'Share your verification link',
+  STEP_SHARE_DESC: 'Let others verify your credential.',
+  // Empty states
+  EMPTY_ORG_RECORDS: 'No credentials issued yet',
+  EMPTY_ORG_RECORDS_DESC: 'Issue your first credential to get started.',
+  EMPTY_ORG_RECORDS_CTA: 'Issue Credential',
+  EMPTY_INDIVIDUAL_RECORDS: 'Your vault is empty',
+  EMPTY_INDIVIDUAL_RECORDS_DESC: 'Secure your first document to create a permanent record.',
+  EMPTY_INDIVIDUAL_RECORDS_CTA: 'Secure Document',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 

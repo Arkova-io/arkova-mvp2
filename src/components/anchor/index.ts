@@ -4,3 +4,4 @@ export { ConfirmAnchorModal } from './ConfirmAnchorModal';
 export { AssetDetailView } from './AssetDetailView';
 export { AnchorLifecycleTimeline } from './AnchorLifecycleTimeline';
 export type { AnchorLifecycleData } from './AnchorLifecycleTimeline';
+export { ShareSheet } from './ShareSheet';
