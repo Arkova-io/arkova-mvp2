@@ -1,5 +1,5 @@
 # GEO & SEO Optimization Stories
-_Last updated: 2026-03-15 | 0/12 stories — ALL NOT STARTED_
+_Last updated: 2026-03-15 | 2/12 COMPLETE, 2/12 PARTIAL, 8/12 NOT STARTED_
 
 ## Group Overview
 
@@ -15,9 +15,9 @@ The GEO audit report lives at `GEO-AUDIT-REPORT.md` in the repo root. Detailed s
 
 | Status | Count |
 |--------|-------|
-| COMPLETE | 0 |
-| PARTIAL | 0 |
-| NOT STARTED | 12 |
+| COMPLETE | 2 |
+| PARTIAL | 2 |
+| NOT STARTED | 8 |
 
 ---
 
@@ -58,10 +58,24 @@ As an AI crawler (GPTBot, ClaudeBot, PerplexityBot), I need the marketing site c
 
 ## GEO-02: Fix LinkedIn Entity Collision + Expand sameAs
 
-**Status:** NOT STARTED
+**Status:** PARTIAL (sameAs URLs updated in schema; LinkedIn company page creation + Wikidata entry are external tasks)
 **Priority:** CRITICAL (active harm to entity recognition)
 **Dependencies:** None
 **Estimated Points:** 3
+
+### Completion Gaps
+
+- LinkedIn sameAs URL corrected to `/company/arkovatech` and GitHub added to sameAs array
+- LinkedIn company page for "Arkova Technologies, Inc." not yet created (external task — requires LinkedIn admin access)
+- Wikidata entry not yet created (external task)
+- Crunchbase profile not yet created (external task)
+
+### Remaining Work
+
+- Create LinkedIn company page for Arkova Technologies, Inc. (manual, external)
+- Create Wikidata entry with: instance of (business), industry (software), website, founding date
+- Add Crunchbase and Wikidata URLs to sameAs array once created
+- Verify entity resolution on ChatGPT/Perplexity after indexing
 
 ### Research
 
@@ -161,10 +175,24 @@ As an AI model evaluating source credibility, I need to know who is behind Arkov
 
 ## GEO-05: Enhanced Schema Markup (WebSite, speakable, AggregateOffer)
 
-**Status:** NOT STARTED
+**Status:** PARTIAL (WebSite schema deployed; speakable + AggregateOffer still pending)
 **Priority:** HIGH
 **Dependencies:** GEO-02 (sameAs fix)
 **Estimated Points:** 3
+
+### Completion Gaps
+
+- WebSite JSON-LD schema deployed with publisher reference (4 schemas total on homepage)
+- Missing: speakable WebPage schema (requires CSS selectors for hero/FAQ sections)
+- Missing: AggregateOffer enhancement to SoftwareApplication schema (requires pricing tier details)
+- Missing: Person schema for founder(s)
+
+### Remaining Work
+
+- Add speakable WebPage JSON-LD targeting `.hero-headline`, `.hero-subheadline`, `.value-proposition` CSS selectors
+- Replace SoftwareApplication Offer with AggregateOffer including all 3 pricing tiers
+- Add Person schema for founder(s) once team bios are finalized (GEO-04)
+- Validate all schemas with Google Rich Results Test
 
 ### Research
 
@@ -196,7 +224,7 @@ As a search engine or AI assistant, I need comprehensive structured data to unde
 
 ## GEO-06: Deploy Upgraded llms.txt
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (2026-03-15 — deployed to arkova-marketing repo, Vercel auto-deploys)
 **Priority:** HIGH
 **Dependencies:** None
 **Estimated Points:** 1
@@ -230,7 +258,7 @@ As an AI system discovering Arkova's capabilities, I need a properly structured 
 
 ## GEO-07: Fix Broken og:image + Complete Meta Tags
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (2026-03-15 — og:image→arkova-logo.png, og:site_name, twitter:site/@arkaboratory, twitter:image, description 153 chars)
 **Priority:** HIGH
 **Dependencies:** None
 **Estimated Points:** 1

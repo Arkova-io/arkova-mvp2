@@ -100,12 +100,12 @@ All HIGH+ launch blockers resolved:
 | Story | Priority | Description | Status |
 |-------|----------|-------------|--------|
 | GEO-01 | CRITICAL | SSR for marketing site (crawlers see empty div) | NOT STARTED |
-| GEO-02 | CRITICAL | Fix LinkedIn entity collision + expand sameAs | NOT STARTED |
+| GEO-02 | CRITICAL | Fix LinkedIn entity collision + expand sameAs | PARTIAL (sameAs fixed; LinkedIn page + Wikidata external) |
 | GEO-03 | CRITICAL | Publish /privacy and /terms on marketing site | NOT STARTED |
 | GEO-04 | HIGH | About page with team bios + Person schema | NOT STARTED |
-| GEO-05 | HIGH | Enhanced schema (WebSite, speakable, AggregateOffer) | NOT STARTED |
-| GEO-06 | HIGH | Deploy upgraded llms.txt | NOT STARTED |
-| GEO-07 | HIGH | Fix broken og:image + complete meta tags | NOT STARTED |
+| GEO-05 | HIGH | Enhanced schema (WebSite, speakable, AggregateOffer) | PARTIAL (WebSite deployed; speakable + AggregateOffer pending) |
+| GEO-06 | HIGH | Deploy upgraded llms.txt | **COMPLETE** |
+| GEO-07 | HIGH | Fix broken og:image + complete meta tags | **COMPLETE** |
 | GEO-08 | HIGH | Content expansion — 5 core pages | NOT STARTED |
 | GEO-09 | MEDIUM | Community & brand presence launch | NOT STARTED |
 | GEO-10 | MEDIUM | IndexNow for Bing/Copilot | NOT STARTED |
@@ -118,6 +118,16 @@ All HIGH+ launch blockers resolved:
 ---
 
 ## Session Log
+
+### Session: 2026-03-15 — GEO Quick Wins (GEO-07, GEO-06, GEO-02, GEO-05)
+
+**Changes to arkova-marketing repo (`carson-see/arkova-marketing`, branch `geo/quick-wins-07-06-02-05`):**
+- **GEO-07 COMPLETE:** Fixed broken `og:image` (`og-image.png` → `arkova-logo.png`), added `og:site_name="Arkova"`, `twitter:site="@arkaboratory"`, `twitter:image`. Extended meta description to 153 chars.
+- **GEO-06 COMPLETE:** Deployed upgraded `llms.txt` (formal spec with API docs, MCP server reference, auth, rate limits). Replaced marketing-copy version.
+- **GEO-02 PARTIAL:** Fixed `sameAs` LinkedIn URL from `/company/arkova` (Arkova Partners) to `/company/arkovatech`. Added GitHub (`carson-see/ArkovaCarson`) to `sameAs` array. Remaining: create actual LinkedIn company page + Wikidata entry (external tasks).
+- **GEO-05 PARTIAL:** Added `WebSite` JSON-LD schema with `alternateName`, `publisher` reference. Now 4 JSON-LD blocks total (Organization, SoftwareApplication, FAQPage, WebSite). Remaining: `speakable` WebPage + `AggregateOffer` enhancement.
+
+**Story doc updates:** `docs/stories/15_geo_seo.md` updated (2 COMPLETE, 2 PARTIAL, 8 NOT STARTED). `00_stories_index.md` and CLAUDE.md Section 8 updated with GEO row.
 
 ### Session: 2026-03-15 — GEO Audit + Story Creation
 
