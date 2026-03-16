@@ -127,13 +127,15 @@ function metadataToFields(metadata: Record<string, Json | undefined> | null): Te
   if (!metadata) return [];
   const fields = (metadata as Record<string, unknown>).fields;
   if (!Array.isArray(fields)) return [];
-  return fields.map((f: Record<string, unknown>) => ({
-    id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    name: (f.label as string) ?? (f.key as string) ?? '',
-    type: (f.type as TemplateFieldDefinition['type']) ?? 'text',
-    required: (f.required as boolean) ?? false,
-    ...(Array.isArray(f.options) && { options: f.options as string[] }),
-  }));
+  return fields
+    .filter((f): f is Record<string, unknown> => f != null && typeof f === 'object')
+    .map((f, idx) => ({
+      id: `field_${idx}_${(f.key as string) ?? idx}`,
+      name: (f.label as string) ?? (f.key as string) ?? '',
+      type: (f.type as TemplateFieldDefinition['type']) ?? 'text',
+      required: (f.required as boolean) ?? false,
+      ...(Array.isArray(f.options) && { options: f.options as string[] }),
+    }));
 }
 
 export function CredentialTemplatesManager({

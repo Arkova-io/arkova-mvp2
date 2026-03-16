@@ -54,6 +54,8 @@ const mainNavItems: NavItem[] = [
   { label: NAV_LABELS.SEARCH, icon: Search, to: ROUTES.SEARCH },
 ];
 
+// UI-only visibility hint — NOT a security control. Actual admin access must be
+// enforced server-side via RLS/roles. TODO: migrate to profiles.is_platform_admin flag.
 const PLATFORM_ADMIN_EMAILS = ['carson@arkova.io', 'sarah@arkova.io'];
 
 const adminNavItems: NavItem[] = [
@@ -82,7 +84,7 @@ const THEME_LABEL: Record<Theme, string> = {
   system: 'System',
 };
 
-function ThemeToggle({ collapsed }: { collapsed: boolean }) {
+function ThemeToggle({ collapsed }: Readonly<{ collapsed: boolean }>) {
   const { theme, setTheme } = useTheme();
 
   const cycleTheme = () => {

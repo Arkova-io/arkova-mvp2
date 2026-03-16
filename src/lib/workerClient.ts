@@ -38,8 +38,9 @@ export async function workerFetch(
       },
     });
   } catch (error) {
-    // TypeError: Failed to fetch = network error (worker down, CORS, offline)
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    // TypeError from fetch() = network error (worker down, CORS, offline)
+    // Check error type rather than message content for cross-browser reliability
+    if (error instanceof TypeError) {
       throw new Error(WORKER_UNAVAILABLE_MESSAGE);
     }
     throw error;
@@ -66,7 +67,9 @@ export async function workerPostForUrl(
     );
   }
 
-  const data = await response.json();
+  const data = await response.json().catch(() => {
+    throw new Error('Invalid server response');
+  });
   const url = (data as Record<string, string>).url;
   if (!url) throw new Error('No redirect URL returned');
   return url;

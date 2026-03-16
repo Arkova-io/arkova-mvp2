@@ -1,4 +1,5 @@
 # Crawler DNS Rebinding Mitigation
+
 _Last updated: 2026-03-16 | Story: INJ-03_
 
 ## Overview

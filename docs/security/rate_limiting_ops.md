@@ -1,4 +1,5 @@
 # Rate Limiting — Single-Instance Limitation
+
 _Last updated: 2026-03-16 | Story: AUTH-05_
 
 ## Overview
@@ -16,6 +17,17 @@ share state across multiple worker instances.
 | `api` | 60 req/min | 60 s | Per IP |
 | `auth` | 5 req/min | 60 s | Per IP (skip failed) |
 | `quotaCheck` | 10 req/min | 60 s | Per IP |
+
+### Public API Limits (Constitution 1.10)
+
+| Endpoint | Limit | Scope |
+|----------|-------|-------|
+| `/api/v1/*` (anonymous) | 100 req/min | Per IP |
+| `/api/v1/*` (API key) | 1,000 req/min | Per key |
+| `/api/v1/verify/batch` | 10 req/min | Per API key |
+| AI operations | 30 req/min | Per user |
+
+These public API limits are enforced via the API key middleware in `services/worker/src/api/v1/router.ts`.
 
 ## Limitation: Multi-Instance Deployments
 
