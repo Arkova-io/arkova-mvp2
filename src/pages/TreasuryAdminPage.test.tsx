@@ -38,6 +38,15 @@ vi.mock('@/hooks/useOrganization', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useTreasuryStatus', () => ({
+  useTreasuryStatus: () => ({
+    status: null,
+    loading: false,
+    error: null,
+    fetchStatus: vi.fn(),
+  }),
+}));
+
 // Mock supabase — factory must not reference outer variables (hoisting)
 vi.mock('@/lib/supabase', () => {
   const mockResolve = { count: 5, error: null };
@@ -88,7 +97,7 @@ describe('TreasuryAdminPage', () => {
     expect(screen.getByText('Total Anchors')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
     expect(screen.getByText('Secured')).toBeInTheDocument();
-    expect(screen.getByText('Revoked')).toBeInTheDocument();
+    expect(screen.getByText('Last 24 Hours')).toBeInTheDocument();
   });
 
   it('renders treasury vault section', () => {

@@ -424,6 +424,29 @@ app.post('/jobs/credit-expiry', cronJobsLimiter, async (req, res) => {
 });
 
 // =========================================================================
+// Treasury Status — Arkova platform admin only (feedback_treasury_access)
+// =========================================================================
+app.options('/api/treasury/status', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/treasury/status', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const { handleTreasuryStatus } = await import('./api/treasury.js');
+    await handleTreasuryStatus(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Treasury status request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
 // API Documentation — accessible without auth or feature flag (P4.5-TS-04)
 // =========================================================================
 app.use('/api/docs', docsRouter);
