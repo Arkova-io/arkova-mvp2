@@ -1,9 +1,9 @@
 # Arkova Documentation Index
-_Last updated: 2026-03-13_
+_Last updated: 2026-03-16_
 
 ## Reading Guide
 
-This directory contains 15 architecture and design documents for the Arkova platform. They are numbered for easy reference but should be read in the order that matches your task.
+This directory contains 18 architecture and design documents for the Arkova platform. They are numbered for easy reference but should be read in the order that matches your task.
 
 ### Suggested Reading Order
 

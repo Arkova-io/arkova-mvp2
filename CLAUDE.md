@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-16 (Bitcoin Testnet 4 migration + launch readiness audit — 15/19 AI stories, migration 0062)
+> **Version:** 2026-03-16 (Sprint 3 PRs merged — security hardening, testnet4, AI extraction — 15/19 AI stories, migration 0063)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
@@ -623,7 +623,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 61 files, versions 0001–0062 (0033 skipped). Last: `0062_security_hardening_high.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0062 pending production apply (merged to main via PR #71).
+**Current migration inventory:** 62 files, versions 0001–0063 (0033 skipped). Last: `0063_security_sprint2.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0063 pending production apply.
 
 ---
 
