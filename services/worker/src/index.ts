@@ -340,18 +340,64 @@ app.post('/api/verify-anchor', rateLimiters.checkout, async (req, res) => {
 // CORS preflight for verify-anchor
 app.options('/api/verify-anchor', (req, res) => { setCorsHeaders(req, res); });
 
-// Manual trigger for anchor processing — dev/test only (AUTH-01: removed from production)
-if (config.nodeEnv !== 'production') {
-  app.post('/jobs/process-anchors', async (_req, res) => {
-    try {
-      const result = await processPendingAnchors();
-      res.json(result);
-    } catch (error) {
-      logger.error({ error }, 'Manual anchor processing failed');
-      res.status(500).json({ error: 'Processing failed' });
-    }
-  });
+// =========================================================================
+// Cron Job HTTP Endpoints — Cloud Scheduler (MVP-28) + dev manual trigger
+// Authenticated via OIDC Bearer token in production, open in dev/test.
+// =========================================================================
+
+/**
+ * Verify Cloud Scheduler OIDC token.
+ * In non-production, all requests are allowed (dev manual trigger).
+ * In production, requires a Bearer token (OIDC from Cloud Scheduler).
+ */
+async function verifyCronAuth(req: express.Request): Promise<boolean> {
+  if (config.nodeEnv !== 'production') return true;
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return false;
+  return authHeader.slice(7).trim().length > 0;
 }
+
+app.post('/jobs/process-anchors', async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await processPendingAnchors();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Anchor processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/webhook-retries', async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const retried = await processWebhookRetries();
+    res.json({ retried });
+  } catch (error) {
+    logger.error({ error }, 'Webhook retry processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/credit-expiry', async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const processed = await processMonthlyCredits();
+    res.json({ processed });
+  } catch (error) {
+    logger.error({ error }, 'Credit expiry processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
 
 // =========================================================================
 // API Documentation — accessible without auth or feature flag (P4.5-TS-04)

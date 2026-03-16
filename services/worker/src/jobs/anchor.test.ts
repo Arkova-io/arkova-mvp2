@@ -115,6 +115,8 @@ vi.mock('../webhooks/delivery.js', () => ({
   dispatchWebhookEvent: mockDispatchWebhookEvent,
 }));
 
+const mockRpc = vi.hoisted(() => vi.fn());
+
 vi.mock('../utils/db.js', () => ({
   db: {
     from: vi.fn((table: string) => {
@@ -129,6 +131,7 @@ vi.mock('../utils/db.js', () => ({
           return {};
       }
     }),
+    rpc: mockRpc,
   },
 }));
 
@@ -144,7 +147,7 @@ const MOCK_ANCHOR = {
   id: 'anchor-001',
   user_id: 'user-001',
   org_id: 'org-001',
-  fingerprint: 'sha256-abc123def456789',
+  fingerprint: 'a'.repeat(64), // Valid 64-char hex SHA-256
   status: 'PENDING',
   file_name: 'test-document.pdf',
   file_size: 1024,
@@ -174,6 +177,7 @@ describe('processAnchor', () => {
     mockChainIndexUpsert.mockResolvedValue({ error: null });
     mockAuditInsert.mockResolvedValue({ error: null });
     mockDispatchWebhookEvent.mockResolvedValue(undefined);
+    mockRpc.mockResolvedValue({ data: true, error: null });
   });
 
   // ---- Success path ----
@@ -418,6 +422,50 @@ describe('processAnchor', () => {
     });
   });
 
+  // ---- Fingerprint validation ----
+
+  describe('fingerprint validation', () => {
+    it('returns false when fingerprint is missing', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, fingerprint: '' },
+        error: null,
+      });
+      const result = await processAnchor('anchor-001');
+      expect(result).toBe(false);
+      expect(mockSubmitFingerprint).not.toHaveBeenCalled();
+    });
+
+    it('returns false when fingerprint is not 64 hex chars', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, fingerprint: 'not-a-valid-hash' },
+        error: null,
+      });
+      const result = await processAnchor('anchor-001');
+      expect(result).toBe(false);
+      expect(mockSubmitFingerprint).not.toHaveBeenCalled();
+    });
+
+    it('returns false when fingerprint is null', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, fingerprint: null },
+        error: null,
+      });
+      const result = await processAnchor('anchor-001');
+      expect(result).toBe(false);
+      expect(mockSubmitFingerprint).not.toHaveBeenCalled();
+    });
+
+    it('accepts valid uppercase hex fingerprint', async () => {
+      mockSingle.mockResolvedValue({
+        data: { ...MOCK_ANCHOR, fingerprint: 'A'.repeat(64) },
+        error: null,
+      });
+      const result = await processAnchor('anchor-001');
+      expect(result).toBe(true);
+      expect(mockSubmitFingerprint).toHaveBeenCalled();
+    });
+  });
+
   // ---- Chain index upsert (P7-TS-13) ----
 
   describe('chain index upsert', () => {
@@ -632,6 +680,7 @@ describe('processPendingAnchors', () => {
     mockUpdateEq.mockResolvedValue({ error: null });
     mockChainIndexUpsert.mockResolvedValue({ error: null });
     mockAuditInsert.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: true, error: null });
   });
 
   it('returns zero counts when no pending anchors exist', async () => {
@@ -703,6 +752,38 @@ describe('processPendingAnchors', () => {
     const result = await processPendingAnchors();
 
     expect(result).toEqual({ processed: 0, failed: 2 });
+  });
+
+  // ---- Switchboard kill switch ----
+
+  describe('switchboard flag check', () => {
+    it('skips processing when switchboard flag is disabled', async () => {
+      mockRpc.mockResolvedValue({ data: false, error: null });
+      const result = await processPendingAnchors();
+      expect(result).toEqual({ processed: 0, failed: 0 });
+      expect(anchorsTable.select).not.toHaveBeenCalled();
+    });
+
+    it('proceeds when switchboard flag is enabled', async () => {
+      mockRpc.mockResolvedValue({ data: true, error: null });
+      mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
+      const result = await processPendingAnchors();
+      expect(result.processed).toBe(1);
+    });
+
+    it('defaults to enabled when flag read fails', async () => {
+      mockRpc.mockResolvedValue({ data: null, error: { message: 'RPC error' } });
+      mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
+      const result = await processPendingAnchors();
+      expect(result.processed).toBe(1);
+    });
+
+    it('defaults to enabled when RPC throws', async () => {
+      mockRpc.mockRejectedValue(new Error('DB unreachable'));
+      mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
+      const result = await processPendingAnchors();
+      expect(result.processed).toBe(1);
+    });
   });
 
   // ---- HARDENING-2: Query shape verification ----

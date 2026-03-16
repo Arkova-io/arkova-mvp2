@@ -116,6 +116,7 @@ vi.mock('../utils/db.js', () => {
 
   return {
     db: {
+      rpc: vi.fn(() => Promise.resolve({ data: true, error: null })),
       from: vi.fn((table: string) => {
         if (table === 'anchors') {
           return {
@@ -156,12 +157,17 @@ const RECEIPT: ChainReceipt = {
   confirmations: 6,
 };
 
+/** Counter for generating unique but valid 64-char hex fingerprints */
+let fingerprintCounter = 0;
+
 function seedAnchor(id: string, overrides: Record<string, unknown> = {}) {
+  fingerprintCounter++;
+  const hexId = fingerprintCounter.toString(16).padStart(64, '0');
   dbState.anchors.set(id, {
     id,
     user_id: 'user-001',
     org_id: 'org-001',
-    fingerprint: `sha256-${id}`,
+    fingerprint: hexId, // Valid 64-char hex SHA-256
     status: 'PENDING',
     file_name: 'test.pdf',
     file_size: 1024,
@@ -181,6 +187,7 @@ describe('anchor lifecycle: PENDING → SECURED → webhook', () => {
     vi.clearAllMocks();
     dbState.anchors.clear();
     dbState.auditEvents = [];
+    fingerprintCounter = 0;
     mockSubmitFingerprint.mockResolvedValue(RECEIPT);
     mockDispatchWebhookEvent.mockResolvedValue(undefined);
   });
@@ -218,7 +225,7 @@ describe('anchor lifecycle: PENDING → SECURED → webhook', () => {
       expect.objectContaining({
         anchor_id: 'anc-001',
         public_id: 'pub-anc-001',
-        fingerprint: 'sha256-anc-001',
+        fingerprint: expect.stringMatching(/^[0-9a-f]{64}$/),
         status: 'SECURED',
         chain_tx_id: RECEIPT.receiptId,
         chain_block_height: RECEIPT.blockHeight,
