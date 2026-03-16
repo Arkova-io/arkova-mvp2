@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-15 (P8 Phase 1.5 complete — 15/19 AI stories, migration 0060)
+> **Version:** 2026-03-16 (P8 Phase 1.5 + GDPR + security hardening merged — 15/19 AI stories, migration 0062)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
@@ -605,7 +605,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 60 files, versions 0001–0060 (0033 skipped). Last: `0060_credential_embeddings.sql` (P8-S10). Migrations 0001–0058 applied to production. Migrations 0059–0060 pending (apply after P8 Phase 1.5 PR merge).
+**Current migration inventory:** 62 files, versions 0001–0062 (0033 skipped). Last: `0062_security_hardening_high.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0062 pending production apply (merged to main via PR #71).
 
 ---
 
@@ -630,7 +630,7 @@ npx supabase db reset
 | INFRA Edge & Ingress | 7/8 | 1/8 | 0/8 | 88% |
 | UAT Bug Fix Sprints | 17/17 | 0 | 0 | 100% |
 | UF User Flow Gaps | 10/10 | 0 | 0 | 100% |
-| GEO SEO Optimization | 4/12 | 3/12 | 5/12 | 33% |
+| GEO & SEO | 4/12 | 3/12 | 5/12 | 33% |
 | **Total** | **146/163** | **4/163** | **13/163** | **~90%** |
 
 ### Critical Blockers (resolve before production)
@@ -1081,5 +1081,5 @@ AI_PROVIDER=mock                   # gemini | cloudflare | replicate | mock
 
 ---
 
-_Directive version: 2026-03-15 (P8 Phase 1.5 COMPLETE — 15 AI stories) | Repo: ArkovaCarson | 60 migrations | 1,586+ tests | 163 stories (146 complete, 90%)_
+_Directive version: 2026-03-16 (P8 Phase 1.5 + GDPR + security hardening merged) | Repo: ArkovaCarson | 62 migrations | 1,586+ tests | 163 stories (146 complete, 90%)_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

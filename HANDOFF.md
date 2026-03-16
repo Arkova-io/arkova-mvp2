@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 146/163 stories complete (90%). 1,538+ tests. 60 migrations (0001-0060, 0033 skipped). P4.5 COMPLETE (13/13). P8: 15/19 (79%). GEO: 4 complete, 3 partial, 5 not started.
+**Overall progress:** 146/163 stories complete (90%). 1,586 tests (731 frontend + 855 worker). 62 migrations (0001-0062, 0033 skipped). P4.5 COMPLETE (13/13). P8: 15/19 (79%). GEO: 4 complete, 3 partial, 5 not started.
 
 ### Open Blockers
 
@@ -38,20 +38,25 @@ All HIGH+ launch blockers resolved:
 | ~~MVP-05~~ | ~~HIGH~~ | ~~Error boundary + 404~~ | ~~COMPLETE~~ |
 | ~~MVP-11~~ | ~~HIGH~~ | ~~Stripe plan change/downgrade~~ | ~~COMPLETE (PR #43)~~ |
 
-### P8 AI Intelligence — 10/19 COMPLETE (Phase I done)
+### P8 AI Intelligence — 15/19 COMPLETE (Phase I + 1.5 done)
 
 | Story | Description | Status |
 |-------|-------------|--------|
-| P8-S1 | Gemini API Integration (GeminiProvider + circuit breaker) | **COMPLETE** — 13 tests (PR #68) |
-| P8-S2 | AI Cost Tracking (migration 0059 + credits RPCs) | **COMPLETE** — 17 tests (PR #68) |
-| P8-S3 | AI Feature Flags (3 switchboard flags + middleware) | **COMPLETE** — 17 tests (PR #68) |
-| P8-S4 | AI Extraction Service (POST /api/v1/ai/extract) | **COMPLETE** — 6 tests (PR #68) |
-| P8-S5 | AI Extraction UI (OCR + PII strip + suggestions) | **COMPLETE** — 18 tests (PR #68) |
-| P8-S7 | Cloudflare Crawler (university ingestion) | **COMPLETE** — 5 tests (PR #31) |
-| P8-S13 | Batch AI Processing (Cloudflare Queues) | **COMPLETE** — 4 tests (PR #31) |
-| P8-S15 | R2 Report Storage (zero-egress signed URLs) | **COMPLETE** — 4 tests (PR #31) |
-| P8-S17 | AI Provider Abstraction (IAIProvider + factory + fallback) | **COMPLETE** — 16 tests (PR #31) |
-| P8-S18 | Client-Side PII Stripping (Constitution 4A) | **COMPLETE** — 27 tests (PR #68) |
+| P8-S1 | Gemini API Integration (GeminiProvider + circuit breaker) | **COMPLETE** — 13 tests |
+| P8-S2 | AI Cost Tracking (migration 0059 + credits RPCs) | **COMPLETE** — 17 tests |
+| P8-S3 | AI Feature Flags (3 switchboard flags + middleware) | **COMPLETE** — 17 tests |
+| P8-S4 | AI Extraction Service (POST /api/v1/ai/extract) | **COMPLETE** — 6 tests |
+| P8-S5 | AI Extraction UI (OCR + PII strip + suggestions) | **COMPLETE** — 18 tests |
+| P8-S7 | Cloudflare Crawler (university ingestion) | **COMPLETE** — 5 tests |
+| P8-S10 | pgvector Embedding Schema (migration 0060) | **COMPLETE** — merged PR #71 |
+| P8-S11 | Embedding Generation Pipeline | **COMPLETE** — 18 tests |
+| P8-S12 | Semantic Search UI | **COMPLETE** — 20 tests |
+| P8-S13 | Batch AI Processing (Cloudflare Queues) | **COMPLETE** — 4 tests |
+| P8-S14 | Batch AI Dashboard | **COMPLETE** — 5 tests |
+| P8-S15 | R2 Report Storage (zero-egress signed URLs) | **COMPLETE** — 4 tests |
+| P8-S17 | AI Provider Abstraction (IAIProvider + factory + fallback) | **COMPLETE** — 16 tests |
+| P8-S18 | Client-Side PII Stripping (Constitution 4A) | **COMPLETE** — 27 tests |
+| P8-S19 | Agentic Verification Endpoint | **COMPLETE** — 5 tests |
 
 ### Sentry Integration
 
@@ -80,12 +85,12 @@ All HIGH+ launch blockers resolved:
 
 ### What's Production-Ready
 
-- Database layer (58 migrations, RLS on all tables, audit trail immutable)
+- Database layer (62 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance + individual anchor creation
 - Public verification portal (5-section display, verification event logging)
 - CI/CD pipeline (typecheck, lint, test, copy-lint, build-check, E2E)
-- Worker test coverage (604 tests across 24+ files, 80%+ on all critical paths)
+- Worker test coverage (855 tests across 53 files, 80%+ on all critical paths)
 - Webhook delivery engine + settings UI
 - Stripe webhook handlers + billing UI
 - PDF + JSON proof downloads
@@ -94,9 +99,12 @@ All HIGH+ launch blockers resolved:
 - Bitcoin chain client (code complete, operational items remain)
 - Sentry error tracking with PII scrubbing (frontend + worker)
 - AI provider abstraction (IAIProvider interface, factory, mock, CF fallback)
+- AI extraction pipeline (Gemini, OCR, PII stripping, credit tracking)
+- Semantic search (pgvector embeddings, cosine similarity, Nordic Vault UI)
 - Edge worker infrastructure (batch queue, report storage, crawler, AI fallback)
 - AI documentation (llms.txt + AGENTS.md for agent discovery)
 - Remote MCP server (Cloudflare Worker, Streamable HTTP, OAuth + API key auth)
+- GDPR compliance (PII erasure RPCs, audit log anonymization, data retention policies)
 - **"Nordic Vault" UI design system** (PR #42) — DM Sans + JetBrains Mono fonts, mesh gradients, glassmorphism, glow shadows, staggered animations. Full rules in CLAUDE.md Section 5 + `feedback_frontend_aesthetics.md`.
 - **User Flow Gaps (UF-01 through UF-10) ALL COMPLETE** — CredentialRenderer, public search, recipient inbox, PENDING status UX, metadata entry, usage tracking, enhanced verification, share flow, breadcrumbs/nav polish, onboarding checklist
 - **GCP Infrastructure** — Cloud Run (worker deployed), Secret Manager (7 secrets), Cloud Scheduler (4 cron jobs)
@@ -124,6 +132,26 @@ All HIGH+ launch blockers resolved:
 ---
 
 ## Session Log
+
+### Session: 2026-03-16 — PR Review, Merge, and Cleanup
+
+**PR Review (PRs #68-71):**
+- Reviewed 21 actionable code review findings across 4 open PRs (CodeRabbit, GitHub Advanced Security, SonarCloud)
+- Fixed 15 findings: 3 security (schema passthrough, prompt injection, missing rate limits), 6 bugs (retry logic, credit tracking, worker leak), 6 moderate improvements (optional chaining, error handling)
+- All 1,586 tests passing after fixes
+
+**PR Merge:**
+- Merged PR #71 (`fix/gdpr-critical-pii-erasure`) via squash into main — includes Phase 1.5 + bug fixes + GDPR + security hardening + code review fixes
+- Closed PRs #68, #69, #70 as superseded (content included in #71)
+
+**Branch Cleanup:**
+- Deleted 9 stale remote branches (feat/p8-ai-phase1, feat/p8-ai-phase1.5, fix/p8-code-review-bugs, fix/gdpr-critical-pii-erasure, docs/full-sync-sprint-d, geo/quick-wins-doc-update, uf-sprint-c, feat/geo-seo-stories, feat/phase6-lint-cleanup, feat/p45-verification-api, p45-verification-api-phase2)
+- Cleaned up 7 local branches. Only `main` remains.
+
+**Documentation:**
+- Updated CLAUDE.md: migration count (62), version date, "GEO SEO Optimization" → "GEO & SEO"
+- Updated HANDOFF.md: test counts, P8 status (15/19), production-ready list, session log
+- Updated MEMORY.md: PR status, migration count, session handoff notes
 
 ### Session: 2026-03-16 — CISO Security Audit (Launch Readiness)
 
