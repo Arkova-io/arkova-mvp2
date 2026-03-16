@@ -17,8 +17,11 @@ import { ECPairFactory } from 'ecpair';
 
 const ECPair = ECPairFactory(ecc);
 
-/** Signet uses testnet network parameters */
+/** Signet/testnet/testnet4 all use testnet network parameters in bitcoinjs-lib */
 export const SIGNET_NETWORK = bitcoin.networks.testnet;
+
+/** Alias — testnet4 uses the same bitcoinjs-lib network params as testnet */
+export const TESTNET4_NETWORK = bitcoin.networks.testnet;
 
 export interface SignetKeypair {
   /** WIF-encoded private key — NEVER log or commit */
@@ -28,7 +31,7 @@ export interface SignetKeypair {
 }
 
 /**
- * Generate a new random Signet keypair.
+ * Generate a new random keypair for testnet-family networks (signet, testnet, testnet4).
  * The WIF must be stored securely in env vars — never committed to source.
  */
 export function generateSignetKeypair(): SignetKeypair {
@@ -46,9 +49,12 @@ export function generateSignetKeypair(): SignetKeypair {
   return { wif: keyPair.toWIF(), address };
 }
 
+/** Alias for testnet4 keypair generation (same underlying function) */
+export const generateTestnet4Keypair = generateSignetKeypair;
+
 /**
  * Derive the P2PKH address from a WIF-encoded private key.
- * Validates the WIF is parseable for Signet (testnet params).
+ * Validates the WIF is parseable for testnet-family networks (signet/testnet/testnet4).
  */
 export function addressFromWif(wif: string): string {
   const keyPair = ECPair.fromWIF(wif, SIGNET_NETWORK);
@@ -66,7 +72,7 @@ export function addressFromWif(wif: string): string {
 }
 
 /**
- * Validate that a WIF string is parseable for the Signet network.
+ * Validate that a WIF string is parseable for testnet-family networks.
  * Returns true if valid, false otherwise.
  */
 export function isValidSignetWif(wif: string): boolean {
@@ -77,3 +83,6 @@ export function isValidSignetWif(wif: string): boolean {
     return false;
   }
 }
+
+/** Alias for testnet4 WIF validation (same underlying function) */
+export const isValidTestnet4Wif = isValidSignetWif;

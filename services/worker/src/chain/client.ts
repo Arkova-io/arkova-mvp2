@@ -3,7 +3,7 @@
  *
  * Returns appropriate chain client based on configuration.
  * - Test/mock mode: MockChainClient (always)
- * - Signet/testnet with ENABLE_PROD_NETWORK_ANCHORING: BitcoinChainClient (WIF signing)
+ * - Signet/testnet/testnet4 with ENABLE_PROD_NETWORK_ANCHORING: BitcoinChainClient (WIF signing)
  * - Mainnet with ENABLE_PROD_NETWORK_ANCHORING: BitcoinChainClient (KMS signing)
  * - All other cases: MockChainClient (safe fallback)
  *
@@ -163,7 +163,7 @@ export async function createChainClient(): Promise<ChainClient> {
 
   // ── Signet / testnet ──────────────────────────────────────────────
 
-  if (config.bitcoinNetwork === 'signet' || config.bitcoinNetwork === 'testnet') {
+  if (config.bitcoinNetwork === 'signet' || config.bitcoinNetwork === 'testnet' || config.bitcoinNetwork === 'testnet4') {
     if (!config.bitcoinTreasuryWif) {
       logger.error('BITCOIN_TREASURY_WIF required for Signet chain client — falling back to mock');
       return new MockChainClient();
@@ -199,7 +199,7 @@ export async function createChainClient(): Promise<ChainClient> {
         utxoProvider: utxoProvider.name,
         feeEstimator: feeEstimator.name,
       },
-      'Using BitcoinChainClient (Signet)',
+      `Using BitcoinChainClient (${config.bitcoinNetwork})`,
     );
 
     return new BitcoinChainClient({

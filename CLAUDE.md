@@ -1,6 +1,6 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-16 (P8 Phase 1.5 + GDPR + security hardening merged — 15/19 AI stories, migration 0062)
+> **Version:** 2026-03-16 (Bitcoin Testnet 4 migration + launch readiness audit — 15/19 AI stories, migration 0062)
 > **Repo:** ArkovaCarson | **Branch:** main | **Deploy:** arkova-carson.vercel.app
 > **Companion files:** `HANDOFF.md` (living state — Phase 3/4 tracking), `ARCHIVE_memory.md` (historical context)
 
@@ -1033,7 +1033,7 @@ STRIPE_WEBHOOK_SECRET=
 
 # Bitcoin (worker only)
 BITCOIN_TREASURY_WIF=               # signing key — never logged (Constitution 1.4)
-BITCOIN_NETWORK=                    # "signet", "testnet", or "mainnet"
+BITCOIN_NETWORK=                    # "testnet4" (recommended), "signet", "testnet", or "mainnet"
 BITCOIN_RPC_URL=                    # optional — Signet/mainnet RPC endpoint
 BITCOIN_RPC_AUTH=                   # optional — RPC auth credentials
 
@@ -1081,5 +1081,5 @@ AI_PROVIDER=mock                   # gemini | cloudflare | replicate | mock
 
 ---
 
-_Directive version: 2026-03-16 (P8 Phase 1.5 + GDPR + security hardening merged) | Repo: ArkovaCarson | 62 migrations | 1,586+ tests | 163 stories (146 complete, 90%)_
+_Directive version: 2026-03-16 (Bitcoin Testnet 4 migration + launch readiness audit) | Repo: ArkovaCarson | 62 migrations | 1,586+ tests | 163 stories (146 complete, 90%)_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

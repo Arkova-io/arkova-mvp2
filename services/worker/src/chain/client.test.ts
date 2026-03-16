@@ -243,6 +243,17 @@ describe('createChainClient', () => {
     expect((client as unknown as { _isBitcoinClient: boolean })._isBitcoinClient).toBe(true);
   });
 
+  it('handles testnet4 same as signet/testnet', async () => {
+    mockConfig.useMocks = false;
+    mockConfig.nodeEnv = 'production';
+    mockConfig.enableProdNetworkAnchoring = true;
+    mockConfig.bitcoinNetwork = 'testnet4';
+    mockConfig.bitcoinTreasuryWif = 'cVt4o7BGAig1UXywgGSmARhxMdzP5qvQsxKkSsc1XEkw3tDTQFpy';
+
+    const client = await createChainClient();
+    expect((client as unknown as { _isBitcoinClient: boolean })._isBitcoinClient).toBe(true);
+  });
+
   // ── Mainnet path ──────────────────────────────────────────────────
 
   it('returns BitcoinChainClient for mainnet with valid KMS config', async () => {

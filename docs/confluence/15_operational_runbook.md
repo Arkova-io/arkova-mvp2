@@ -32,11 +32,32 @@ Follow `docs/confluence/14_kms_operations.md` for detailed instructions.
 | 4 | Set `BITCOIN_NETWORK=mainnet` in Cloud Run env | Ops |
 | 5 | Set `ENABLE_PROD_NETWORK_ANCHORING=true` in switchboard_flags | Ops |
 
-### 1.3 Signet (Already Verified)
+### 1.3 Testnet 4 (Recommended for Testnet Launch)
+
+**Why Testnet 4 over Signet:** More active network, consistent block production, better Mempool.space support. Same bitcoinjs-lib network params (`bitcoin.networks.testnet`), same address format (m/n... P2PKH).
+
+| Step | Action | Who |
+|------|--------|-----|
+| 1 | Generate testnet4 keypair (or reuse signet WIF — same format) | Ops |
+| 2 | Fund from faucet: `https://mempool.space/testnet4/faucet` | Ops |
+| 3 | Set `BITCOIN_NETWORK=testnet4` in Cloud Run env | Ops |
+| 4 | Set `BITCOIN_TREASURY_WIF` in Cloud Run env | Ops |
+| 5 | Set `ENABLE_PROD_NETWORK_ANCHORING=true` in switchboard_flags | Ops |
+
+**Mempool API:** Default URL is `https://mempool.space/testnet4/api` (no override needed). To use a custom endpoint, set `MEMPOOL_API_URL`.
+
+**To switch from Signet to Testnet 4:**
+1. Change `BITCOIN_NETWORK=testnet4` (from `signet`)
+2. Reuse existing signet WIF (both use testnet params) or generate new keypair
+3. Fund the address from the testnet4 faucet
+4. Restart worker
+
+### 1.4 Signet (Legacy — Already Verified)
 
 - Treasury: `mx1zmGtQTghi4GWcJaV1oPwJ5TKhGfFpjs` (500,636 sats)
 - E2E broadcast TX: `b8e381df09ca404eaae2e5e9d9b3d27567fe97ece39ead718f6d2c77ca60eb57`
 - Set `BITCOIN_NETWORK=signet` + `BITCOIN_TREASURY_WIF` for signet deployment
+- **Note:** Signet is still fully supported. Testnet 4 is recommended for new deployments.
 
 ## 2. Worker Production Deployment (MVP-01)
 
@@ -53,7 +74,7 @@ Set these in GCP Cloud Run configuration (or via `gcloud run services update`):
 | `STRIPE_SECRET_KEY` | Stripe dashboard → Developers → API keys | Use live key for production |
 | `STRIPE_WEBHOOK_SECRET` | Stripe dashboard → after webhook registration | See step 2.2 |
 | `BITCOIN_TREASURY_WIF` | Generated via `generate-signet-keypair.ts` | For signet; KMS for mainnet |
-| `BITCOIN_NETWORK` | `signet` for testnet launch | `mainnet` when ready |
+| `BITCOIN_NETWORK` | `testnet4` for testnet launch (recommended) | `mainnet` when ready |
 | `ENABLE_PROD_NETWORK_ANCHORING` | `true` | Gates real Bitcoin calls |
 | `FRONTEND_URL` | `https://arkova-carson.vercel.app` | CORS origin |
 | `NODE_ENV` | `production` | |
@@ -158,3 +179,4 @@ Domains are added to Vercel but DNS records need to be set at the registrar (Nam
 | 2026-03-16 | Updated: Stripe webhook COMPLETE (we_1TBHb6BBeICNeQqrolzWA2yj), API_KEY_HMAC_SECRET mounted, health endpoint corrected to /health, Cloud Run URL confirmed, remaining tasks itemized with status |
 | 2026-03-16 | Cloud Scheduler: 4 cron jobs created (process-anchors, webhook-retries, generate-reports, credit-expiry). MVP-28 COMPLETE. |
 | 2026-03-16 | Vercel: VITE_APP_URL set, domains added (app.arkova.ai, arkova.ai, www.arkova.ai). DNS instructions added (Section 3.1). |
+| 2026-03-16 | Bitcoin Testnet 4 migration: added Section 1.3 (Testnet 4 setup), renamed Section 1.3 → 1.4 (Signet legacy). Default network changed from signet to testnet4. |

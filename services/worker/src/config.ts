@@ -28,7 +28,7 @@ const ConfigSchema = z.object({
   stripeWebhookSecret: z.string().min(1),
 
   // Bitcoin chain
-  bitcoinNetwork: z.enum(['signet', 'testnet', 'mainnet']).default('signet'),
+  bitcoinNetwork: z.enum(['signet', 'testnet', 'testnet4', 'mainnet']).default('testnet4'),
   bitcoinRpcUrl: z.string().url().optional(),
   bitcoinRpcAuth: z.string().optional(),
   /** Treasury WIF — loaded from env, NEVER logged (Constitution 1.4) */
@@ -153,9 +153,10 @@ export const config = loadConfig();
 export const NETWORK_DISPLAY_NAMES = {
   signet: 'Test Environment',
   testnet: 'Test Environment',
+  testnet4: 'Test Environment',
   mainnet: 'Production Network',
 } as const;
 
-export function getNetworkDisplayName(network: 'signet' | 'testnet' | 'mainnet'): string {
+export function getNetworkDisplayName(network: 'signet' | 'testnet' | 'testnet4' | 'mainnet'): string {
   return NETWORK_DISPLAY_NAMES[network];
 }

@@ -53,8 +53,8 @@ describe('NETWORK_DISPLAY_NAMES', () => {
     expect(NETWORK_DISPLAY_NAMES.mainnet).toBe('Production Network');
   });
 
-  it('has exactly three entries', () => {
-    expect(Object.keys(NETWORK_DISPLAY_NAMES)).toHaveLength(3);
+  it('has exactly four entries', () => {
+    expect(Object.keys(NETWORK_DISPLAY_NAMES)).toHaveLength(4);
   });
 });
 
@@ -107,7 +107,7 @@ describe('config singleton', () => {
     expect(typeof config.supabaseServiceKey).toBe('string');
     expect(typeof config.stripeSecretKey).toBe('string');
     expect(typeof config.stripeWebhookSecret).toBe('string');
-    expect(['signet', 'testnet', 'mainnet']).toContain(config.bitcoinNetwork);
+    expect(['signet', 'testnet', 'testnet4', 'mainnet']).toContain(config.bitcoinNetwork);
     expect(typeof config.useMocks).toBe('boolean');
     expect(typeof config.enableProdNetworkAnchoring).toBe('boolean');
   });
@@ -126,8 +126,8 @@ describe('config singleton', () => {
     expect(config.enableProdNetworkAnchoring).toBe(false);
   });
 
-  it('defaults bitcoinNetwork to signet', () => {
-    expect(config.bitcoinNetwork).toBe('signet');
+  it('defaults bitcoinNetwork to testnet4', () => {
+    expect(config.bitcoinNetwork).toBe('testnet4');
   });
 
   it('bitcoin config fields are optional when useMocks is true', () => {

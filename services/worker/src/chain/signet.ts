@@ -543,10 +543,11 @@ export class BitcoinChainClient implements ChainClient {
     try {
       const info = await this.provider.getBlockchainInfo();
 
-      // Accept signet, testnet, and mainnet chain names
+      // Accept signet, testnet, testnet4, and mainnet chain names
       const isValid =
         info.chain === 'signet' ||
         info.chain === 'test' ||
+        info.chain === 'testnet4' ||
         info.chain === 'main';
 
       logger.info(

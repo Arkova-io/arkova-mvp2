@@ -341,6 +341,7 @@ export interface MempoolProviderConfig {
   baseUrl?: string;
 }
 
+const DEFAULT_MEMPOOL_TESTNET4_URL = 'https://mempool.space/testnet4/api';
 const DEFAULT_MEMPOOL_SIGNET_URL = 'https://mempool.space/signet/api';
 
 export class MempoolUtxoProvider implements UtxoProvider {
@@ -348,7 +349,7 @@ export class MempoolUtxoProvider implements UtxoProvider {
   private readonly baseUrl: string;
 
   constructor(config: MempoolProviderConfig = {}) {
-    this.baseUrl = (config.baseUrl ?? DEFAULT_MEMPOOL_SIGNET_URL).replace(/\/$/, '');
+    this.baseUrl = (config.baseUrl ?? DEFAULT_MEMPOOL_TESTNET4_URL).replace(/\/$/, '');
   }
 
   async listUnspent(address: string): Promise<Utxo[]> {
@@ -392,8 +393,9 @@ export class MempoolUtxoProvider implements UtxoProvider {
       if (!heightResp.ok) throw new HttpError(`Mempool API GET ${heightUrl} failed: HTTP ${heightResp.status}`, heightResp.status);
       const blocks = Number.parseInt(await heightResp.text(), 10);
       const isSignet = this.baseUrl.includes('/signet');
-      const isTestnet = this.baseUrl.includes('/testnet');
-      return { chain: isSignet ? 'signet' : isTestnet ? 'test' : 'main', blocks };
+      const isTestnet4 = this.baseUrl.includes('/testnet4');
+      const isTestnet = !isTestnet4 && this.baseUrl.includes('/testnet');
+      return { chain: isSignet ? 'signet' : isTestnet4 ? 'testnet4' : isTestnet ? 'test' : 'main', blocks };
     }, { name: 'MempoolUtxoProvider.getBlockchainInfo' });
   }
 
@@ -449,7 +451,7 @@ export function createUtxoProvider(factoryConfig: UtxoProviderFactoryConfig): Ut
     return new RpcUtxoProvider({ rpcUrl: factoryConfig.rpcUrl, rpcAuth: factoryConfig.rpcAuth });
   }
   if (factoryConfig.type === 'mempool') {
-    const baseUrl = factoryConfig.mempoolApiUrl ?? DEFAULT_MEMPOOL_SIGNET_URL;
+    const baseUrl = factoryConfig.mempoolApiUrl ?? DEFAULT_MEMPOOL_TESTNET4_URL;
     logger.info({ provider: 'mempool', baseUrl }, 'Creating Mempool.space UTXO provider');
     return new MempoolUtxoProvider({ baseUrl });
   }

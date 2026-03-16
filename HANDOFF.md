@@ -133,6 +133,31 @@ All HIGH+ launch blockers resolved:
 
 ## Session Log
 
+### Session: 2026-03-16 — Bitcoin Testnet 4 Migration + Launch Readiness Audit
+
+**Bitcoin Testnet 4 Migration (COMPLETE):**
+- Added `testnet4` to `BITCOIN_NETWORK` enum in `config.ts` (now: signet, testnet, testnet4, mainnet)
+- Default network changed from `signet` to `testnet4`
+- Updated `client.ts` factory: testnet4 handled same as signet/testnet (WIF + testnet params)
+- Updated `utxo-provider.ts`: default Mempool URL → `https://mempool.space/testnet4/api`, chain detection for testnet4
+- Updated `signet.ts` health check: accepts `testnet4` chain name
+- Updated `wallet.ts`: added `TESTNET4_NETWORK`, `generateTestnet4Keypair`, `isValidTestnet4Wif` aliases
+- Updated `.env.example`: default `BITCOIN_NETWORK=testnet4`
+- Added testnet4 test to `client.test.ts` — all 279 chain tests pass
+- No migration needed (config-only change)
+
+**Launch Readiness Audit (6-phase consolidated report):**
+- Created `docs/bugs/launch_readiness_audit.md` — consolidates findings from security audit, 3 UAT reports, and Testnet 4 migration
+- Total: 63 findings (4 CRITICAL, 16 HIGH, 25 MEDIUM, 15 LOW, 3 INFO)
+- 26 findings already FIXED (GDPR erasure, security hardening, PostgREST injection, rate limiting, auth)
+- 2 blocking issues remain: seed data strip (SEC-01) + data retention policy (PII-03) — both operational
+- **Verdict: CONDITIONAL PASS** for testnet/controlled launch
+
+**Documentation updates:**
+- CLAUDE.md: version line, BITCOIN_NETWORK comment in Section 13
+- HANDOFF.md: this session log entry
+- Operational runbook (`15_operational_runbook.md`): Testnet 4 setup steps (Section 1.3), Signet renamed to legacy (Section 1.4), Cloud Run env var updated
+
 ### Session: 2026-03-16 — Branch Merge, Cleanup, and Doc Sync
 
 **Branch merges:**
