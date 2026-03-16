@@ -771,18 +771,25 @@ describe('processPendingAnchors', () => {
       expect(result.processed).toBe(1);
     });
 
-    it('defaults to enabled when flag read fails', async () => {
+    it('defaults to disabled when flag read fails (fail-closed)', async () => {
       mockRpc.mockResolvedValue({ data: null, error: { message: 'RPC error' } });
       mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
       const result = await processPendingAnchors();
-      expect(result.processed).toBe(1);
+      expect(result).toEqual({ processed: 0, failed: 0 });
     });
 
-    it('defaults to enabled when RPC throws', async () => {
+    it('defaults to disabled when RPC throws (fail-closed)', async () => {
       mockRpc.mockRejectedValue(new Error('DB unreachable'));
       mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
       const result = await processPendingAnchors();
-      expect(result.processed).toBe(1);
+      expect(result).toEqual({ processed: 0, failed: 0 });
+    });
+
+    it('defaults to disabled when flag data is not a boolean', async () => {
+      mockRpc.mockResolvedValue({ data: 'true', error: null });
+      mockLimit.mockResolvedValue({ data: [{ id: 'a1' }], error: null });
+      const result = await processPendingAnchors();
+      expect(result).toEqual({ processed: 0, failed: 0 });
     });
   });
 

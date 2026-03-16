@@ -145,6 +145,7 @@ curl https://arkova-worker-kvojbeutfa-uc.a.run.app/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "healthy",
@@ -212,7 +213,7 @@ The OP_RETURN output will contain `ARKV` (hex: `41524b56`) followed by the 32-by
 
 ## 8. Architecture Overview
 
-```
+```text
 ┌──────────────┐     ┌──────────────────┐     ┌───────────────────┐
 │   Frontend    │────▶│   Supabase DB    │◀────│  Worker (Cloud    │
 │  (Vercel)     │     │  (anchors table) │     │  Run + node-cron) │

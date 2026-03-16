@@ -133,7 +133,8 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
 
 /**
  * Check if anchoring is enabled via switchboard_flags (runtime kill switch).
- * Falls back to true if the flag cannot be read (fail-open for env-var gated deployments).
+ * Fails closed (returns false) on errors — prevents unintended chain submissions
+ * when the control plane is unreachable.
  */
 async function isAnchoringEnabled(): Promise<boolean> {
   try {
@@ -142,15 +143,18 @@ async function isAnchoringEnabled(): Promise<boolean> {
       p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING',
     });
 
-    if (error) {
-      logger.warn({ error }, 'Failed to read ENABLE_PROD_NETWORK_ANCHORING flag — defaulting to enabled');
-      return true;
+    if (error || typeof data !== 'boolean') {
+      logger.warn(
+        { error, dataType: typeof data },
+        'Failed to read valid ENABLE_PROD_NETWORK_ANCHORING flag — defaulting to disabled',
+      );
+      return false;
     }
 
-    return data as boolean;
-  } catch {
-    // DB unreachable — don't block processing if env var already gates it
-    return true;
+    return data;
+  } catch (err) {
+    logger.warn({ error: err }, 'ENABLE_PROD_NETWORK_ANCHORING flag lookup threw — defaulting to disabled');
+    return false;
   }
 }
 
