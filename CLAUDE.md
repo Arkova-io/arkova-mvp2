@@ -605,7 +605,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 62 files, versions 0001–0062 (0033 skipped). Last: `0062_security_hardening_high.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0062 pending production apply (merged to main via PR #71).
+**Current migration inventory:** 61 files, versions 0001–0062 (0033 skipped). Last: `0062_security_hardening_high.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0062 pending production apply (merged to main via PR #71).
 
 ---
 
