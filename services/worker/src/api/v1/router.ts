@@ -24,7 +24,10 @@ import { keysRouter } from './keys.js';
 import { usageRouter } from './usage.js';
 import { aiExtractRouter } from './ai-extract.js';
 import { aiUsageRouter } from './ai-usage.js';
-import { aiExtractionGate } from '../../middleware/aiFeatureGate.js';
+import { aiEmbedRouter } from './ai-embed.js';
+import { aiSearchRouter } from './ai-search.js';
+import { aiVerifySearchRouter } from './ai-verify-search.js';
+import { aiExtractionGate, aiSemanticSearchGate } from '../../middleware/aiFeatureGate.js';
 import { verifyAuthToken } from '../../auth.js';
 import { config } from '../../config.js';
 import { logger } from '../../utils/logger.js';
@@ -62,8 +65,12 @@ router.use((_req: Request, res: Response, next: NextFunction) => {
 });
 
 // ─── API key auth (optional — attaches req.apiKey if present) ───
-const hmacSecret = config.apiKeyHmacSecret ?? '';
-router.use(apiKeyAuth(hmacSecret));
+// AUTH-02: Fail fast if HMAC secret is unset — empty string would make all key hashes reproducible
+const hmacSecret = config.apiKeyHmacSecret;
+if (!hmacSecret) {
+  logger.warn('API_KEY_HMAC_SECRET not configured — API key auth will reject all keys');
+}
+router.use(apiKeyAuth(hmacSecret ?? ''));
 
 // ─── Rate limiting (Constitution 1.10) ───
 // Anonymous: 100 req/min per IP, API key holders: 1,000 req/min per key
@@ -117,11 +124,14 @@ const batchRateLimiter = rateLimit({
 });
 
 // ─── Mount routes ───
-// Public verification — no auth required (API key optional for tracking)
-router.use('/verify', verifyRouter);
+// Agentic verification search — MUST be before /verify to avoid route shadowing (P8-S19)
+router.use('/verify/search', aiSemanticSearchGate(), aiVerifySearchRouter);
 
 // Batch verification — API key required, stricter rate limit
 router.use('/verify/batch', batchRateLimiter, batchRouter);
+
+// Public verification — no auth required (API key optional for tracking)
+router.use('/verify', verifyRouter);
 
 // Job status polling — API key required
 router.use('/jobs', jobsRouter);
@@ -132,8 +142,21 @@ router.use('/usage', usageRouter);
 // Key management — requires Supabase JWT auth
 router.use('/keys', requireAuth, keysRouter);
 
+// ─── AI rate limiter (30 req/min per user — AI ops are expensive) ───
+const aiRateLimiter = rateLimit({
+  windowMs: 60_000,
+  maxRequests: 30,
+  keyGenerator: (req) => `ai:${req.authUserId ?? req.ip ?? 'unknown'}`,
+});
+
 // AI endpoints — behind ENABLE_AI_EXTRACTION flag + JWT auth (P8-S4)
-router.use('/ai/extract', aiExtractionGate(), requireAuth, aiExtractRouter);
+router.use('/ai/extract', aiExtractionGate(), requireAuth, aiRateLimiter, aiExtractRouter);
 router.use('/ai/usage', requireAuth, aiUsageRouter);
+
+// AI embedding — behind ENABLE_AI_EXTRACTION flag + JWT auth (P8-S11)
+router.use('/ai/embed', aiExtractionGate(), requireAuth, aiRateLimiter, aiEmbedRouter);
+
+// AI semantic search — behind ENABLE_SEMANTIC_SEARCH flag + JWT auth (P8-S12)
+router.use('/ai/search', aiSemanticSearchGate(), requireAuth, aiRateLimiter, aiSearchRouter);
 
 export { router as apiV1Router };
