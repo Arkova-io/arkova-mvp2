@@ -47,6 +47,9 @@ Every prompt that involves UI/frontend work (component changes, page updates, st
 
 UAT is not optional. A task is not complete until UAT screenshots confirm the changes work at both viewport sizes.
 
+### BACKLOG MANDATE
+All backlog items — stories, bugs, security findings, operational tasks, GEO items — **must exist in a single source of truth**: `docs/BACKLOG.md`. This document is prioritized and re-prioritized each session. No backlog item should exist only in a story doc, bug report, or session log — it must also appear in BACKLOG.md. When work is completed, update BACKLOG.md before closing the session.
+
 ---
 
 ## 0.1. READ FIRST — EVERY SESSION
@@ -54,10 +57,11 @@ UAT is not optional. A task is not complete until UAT screenshots confirm the ch
 ```
 1. CLAUDE.md          ← You are here. Rules, Mandates, Constitution, story status.
 2. HANDOFF.md         ← Living state. Phase 3/4 tracking, blockers, decisions.
-3. ARCHIVE_memory.md  ← Historical context from prior phases.
-4. docs/confluence/01_architecture_overview.md  ← If it exists.
-5. The relevant agents.md in any folder you are about to edit.
-6. The story card from the Technical Backlog for the story you are implementing.
+3. docs/BACKLOG.md    ← **SINGLE SOURCE OF TRUTH** for all open work (stories, bugs, security, ops).
+4. ARCHIVE_memory.md  ← Historical context from prior phases.
+5. docs/confluence/01_architecture_overview.md  ← If it exists.
+6. The relevant agents.md in any folder you are about to edit.
+7. The story card from the Technical Backlog for the story you are implementing.
 ```
 
 If a folder contains an `agents.md`, read it before touching anything. If you learn something important during your work, update that folder's `agents.md` AND the "Current State" section of HANDOFF.md.
