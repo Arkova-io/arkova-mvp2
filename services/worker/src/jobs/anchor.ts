@@ -2,6 +2,12 @@
  * Anchor Processing Job
  *
  * Processes PENDING anchors and submits them to the chain.
+ *
+ * Constitution refs:
+ *   - 1.4: Treasury keys never logged
+ *   - 1.9: ENABLE_PROD_NETWORK_ANCHORING gates real Bitcoin chain calls
+ *
+ * Stories: CRIT-2, P7-TS-05, P7-TS-13
  */
 
 import { db } from '../utils/db.js';
@@ -9,6 +15,9 @@ import { logger, createRpcLogger } from '../utils/logger.js';
 import { getInitializedChainClient } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
+
+/** SHA-256 hex fingerprint pattern: exactly 64 lowercase hex characters */
+const FINGERPRINT_REGEX = /^[a-f0-9]{64}$/i;
 
 /**
  * Process a single anchor
@@ -31,6 +40,15 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
   }
 
   try {
+    // Validate fingerprint before submitting to chain
+    if (!anchor.fingerprint || !FINGERPRINT_REGEX.test(anchor.fingerprint)) {
+      logger.error(
+        { anchorId, fingerprint: anchor.fingerprint ? '[invalid format]' : '[missing]' },
+        'Anchor has invalid fingerprint — skipping chain submission',
+      );
+      return false;
+    }
+
     // Submit fingerprint to chain
     const chainClient = getInitializedChainClient();
     const receipt = await chainClient.submitFingerprint({
@@ -114,10 +132,45 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
 }
 
 /**
+ * Check if anchoring is enabled via switchboard_flags (runtime kill switch).
+ * Fails closed (returns false) on errors — prevents unintended chain submissions
+ * when the control plane is unreachable.
+ */
+async function isAnchoringEnabled(): Promise<boolean> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (db.rpc as any)('get_flag', {
+      p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING',
+    });
+
+    if (error || typeof data !== 'boolean') {
+      logger.warn(
+        { error, dataType: typeof data },
+        'Failed to read valid ENABLE_PROD_NETWORK_ANCHORING flag — defaulting to disabled',
+      );
+      return false;
+    }
+
+    return data;
+  } catch (err) {
+    logger.warn({ error: err }, 'ENABLE_PROD_NETWORK_ANCHORING flag lookup threw — defaulting to disabled');
+    return false;
+  }
+}
+
+/**
  * Process all pending anchors
  */
 export async function processPendingAnchors(): Promise<{ processed: number; failed: number }> {
   logger.info('Starting pending anchor processing');
+
+  // Runtime kill switch: check switchboard_flags before processing
+  // This allows disabling anchoring without redeploying the worker
+  const enabled = await isAnchoringEnabled();
+  if (!enabled) {
+    logger.info('Anchor processing disabled via switchboard flag');
+    return { processed: 0, failed: 0 };
+  }
 
   // Fetch all PENDING anchors
   const { data: anchors, error } = await db

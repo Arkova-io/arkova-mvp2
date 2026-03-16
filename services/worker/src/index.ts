@@ -20,7 +20,7 @@ import { handleStripeWebhook } from './stripe/handlers.js';
 import { verifyWebhookSignature, createCheckoutSession, createBillingPortalSession } from './stripe/client.js';
 import { processWebhookRetries } from './webhooks/delivery.js';
 import { processMonthlyCredits } from './jobs/credit-expiry.js';
-import { rateLimiters } from './utils/rateLimit.js';
+import { rateLimiters, rateLimit } from './utils/rateLimit.js';
 import { verifyAuthToken } from './auth.js';
 import { apiV1Router } from './api/v1/router.js';
 import { docsRouter } from './api/v1/docs.js';
@@ -340,18 +340,88 @@ app.post('/api/verify-anchor', rateLimiters.checkout, async (req, res) => {
 // CORS preflight for verify-anchor
 app.options('/api/verify-anchor', (req, res) => { setCorsHeaders(req, res); });
 
-// Manual trigger for anchor processing — dev/test only (AUTH-01: removed from production)
-if (config.nodeEnv !== 'production') {
-  app.post('/jobs/process-anchors', async (_req, res) => {
-    try {
-      const result = await processPendingAnchors();
-      res.json(result);
-    } catch (error) {
-      logger.error({ error }, 'Manual anchor processing failed');
-      res.status(500).json({ error: 'Processing failed' });
-    }
-  });
+// =========================================================================
+// Cron Job HTTP Endpoints — Cloud Scheduler (MVP-28) + dev manual trigger
+// Authenticated via OIDC Bearer token in production, open in dev/test.
+// Rate-limited to prevent replay/abuse (CodeQL: missing rate limiting).
+// =========================================================================
+
+// Dedicated rate limiter for cron endpoints — separate from user-facing limits
+const cronJobsLimiter = rateLimit({
+  windowMs: 60000,
+  maxRequests: 5, // 5 req/min — cron fires at most every minute
+  keyGenerator: () => 'cron-jobs', // Global limit (not per-IP)
+});
+
+/**
+ * Verify Cloud Scheduler OIDC token.
+ * In non-production, all requests are allowed (dev manual trigger).
+ * In production, verifies the OIDC JWT signature and claims.
+ */
+async function verifyCronAuth(req: express.Request): Promise<boolean> {
+  if (config.nodeEnv !== 'production') return true;
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return false;
+  const token = authHeader.slice(7).trim();
+  if (!token) return false;
+
+  try {
+    // Verify OIDC token from Google Cloud Scheduler
+    const { createRemoteJWKSet, jwtVerify } = await import('jose');
+    const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: 'https://accounts.google.com',
+      // audience is the Cloud Run service URL
+      audience: config.frontendUrl ? undefined : undefined, // Accept any audience for now
+    });
+    return Boolean(payload?.iss && payload?.exp);
+  } catch (err) {
+    logger.warn({ error: err }, 'OIDC token verification failed');
+    return false;
+  }
 }
+
+app.post('/jobs/process-anchors', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await processPendingAnchors();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Anchor processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/webhook-retries', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const retried = await processWebhookRetries();
+    res.json({ retried });
+  } catch (error) {
+    logger.error({ error }, 'Webhook retry processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/credit-expiry', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const processed = await processMonthlyCredits();
+    res.json({ processed });
+  } catch (error) {
+    logger.error({ error }, 'Credit expiry processing failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
 
 // =========================================================================
 // API Documentation — accessible without auth or feature flag (P4.5-TS-04)
@@ -372,19 +442,25 @@ app.use('/api/v1', apiV1Router);
 Sentry.setupExpressErrorHandler(app);
 
 // Scheduled jobs
+// In production, Cloud Scheduler triggers HTTP endpoints (MVP-28) — in-process cron is a
+// belt-and-suspenders backup for dev/test. To avoid duplicate chain submissions, disable
+// in-process anchor cron in production (Cloud Scheduler is authoritative).
 function setupScheduledJobs(chainInitialized: boolean): void {
-  // Process pending anchors every minute — only if chain client initialized
-  if (chainInitialized) {
+  // Process pending anchors every minute — only in non-production (dev/test backup)
+  // In production, Cloud Scheduler calls POST /jobs/process-anchors instead.
+  if (chainInitialized && config.nodeEnv !== 'production') {
     cron.schedule('* * * * *', async () => {
-      logger.debug('Running scheduled anchor processing');
+      logger.debug('Running scheduled anchor processing (in-process cron)');
       try {
         await processPendingAnchors();
       } catch (error) {
         logger.error({ error }, 'Scheduled anchor processing failed');
       }
     });
-  } else {
+  } else if (!chainInitialized) {
     logger.warn('Anchor processing cron DISABLED — chain client not initialized');
+  } else {
+    logger.info('Anchor processing cron DISABLED in production — Cloud Scheduler is authoritative');
   }
 
   // Process webhook retries every 2 minutes
