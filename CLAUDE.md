@@ -628,7 +628,7 @@ npx supabase db reset
 
 **Never modify an existing migration file.** Write a new compensating migration instead.
 
-**Current migration inventory:** 62 files, versions 0001–0063 (0033 skipped). Last: `0063_security_sprint2.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0063 pending production apply.
+**Current migration inventory:** 63 files, versions 0001–0065 (0033 skipped). Last: `0065_account_deletion.sql`. Migrations 0001–0058 applied to production. Migrations 0059–0065 pending production apply.
 
 ---
 
@@ -1079,6 +1079,10 @@ ENABLE_VERIFICATION_API=false
 API_KEY_HMAC_SECRET=
 CORS_ALLOWED_ORIGINS=*
 
+# Cron job authentication (AUTH-01)
+CRON_SECRET=                        # shared secret for X-Cron-Secret header (min 16 chars)
+CRON_OIDC_AUDIENCE=                 # Cloud Run service URL for OIDC audience verification
+
 # Cloudflare (edge workers — never in browser)
 CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_API_TOKEN=              # wrangler deploy token
@@ -1105,5 +1109,5 @@ AI_PROVIDER=mock                   # gemini | cloudflare | replicate | mock
 
 ---
 
-_Directive version: 2026-03-16 (Sprint 4 polish + testnet4 anchoring merged) | Repo: ArkovaCarson | 62 migrations | 1,631 tests | 163 stories (146 complete, 90%)_
+_Directive version: 2026-03-16 (All 12 CISO security findings resolved — AUTH-01, SEC-01 complete) | Repo: ArkovaCarson | 63 migrations | 1,745 tests | 163 stories (146 complete, 90%)_
 _Companion: MEMORY.md (living state) | Technical Backlog P1-P7 | Phase 1.5 Backlog | Business Backlog P1-P7_

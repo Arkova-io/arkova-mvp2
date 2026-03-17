@@ -9,11 +9,11 @@ _Last updated: 2026-03-16 | Re-prioritized each session per CLAUDE.md rules_
 
 | Category | Total | Done | Open | Blocking Launch? |
 |----------|-------|------|------|:----------------:|
-| Stories (NOT STARTED) | 9 | — | 9 | No (post-launch) |
-| Stories (PARTIAL) | 2 | — | 2 | No (GEO-12 cosmetic, INFRA-07 ops-only) |
+| Stories (NOT STARTED) | 13 | — | 13 | No (post-launch) |
+| Stories (PARTIAL) | 4 | — | 4 | 1 blocking (INFRA-07) |
 | Security Findings | 12 | 12 fixed | 0 | No |
-| UAT Bugs | 38 | 27 | 11 | No (all MEDIUM/LOW) |
-| Operational Tasks | 7 | 0 | 7 | **YES** (OPS-01/02 CRITICAL) |
+| UAT Bugs | 38 | 33 | 5 | No (all MEDIUM/LOW) |
+| Operational Tasks | 7 | 0 | 7 | **YES** |
 | Code TODOs | 1 | — | 1 | No |
 | **Total Open Items** | | | **30** | |
 
@@ -36,15 +36,15 @@ _Last updated: 2026-03-16 | Re-prioritized each session per CLAUDE.md rules_
 
 ### Operational (from `docs/confluence/15_operational_runbook.md`)
 
-| # | ID | Priority | Issue | Status | Runbook |
-|---|-----|----------|-------|--------|---------|
-| 9 | OPS-01 | **CRITICAL** | Apply migrations 0059-0065 to production Supabase — blocks P8 AI, GDPR, security | PENDING | Section 3 |
-| 10 | OPS-02 | **CRITICAL** | Run `scripts/strip-demo-seeds.sql` — demo accounts with known passwords are live | PENDING | Section 4 |
-| 11 | OPS-03 | **HIGH** | Set Sentry DSN env vars (Vercel + Cloud Run) — error tracking not connected | PENDING | Section 5 |
-| 12 | OPS-04 | **HIGH** | Sentry source map upload — production stack traces obfuscated | PENDING | Section 6 |
-| 13 | OPS-05 | **HIGH** | AWS KMS key provisioning — blocks production Bitcoin anchoring | PENDING | Section 1.1 |
-| 14 | OPS-06 | **HIGH** | Fund mainnet treasury wallet — blocks production anchoring after KMS | PENDING | Section 1.2 |
-| 15 | OPS-07 | MEDIUM | Key rotation (Stripe + Supabase service role) | PENDING | Section 7 |
+| # | ID | Issue | Status |
+|---|-----|-------|--------|
+| 9 | OPS-01 | Apply migrations 0059-0065 to production Supabase | PENDING |
+| 10 | OPS-02 | Run `scripts/strip-demo-seeds.sql` on production | PENDING |
+| 11 | OPS-03 | Set Sentry DSN env vars (Vercel + Cloud Run) | PENDING |
+| 12 | OPS-04 | Sentry source map upload plugin | PENDING |
+| 13 | OPS-05 | AWS KMS key provisioning (mainnet signing) | PENDING |
+| 14 | OPS-06 | Mainnet treasury funding | PENDING |
+| 15 | OPS-07 | Key rotation (Stripe + Supabase service role) | PENDING |
 
 ---
 
@@ -112,13 +112,13 @@ _Last updated: 2026-03-16 | Re-prioritized each session per CLAUDE.md rules_
 | MVP-12 | Dark mode toggle | LOW |
 | MVP-20 | LinkedIn badge integration | LOW |
 
-### ~~P8 AI Intelligence — 4 stories COMPLETE (PR #80)~~
-| ID | Description | Status |
-|----|-------------|--------|
-| ~~P8-S6~~ | ~~Extraction learning / feedback loop~~ | ~~**COMPLETE** (PR #80)~~ |
-| ~~P8-S8~~ | ~~Integrity scoring + duplicate detection~~ | ~~**COMPLETE** (PR #80)~~ |
-| ~~P8-S9~~ | ~~Admin review queue~~ | ~~**COMPLETE** (PR #80)~~ |
-| ~~P8-S16~~ | ~~AI Reports~~ | ~~**COMPLETE** (PR #80)~~ |
+### P8 AI Intelligence — 4 not started (Phase II)
+| ID | Description | Priority |
+|----|-------------|----------|
+| P8-S6 | Extraction learning / feedback loop | MEDIUM |
+| P8-S8 | Duplicate detection (cross-org) | HIGH |
+| P8-S9 | Admin review queue | HIGH |
+| P8-S16 | Multi-language OCR support | LOW |
 
 ### GEO & SEO — 5 not started
 | ID | Description | Priority |
@@ -129,25 +129,17 @@ _Last updated: 2026-03-16 | Re-prioritized each session per CLAUDE.md rules_
 | GEO-10 | IndexNow for Bing/Copilot | MEDIUM |
 | GEO-11 | YouTube explainers + VideoObject schema | MEDIUM |
 
-### GEO & SEO — 2 partial (see `docs/stories/15_geo_seo.md` for all 12 stories)
-| ID | Story Doc Name | Status |
-|----|----------------|--------|
-| GEO-02 | LinkedIn entity collision + sameAs | ⚠️ PARTIAL — sameAs updated; LinkedIn company page + Wikidata entry are external tasks |
-| GEO-08 | Content expansion — 5 core pages | ⚠️ PARTIAL — Research section + first article done; 5 core pages remaining |
-
-### GEO & SEO — 5 complete
-| ID | Story Doc Name | Status |
-|----|----------------|--------|
-| ~~GEO-01~~ | ~~Server-Side Rendering for marketing site~~ | ✅ COMPLETE (PR #2 arkova-marketing) |
-| ~~GEO-05~~ | ~~Enhanced schema (speakable + AggregateOffer)~~ | ✅ COMPLETE — SoftwareApplication + AggregateOffer + speakable in app index.html |
-| ~~GEO-06~~ | ~~llms.txt deployment~~ | ✅ COMPLETE — llms.txt + robots.txt with AI crawler rules, canonical URLs |
-| ~~GEO-07~~ | ~~Fix og:image + meta tags~~ | ✅ COMPLETE — og:image, twitter:site, og:site_name |
-| ~~GEO-12~~ | ~~Security headers~~ | ✅ COMPLETE — vercel.json with 7 headers + CSP + SPA rewrite, 10 tests |
+### GEO & SEO — 3 partial
+| ID | Description | Remaining |
+|----|-------------|-----------|
+| GEO-02 | LinkedIn entity + sameAs | Wikidata entry (external) |
+| GEO-05 | Enhanced schema | speakable + AggregateOffer |
+| GEO-12 | Security headers | CSP header (complex with Google Fonts) |
 
 ### INFRA — 1 partial
 | ID | Description | Remaining |
 |----|-------------|-----------|
-| INFRA-07 | Sentry integration | Code COMPLETE. OPS-only: DSN env vars (OPS-03) + source map auth token (OPS-04). Runbook sections 5-6 have exact commands. |
+| INFRA-07 | Sentry integration | Source map upload + DSN env vars in production |
 
 ---
 
