@@ -8,7 +8,7 @@
 # Prerequisites:
 #   1. `cloudflared` installed locally
 #   2. `cloudflared login` completed (auth token cached)
-#   3. DNS zone `arkova.io` active in Cloudflare
+#   3. DNS zone `arkova.ai` active in Cloudflare
 #
 # ADR: docs/confluence/15_zero_trust_edge_architecture.md
 # Story: INFRA-01
@@ -18,8 +18,8 @@ set -euo pipefail
 
 # ── Configuration ────────────────────────────────
 TUNNEL_NAME="arkova-worker"
-HOSTNAME_PROD="worker.arkova.io"
-HOSTNAME_STAGING="staging-worker.arkova.io"
+HOSTNAME_PROD="worker.arkova.ai"
+HOSTNAME_STAGING="staging-worker.arkova.ai"
 
 echo "═══════════════════════════════════════════════"
 echo "  Arkova Tunnel Deployment — INFRA-01"
@@ -96,7 +96,7 @@ echo "  │ Domain: ${HOSTNAME_STAGING}                                    │"
 echo "  ├─────────────────────────────────────────────────────────────────┤"
 echo "  │ Route             │ Policy Type     │ Rule                     │"
 echo "  │───────────────────│─────────────────│──────────────────────────│"
-echo "  │ /* (all routes)   │ Allow           │ @arkova.io email domain  │"
+echo "  │ /* (all routes)   │ Allow           │ @arkova.ai email domain  │"
 echo "  │                   │                 │ (requires SSO/email OTP) │"
 echo "  └─────────────────────────────────────────────────────────────────┘"
 echo ""

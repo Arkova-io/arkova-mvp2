@@ -1,5 +1,5 @@
 /**
- * RLS Integration Tests for Ralph
+ * RLS Integration Tests for Arkova
  *
  * These tests verify Row Level Security policies are working correctly.
  * They use the Supabase client with different user contexts to test access.

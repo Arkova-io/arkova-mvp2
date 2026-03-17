@@ -254,36 +254,29 @@ export async function updateReviewItem(
  */
 export async function getReviewQueueStats(orgId: string): Promise<ReviewQueueStats> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (db as any)
-      .from('review_queue_items')
-      .select('status')
-      .eq('org_id', orgId);
+    // WRK-04: Use SQL COUNT via RPC instead of fetching all rows.
+    // Since Supabase client doesn't support GROUP BY directly,
+    // query each status with count option (5 fast COUNT queries vs 1 large SELECT).
+    const statuses = ['PENDING', 'INVESTIGATING', 'ESCALATED', 'APPROVED', 'DISMISSED'] as const;
+    const counts = await Promise.all(
+      statuses.map(async (status) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count, error } = await (db as any)
+          .from('review_queue_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', orgId)
+          .eq('status', status);
+        if (error) {
+          logger.warn({ error, status, orgId }, 'Failed to count review queue items');
+        }
+        return count ?? 0;
+      }),
+    );
 
-    if (error || !data) {
-      return { total: 0, pending: 0, investigating: 0, escalated: 0, approved: 0, dismissed: 0 };
-    }
+    const [pending, investigating, escalated, approved, dismissed] = counts;
+    const total = pending + investigating + escalated + approved + dismissed;
 
-    const stats: ReviewQueueStats = {
-      total: data.length,
-      pending: 0,
-      investigating: 0,
-      escalated: 0,
-      approved: 0,
-      dismissed: 0,
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const row of data as any[]) {
-      const status = row.status as string;
-      if (status === 'PENDING') stats.pending++;
-      else if (status === 'INVESTIGATING') stats.investigating++;
-      else if (status === 'ESCALATED') stats.escalated++;
-      else if (status === 'APPROVED') stats.approved++;
-      else if (status === 'DISMISSED') stats.dismissed++;
-    }
-
-    return stats;
+    return { total, pending, investigating, escalated, approved, dismissed };
   } catch (err) {
     logger.error({ error: err }, 'Failed to get review queue stats');
     return { total: 0, pending: 0, investigating: 0, escalated: 0, approved: 0, dismissed: 0 };
