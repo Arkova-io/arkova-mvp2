@@ -23,6 +23,7 @@ export interface ToolDefinition {
 }
 
 export interface ToolResult {
+  [key: string]: unknown;
   content: { type: 'text'; text: string }[];
   isError?: boolean;
 }
@@ -127,22 +128,22 @@ export async function handleVerifyCredential(
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as Record<string, unknown>;
 
     // Map to frozen verification schema
     const result = {
       verified: data?.status === 'SECURED' || data?.status === 'ACTIVE',
-      status: mapStatus(data?.status),
-      issuer_name: data?.org_name ?? 'Unknown',
-      recipient_identifier: data?.recipient_hash ?? '',
-      credential_type: data?.credential_type ?? 'UNKNOWN',
-      issued_date: data?.issued_at ?? null,
-      expiry_date: data?.expires_at ?? null,
-      anchor_timestamp: data?.created_at ?? '',
-      network_receipt_id: data?.chain_tx_id ?? null,
+      status: mapStatus(data?.status as string | null | undefined),
+      issuer_name: (data?.org_name as string) ?? 'Unknown',
+      recipient_identifier: (data?.recipient_hash as string) ?? '',
+      credential_type: (data?.credential_type as string) ?? 'UNKNOWN',
+      issued_date: (data?.issued_at as string | null) ?? null,
+      expiry_date: (data?.expires_at as string | null) ?? null,
+      anchor_timestamp: (data?.created_at as string) ?? '',
+      network_receipt_id: (data?.chain_tx_id as string | null) ?? null,
       record_uri: `https://app.arkova.io/verify/${input.public_id}`,
       // Omit jurisdiction when null (Constitution — never return null)
-      ...(data?.jurisdiction && { jurisdiction: data.jurisdiction }),
+      ...(data?.jurisdiction ? { jurisdiction: data.jurisdiction as string } : {}),
     };
 
     return {

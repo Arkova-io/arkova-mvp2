@@ -167,7 +167,10 @@ export async function handleMcpRequest(
       }),
       {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': corsOrigin,
+        },
       },
     );
   }
@@ -178,33 +181,44 @@ export async function handleMcpRequest(
     supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY,
   };
 
-  const mcpServer = createMcpServer(config);
+  try {
+    const mcpServer = createMcpServer(config);
 
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-    enableJsonResponse: true,
-  });
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+      enableJsonResponse: true,
+    });
 
-  await mcpServer.connect(transport);
+    await mcpServer.connect(transport);
 
-  // Handle the request
-  const response = await transport.handleRequest(request, {
-    authInfo: {
-      token: auth.userId,
-      clientId: auth.tier,
-      scopes: ['verify', 'search'],
-    },
-  });
+    // Handle the request
+    const response = await transport.handleRequest(request, {
+      authInfo: {
+        token: auth.userId,
+        clientId: auth.tier,
+        scopes: ['verify', 'search'],
+      },
+    });
 
-  // Add CORS headers to response
-  const headers = new Headers(response.headers);
-  headers.set('Access-Control-Allow-Origin', corsOrigin);
+    // Add CORS headers to response
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', corsOrigin);
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch (error) {
+    console.error('[mcp-server] Request handling failed:', error);
+    return new Response(
+      JSON.stringify({ error: 'MCP server error', message: 'Internal server error' }),
+      { status: 500, headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': corsOrigin,
+      } },
+    );
+  }
 }
 
 export default { handleMcpRequest };

@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-17 (AUDIT-01/02/03/04/05/08/11 resolved — 7/24 audit findings fixed) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-17 (AUDIT-06/10/20 resolved — 10/24 audit findings fixed) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -12,11 +12,11 @@ _Last updated: 2026-03-17 (AUDIT-01/02/03/04/05/08/11 resolved — 7/24 audit fi
 | Stories (NOT STARTED) | 9 | — | 9 | No (post-launch) |
 | Stories (PARTIAL) | 3 | — | 3 | 1 blocking (INFRA-07) |
 | Security Findings | 12 | 12 fixed | 0 | No |
-| Codebase Audit (AUDIT) | 24 | 7 resolved | 17 | No (hardening) |
+| Codebase Audit (AUDIT) | 24 | 10 resolved | 14 | No (hardening) |
 | UAT Bugs | 29 | 29 | 0 | No |
 | Operational Tasks | 7 | 0 | 7 | **YES** |
 | Code TODOs | 1 | — | 1 | No |
-| **Total Open Items** | | | **37** | |
+| **Total Open Items** | | | **34** | |
 
 ---
 
@@ -109,20 +109,20 @@ _128 findings across 24 AUDIT stories from comprehensive 6-agent codebase audit.
 |---|-----|----------|----------|-------|--------|
 | 1 | AUDIT-01 | **CRITICAL** | SQL Bugs | 6 SQL bugs in migrations (operator precedence, wrong columns, missing GRANTs) | **RESOLVED** — Migration 0066. PR #88. |
 | 2 | AUDIT-02 | **HIGH** | Code Bugs | 4 code bugs (infinite re-render, shutdown race, metadata overwrite, HMAC naming) | **RESOLVED** — PR #88. |
-| 3 | AUDIT-03 | **CRITICAL** | Edge Auth | Unauthenticated edge worker routes (report, crawl, ai-fallback) | **RESOLVED** — X-Cron-Secret auth + CRON_SECRET in deploy-worker.yml. PR #88. |
-| 4 | AUDIT-04 | **HIGH** | Security | SSRF gaps in crawler, prompt injection, wildcard CORS in MCP | **RESOLVED** — Expanded blocklist, system/user msg separation, configurable origins. PR #88. |
-| 5 | AUDIT-05 | **HIGH** | Security | TOCTOU credit races, PostgREST filter injection, rate limiting gaps | **RESOLVED** — Deduct-before-extract pattern, input sanitization. This PR. |
-| 6 | AUDIT-08 | **MEDIUM** | Worker Bugs | Cache unbounded growth, review queue full table scan | **RESOLVED** — LRU eviction (10K max), parallel COUNT queries. This PR. |
-| 7 | AUDIT-11 | **MEDIUM** | Config | Ralph references, arkova.io domains, incomplete .env.example | **RESOLVED** — All renamed/updated. This PR. |
+| 3 | AUDIT-03 | **CRITICAL** | Edge Auth | Unauthenticated edge worker routes (report, crawl, ai-fallback) | **RESOLVED** — X-Cron-Secret auth. PR #88. |
+| 4 | AUDIT-04 | **HIGH** | Security | SSRF gaps in crawler, prompt injection, wildcard CORS in MCP | **RESOLVED** — PR #88. |
+| 5 | AUDIT-05 | **HIGH** | Security | TOCTOU credit races, PostgREST filter injection | **RESOLVED** — PR #89. |
+| 6 | AUDIT-06 | **HIGH** | CI Gaps | Edge worker not validated in CI, no worker npm audit | **RESOLVED** — Edge tsc + worker audit in CI. This PR. |
+| 7 | AUDIT-08 | **MEDIUM** | Worker Bugs | Cache unbounded growth, review queue full table scan | **RESOLVED** — PR #89. |
+| 8 | AUDIT-10 | **MEDIUM** | Edge Bugs | Queue dead letter handling, MCP error handling, health check | **RESOLVED** — Max retries + DLQ logging + try/catch. This PR. |
+| 9 | AUDIT-11 | **MEDIUM** | Config | Ralph references, arkova.io domains, incomplete .env.example | **RESOLVED** — PR #89. |
+| 10 | AUDIT-20 | **MEDIUM** | Testing | RLS tests missing for newer tables | **RESOLVED** — 20 tests for 4 tables. This PR. |
 
 ### Open (priority order)
 
 | # | ID | Severity | Category | Issue | Status |
 |---|-----|----------|----------|-------|--------|
-| 8 | AUDIT-06 | HIGH | CI Gaps | Edge worker not validated in CI, no `npm audit` step | OPEN |
-| 9 | AUDIT-10 | MEDIUM | Edge Bugs | Edge worker error handling, queue dead letters | OPEN |
-| 10 | AUDIT-16 | MEDIUM | Docs | Security documentation gaps for SOC 2 readiness | OPEN |
-| 11 | AUDIT-20 | MEDIUM | Testing | RLS tests missing for 9 newer tables | OPEN |
+| 11 | AUDIT-16 | MEDIUM | Docs | Security documentation gaps for SOC 2 readiness | OPEN |
 | 12 | AUDIT-07 | MEDIUM | Frontend | Missing error boundaries in sub-routes, stale data handling | OPEN |
 | 13 | AUDIT-09 | MEDIUM | Frontend | Accessibility gaps (aria labels, focus management) | OPEN |
 | 14 | AUDIT-12 | LOW | Testing | E2E test coverage gaps (billing, webhook settings) | OPEN |
