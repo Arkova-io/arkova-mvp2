@@ -69,22 +69,33 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
+    // SEC-NEW-10: Deduct credit BEFORE extraction to prevent TOCTOU gap
+    const deducted = await deductAICredits(orgId, userId, 1);
+    if (!deducted) {
+      res.status(402).json({
+        error: 'insufficient_credits',
+        message: 'Credit deduction failed. Please try again.',
+      });
+      return;
+    }
+
     // Call AI provider
     const startMs = Date.now();
     const provider = createAIProvider();
-    const result = await provider.extractMetadata({
-      strippedText,
-      credentialType,
-      fingerprint,
-      issuerHint,
-    });
-    const durationMs = Date.now() - startMs;
-
-    // Deduct credit
-    const deducted = await deductAICredits(orgId, userId, 1);
-    if (!deducted) {
-      logger.warn({ orgId, userId }, 'Credit deduction failed after successful extraction');
+    let result;
+    try {
+      result = await provider.extractMetadata({
+        strippedText,
+        credentialType,
+        fingerprint,
+        issuerHint,
+      });
+    } catch (extractionError) {
+      // Refund the credit on extraction failure (best-effort)
+      await deductAICredits(orgId, userId, -1).catch(() => {});
+      throw extractionError;
     }
+    const durationMs = Date.now() - startMs;
 
     // Log usage event (non-blocking)
     logAIUsageEvent({

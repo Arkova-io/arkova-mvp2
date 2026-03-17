@@ -39,19 +39,23 @@ interface CacheEntry {
 }
 
 const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_CACHE_MAX_SIZE = 10_000; // WRK-03: Max cache entries to prevent unbounded growth
 
 /**
  * O(1) fingerprint verification via the `anchor_chain_index` table.
  *
  * DH-05: Includes TTL-based in-memory cache (default 5 min).
+ * WRK-03: Max cache size with LRU eviction (oldest entries removed first).
  * Fingerprints are immutable once anchored, so caching is safe.
  */
 export class SupabaseChainIndexLookup implements ChainIndexLookup {
   private _cache = new Map<string, CacheEntry>();
   private _ttlMs: number;
+  private _maxSize: number;
 
-  constructor(ttlMs: number = DEFAULT_CACHE_TTL_MS) {
+  constructor(ttlMs: number = DEFAULT_CACHE_TTL_MS, maxSize: number = DEFAULT_CACHE_MAX_SIZE) {
     this._ttlMs = ttlMs;
+    this._maxSize = maxSize;
   }
 
   async lookupFingerprint(fingerprint: string): Promise<IndexEntry | null> {
@@ -87,6 +91,16 @@ export class SupabaseChainIndexLookup implements ChainIndexLookup {
         }
       : null;
 
+    // WRK-03: Evict expired + oldest entries if at max capacity
+    if (this._cache.size >= this._maxSize) {
+      this._evictStale();
+    }
+    if (this._cache.size >= this._maxSize) {
+      // Still at capacity after evicting expired — remove oldest entry (LRU)
+      const oldestKey = this._cache.keys().next().value;
+      if (oldestKey !== undefined) this._cache.delete(oldestKey);
+    }
+
     // Cache the result (including null/miss)
     this._cache.set(normalizedFingerprint, {
       value: result,
@@ -104,6 +118,16 @@ export class SupabaseChainIndexLookup implements ChainIndexLookup {
   /** Get current cache size (for monitoring) */
   get cacheSize(): number {
     return this._cache.size;
+  }
+
+  /** WRK-03: Remove all expired entries from the cache */
+  private _evictStale(): void {
+    const now = Date.now();
+    for (const [key, entry] of this._cache) {
+      if (entry.expiresAt <= now) {
+        this._cache.delete(key);
+      }
+    }
   }
 }
 

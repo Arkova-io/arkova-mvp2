@@ -1,5 +1,5 @@
 /**
- * Zod validators for Ralph
+ * Zod validators for Arkova
  *
  * These validators ensure data integrity before database operations.
  * They mirror and complement database-level constraints.

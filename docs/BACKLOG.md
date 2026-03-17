@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-16 (doc sync — P8 19/19, UAT bugs resolved, GEO updates) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-17 (AUDIT-01/02/03/04/05/08/11 resolved — 7/24 audit findings fixed) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -12,10 +12,11 @@ _Last updated: 2026-03-16 (doc sync — P8 19/19, UAT bugs resolved, GEO updates
 | Stories (NOT STARTED) | 9 | — | 9 | No (post-launch) |
 | Stories (PARTIAL) | 3 | — | 3 | 1 blocking (INFRA-07) |
 | Security Findings | 12 | 12 fixed | 0 | No |
+| Codebase Audit (AUDIT) | 24 | 7 resolved | 17 | No (hardening) |
 | UAT Bugs | 29 | 29 | 0 | No |
 | Operational Tasks | 7 | 0 | 7 | **YES** |
 | Code TODOs | 1 | — | 1 | No |
-| **Total Open Items** | | | **20** | |
+| **Total Open Items** | | | **37** | |
 
 ---
 
@@ -38,7 +39,7 @@ _Last updated: 2026-03-16 (doc sync — P8 19/19, UAT bugs resolved, GEO updates
 
 | # | ID | Issue | Status |
 |---|-----|-------|--------|
-| 9 | OPS-01 | Apply migrations 0059-0065 to production Supabase | PENDING |
+| 9 | OPS-01 | Apply migrations 0059-0066 to production Supabase | PENDING |
 | 10 | OPS-02 | Run `scripts/strip-demo-seeds.sql` on production | PENDING |
 | 11 | OPS-03 | Set Sentry DSN env vars (Vercel + Cloud Run) | PENDING |
 | 12 | OPS-04 | Sentry source map upload plugin | PENDING |
@@ -95,6 +96,46 @@ _Last updated: 2026-03-16 (doc sync — P8 19/19, UAT bugs resolved, GEO updates
 | ~~42~~ | ~~UAT3-03~~ | ~~LOW~~ | ~~No loading skeleton on verification page~~ | ~~**FIXED** — Shimmer skeleton already exists in PublicVerification loading state~~ |
 | ~~43~~ | ~~UAT3-04~~ | ~~LOW~~ | ~~QR code on detail page links to localhost~~ | ~~**FIXED** — All copy/QR URLs use `verifyUrl()` (production base URL)~~ |
 | ~~44~~ | ~~UAT3-05~~ | ~~LOW~~ | ~~Missing toast on billing page auth redirect~~ | ~~**FIXED** — AuthGuard already shows redirect toast for all auth redirects including billing~~ |
+
+---
+
+## TIER 4B: CODEBASE AUDIT FINDINGS (2026-03-17)
+
+_128 findings across 24 AUDIT stories from comprehensive 6-agent codebase audit._
+
+### Resolved
+
+| # | ID | Severity | Category | Issue | Status |
+|---|-----|----------|----------|-------|--------|
+| 1 | AUDIT-01 | **CRITICAL** | SQL Bugs | 6 SQL bugs in migrations (operator precedence, wrong columns, missing GRANTs) | **RESOLVED** — Migration 0066. PR #88. |
+| 2 | AUDIT-02 | **HIGH** | Code Bugs | 4 code bugs (infinite re-render, shutdown race, metadata overwrite, HMAC naming) | **RESOLVED** — PR #88. |
+| 3 | AUDIT-03 | **CRITICAL** | Edge Auth | Unauthenticated edge worker routes (report, crawl, ai-fallback) | **RESOLVED** — X-Cron-Secret auth + CRON_SECRET in deploy-worker.yml. PR #88. |
+| 4 | AUDIT-04 | **HIGH** | Security | SSRF gaps in crawler, prompt injection, wildcard CORS in MCP | **RESOLVED** — Expanded blocklist, system/user msg separation, configurable origins. PR #88. |
+| 5 | AUDIT-05 | **HIGH** | Security | TOCTOU credit races, PostgREST filter injection, rate limiting gaps | **RESOLVED** — Deduct-before-extract pattern, input sanitization. This PR. |
+| 6 | AUDIT-08 | **MEDIUM** | Worker Bugs | Cache unbounded growth, review queue full table scan | **RESOLVED** — LRU eviction (10K max), parallel COUNT queries. This PR. |
+| 7 | AUDIT-11 | **MEDIUM** | Config | Ralph references, arkova.io domains, incomplete .env.example | **RESOLVED** — All renamed/updated. This PR. |
+
+### Open (priority order)
+
+| # | ID | Severity | Category | Issue | Status |
+|---|-----|----------|----------|-------|--------|
+| 8 | AUDIT-06 | HIGH | CI Gaps | Edge worker not validated in CI, no `npm audit` step | OPEN |
+| 9 | AUDIT-10 | MEDIUM | Edge Bugs | Edge worker error handling, queue dead letters | OPEN |
+| 10 | AUDIT-16 | MEDIUM | Docs | Security documentation gaps for SOC 2 readiness | OPEN |
+| 11 | AUDIT-20 | MEDIUM | Testing | RLS tests missing for 9 newer tables | OPEN |
+| 12 | AUDIT-07 | MEDIUM | Frontend | Missing error boundaries in sub-routes, stale data handling | OPEN |
+| 13 | AUDIT-09 | MEDIUM | Frontend | Accessibility gaps (aria labels, focus management) | OPEN |
+| 14 | AUDIT-12 | LOW | Testing | E2E test coverage gaps (billing, webhook settings) | OPEN |
+| 15 | AUDIT-13 | LOW | Frontend | Performance (bundle size, lazy loading) | OPEN |
+| 16 | AUDIT-14 | LOW | Docs | API documentation gaps (AI endpoints) | OPEN |
+| 17 | AUDIT-15 | LOW | Code Quality | Dead code cleanup, unused imports | OPEN |
+| 18 | AUDIT-17 | LOW | Testing | Worker integration test coverage | OPEN |
+| 19 | AUDIT-18 | LOW | Frontend | Dark mode support (partial CSS vars) | OPEN |
+| 20 | AUDIT-19 | LOW | Docs | Deployment runbook updates | OPEN |
+| 21 | AUDIT-21 | LOW | Code Quality | Type safety improvements (any casts) | OPEN |
+| 22 | AUDIT-22 | LOW | Frontend | Loading state consistency | OPEN |
+| 23 | AUDIT-23 | LOW | Docs | Onboarding developer documentation | OPEN |
+| 24 | AUDIT-24 | LOW | Testing | Snapshot test coverage | OPEN |
 
 ---
 

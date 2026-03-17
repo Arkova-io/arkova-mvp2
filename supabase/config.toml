@@ -1,7 +1,7 @@
-# Supabase configuration for Ralph
+# Supabase configuration for Arkova
 # See: https://supabase.com/docs/guides/cli/config
 
-project_id = "ralph"
+project_id = "arkova"
 
 [api]
 enabled = true

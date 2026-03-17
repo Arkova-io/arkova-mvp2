@@ -72,7 +72,7 @@ async function crawlDomains(domains: string[], env: Env): Promise<CrawlResponse>
       const url = `https://${domain}`;
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'ArkovaCrawler/1.0 (credential-verification; +https://arkova.io)',
+          'User-Agent': 'ArkovaCrawler/1.0 (credential-verification; +https://arkova.ai)',
         },
         redirect: 'follow',
       });

@@ -151,9 +151,12 @@ export function OrgRegistryTable({
     }
 
     // Apply search filter (filename OR fingerprint)
+    // SEC-NEW-08: Sanitize input to prevent PostgREST filter injection
     if (searchQuery.trim()) {
-      const q = searchQuery.trim();
-      query = query.or(`filename.ilike.%${q}%,fingerprint.ilike.%${q}%`);
+      const q = searchQuery.trim().replace(/[%_\\().,]/g, '');
+      if (q.length > 0) {
+        query = query.or(`filename.ilike.%${q}%,fingerprint.ilike.%${q}%`);
+      }
     }
 
     // Apply date range filter
