@@ -146,7 +146,7 @@ export async function listReviewItems(
       .from('review_queue_items')
       .select(`
         *,
-        anchors!inner(label, file_fingerprint_sha256, credential_type),
+        anchors!inner(label, fingerprint, credential_type),
         integrity_scores(overall_score, level)
       `)
       .eq('org_id', filters.orgId)
@@ -185,7 +185,7 @@ export async function listReviewItems(
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       anchorTitle: row.anchors?.label ?? 'Untitled',
-      anchorFingerprint: row.anchors?.file_fingerprint_sha256,
+      anchorFingerprint: row.anchors?.fingerprint,
       anchorCredentialType: row.anchors?.credential_type,
       integrityScore: row.integrity_scores?.overall_score != null
         ? Number(row.integrity_scores.overall_score) : undefined,
@@ -206,8 +206,8 @@ export async function listReviewItems(
  */
 export async function updateReviewItem(
   itemId: string,
-  orgId: string,
   userId: string,
+  orgId: string,
   action: ReviewAction,
   notes?: string,
 ): Promise<boolean> {
@@ -219,9 +219,9 @@ export async function updateReviewItem(
       DISMISS: 'DISMISSED',
     };
 
-    // Scope update to caller's org_id to prevent cross-tenant modification
+    // Org-scoped update: ensures item belongs to caller's org (prevents cross-tenant access)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (db as any)
+    const { error } = await (db as any)
       .from('review_queue_items')
       .update({
         status: statusMap[action],
@@ -231,12 +231,10 @@ export async function updateReviewItem(
         review_notes: notes ?? null,
       })
       .eq('id', itemId)
-      .eq('org_id', orgId)
-      .select('id')
-      .single();
+      .eq('org_id', orgId);
 
-    if (error || !data) {
-      logger.error({ error, itemId, orgId }, 'Failed to update review item (not found or wrong org)');
+    if (error) {
+      logger.error({ error, itemId }, 'Failed to update review item');
       return false;
     }
 

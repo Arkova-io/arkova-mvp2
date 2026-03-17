@@ -23,14 +23,15 @@ import { useReviewQueue } from '@/hooks/useReviewQueue';
 import type { ReviewAction, ReviewStatus } from '@/hooks/useReviewQueue';
 import { IntegrityScoreBadge } from '@/components/anchor/IntegrityScoreBadge';
 import { toast } from 'sonner';
+import { REVIEW_QUEUE_LABELS } from '@/lib/copy';
 
 const STATUS_FILTERS: { value: ReviewStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'INVESTIGATING', label: 'Investigating' },
-  { value: 'ESCALATED', label: 'Escalated' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'DISMISSED', label: 'Dismissed' },
+  { value: 'PENDING', label: REVIEW_QUEUE_LABELS.PENDING },
+  { value: 'INVESTIGATING', label: REVIEW_QUEUE_LABELS.INVESTIGATING },
+  { value: 'ESCALATED', label: REVIEW_QUEUE_LABELS.ESCALATED },
+  { value: 'APPROVED', label: REVIEW_QUEUE_LABELS.APPROVED },
+  { value: 'DISMISSED', label: REVIEW_QUEUE_LABELS.DISMISSED },
 ];
 
 const ACTION_CONFIG: Record<ReviewAction, {
@@ -41,25 +42,25 @@ const ACTION_CONFIG: Record<ReviewAction, {
 }> = {
   APPROVE: {
     icon: CheckCircle2,
-    label: 'Approve',
+    label: REVIEW_QUEUE_LABELS.ACTION_APPROVE,
     color: 'text-green-600 hover:bg-green-50',
     confirm: 'Approve this credential?',
   },
   INVESTIGATE: {
     icon: Search,
-    label: 'Investigate',
+    label: REVIEW_QUEUE_LABELS.ACTION_INVESTIGATE,
     color: 'text-amber-600 hover:bg-amber-50',
     confirm: 'Mark for investigation?',
   },
   ESCALATE: {
     icon: ArrowUpCircle,
-    label: 'Escalate',
+    label: REVIEW_QUEUE_LABELS.ACTION_ESCALATE,
     color: 'text-red-600 hover:bg-red-50',
     confirm: 'Escalate this item?',
   },
   DISMISS: {
     icon: XCircle,
-    label: 'Dismiss',
+    label: REVIEW_QUEUE_LABELS.ACTION_DISMISS,
     color: 'text-muted-foreground hover:bg-muted/50',
     confirm: 'Dismiss this flag?',
   },
@@ -84,7 +85,7 @@ function getStatusBadge(status: ReviewStatus) {
 export function ReviewQueue() {
   const { items, stats, loading, acting, fetchItems, fetchStats, applyAction } = useReviewQueue();
   const [activeFilter, setActiveFilter] = useState<ReviewStatus | 'ALL'>('PENDING');
-  const [notesByItem, setNotesByItem] = useState<Record<string, string>>({});
+  const [actionNotes, setActionNotes] = useState('');
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,13 +95,10 @@ export function ReviewQueue() {
 
   const handleAction = async (itemId: string, action: ReviewAction) => {
     try {
-      const notes = notesByItem[itemId] || undefined;
-      await applyAction(itemId, action, notes);
-      setNotesByItem((prev) => { const next = { ...prev }; delete next[itemId]; return next; });
+      await applyAction(itemId, action, actionNotes || undefined);
+      setActionNotes('');
       setExpandedItem(null);
       toast.success(`Item ${action.toLowerCase()}d successfully`);
-      // Refresh the list after action
-      fetchItems(activeFilter === 'ALL' ? undefined : activeFilter);
       fetchStats();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Action failed');
@@ -194,11 +192,9 @@ export function ReviewQueue() {
               }`}
             >
               {/* Item header */}
-              <button
-                type="button"
-                className="flex items-center justify-between p-4 cursor-pointer w-full text-left"
+              <div
+                className="flex items-center justify-between p-4 cursor-pointer"
                 onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-                aria-expanded={expandedItem === item.id}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {item.integrityScore != null && item.integrityLevel && (
@@ -225,7 +221,7 @@ export function ReviewQueue() {
                   )}
                   {getStatusBadge(item.status)}
                 </div>
-              </button>
+              </div>
 
               {/* Expanded section */}
               {expandedItem === item.id && (
@@ -257,8 +253,8 @@ export function ReviewQueue() {
                     <div className="space-y-2">
                       <textarea
                         placeholder="Add review notes (optional)..."
-                        value={notesByItem[item.id] ?? ''}
-                        onChange={(e) => setNotesByItem((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                        value={expandedItem === item.id ? actionNotes : ''}
+                        onChange={(e) => setActionNotes(e.target.value)}
                         className="w-full text-sm border rounded-md px-3 py-2 bg-background resize-none"
                         rows={2}
                       />

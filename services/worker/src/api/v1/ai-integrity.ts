@@ -25,30 +25,8 @@ const ComputeRequestSchema = z.object({
   anchorId: z.string().uuid(),
 });
 
-const UuidSchema = z.string().uuid();
-
 /** Threshold below which items are auto-flagged for review */
 const REVIEW_THRESHOLD = 60;
-
-/** Helper: get profile and verify org membership */
-async function getOrgProfile(userId: string) {
-  const { data: profile } = await db
-    .from('profiles')
-    .select('org_id')
-    .eq('id', userId)
-    .single();
-  return profile;
-}
-
-/** Helper: verify anchor belongs to the caller's org */
-async function verifyAnchorOwnership(anchorId: string, orgId: string): Promise<boolean> {
-  const { count } = await db
-    .from('anchors')
-    .select('id', { count: 'exact', head: true })
-    .eq('id', anchorId)
-    .eq('org_id', orgId);
-  return (count ?? 0) > 0;
-}
 
 // POST /compute — Compute integrity score
 router.post('/compute', async (req: Request, res: Response) => {
@@ -65,17 +43,28 @@ router.post('/compute', async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getOrgProfile(userId);
-    const orgId = profile?.org_id ?? undefined;
+    // Get org_id from profile — fail closed
+    const { data: profile } = await db
+      .from('profiles')
+      .select('org_id')
+      .eq('id', userId)
+      .single();
 
-    if (!orgId) {
+    if (!profile?.org_id) {
       res.status(403).json({ error: 'Organization membership required' });
       return;
     }
 
-    // Verify anchor belongs to caller's org (cross-tenant protection)
-    const owns = await verifyAnchorOwnership(parsed.data.anchorId, orgId);
-    if (!owns) {
+    const orgId = profile.org_id;
+
+    // Verify anchor belongs to user's org
+    const { data: anchor } = await db
+      .from('anchors')
+      .select('org_id')
+      .eq('id', parsed.data.anchorId)
+      .single();
+
+    if (!anchor || anchor.org_id !== orgId) {
       res.status(404).json({ error: 'Anchor not found' });
       return;
     }
@@ -84,7 +73,8 @@ router.post('/compute', async (req: Request, res: Response) => {
     const stored = await upsertIntegrityScore(parsed.data.anchorId, orgId, result);
 
     // Auto-create review item if score is below threshold
-    if (result.overallScore < REVIEW_THRESHOLD) {
+    if (result.overallScore < REVIEW_THRESHOLD && orgId) {
+      // Get the integrity score record ID for linking
       const scoreRecord = await getIntegrityScore(parsed.data.anchorId);
       await createReviewItem(
         parsed.data.anchorId,
@@ -119,28 +109,32 @@ router.get('/:anchorId', async (req: Request, res: Response) => {
   }
 
   const { anchorId } = req.params;
-  const uuidParsed = UuidSchema.safeParse(anchorId);
-  if (!uuidParsed.success) {
-    res.status(400).json({ error: 'Invalid anchorId format' });
+  if (!anchorId) {
+    res.status(400).json({ error: 'anchorId is required' });
     return;
   }
 
   try {
-    // Verify org ownership before returning score
-    const profile = await getOrgProfile(userId);
+    // Get org_id from profile — fail closed
+    const { data: profile } = await db
+      .from('profiles')
+      .select('org_id')
+      .eq('id', userId)
+      .single();
+
     if (!profile?.org_id) {
       res.status(403).json({ error: 'Organization membership required' });
       return;
     }
 
-    const owns = await verifyAnchorOwnership(anchorId, profile.org_id);
-    if (!owns) {
+    const score = await getIntegrityScore(anchorId);
+    if (!score) {
       res.status(404).json({ error: 'No integrity score found for this anchor' });
       return;
     }
 
-    const score = await getIntegrityScore(anchorId);
-    if (!score) {
+    // Verify the score belongs to user's org — return 404 to avoid leaking existence
+    if (score.orgId !== profile.org_id) {
       res.status(404).json({ error: 'No integrity score found for this anchor' });
       return;
     }

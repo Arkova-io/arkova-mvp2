@@ -35,7 +35,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    // Get org_id from profile — require org membership for feedback
+    // Get org_id from profile — fail closed
     const { data: profile } = await db
       .from('profiles')
       .select('org_id')
@@ -47,7 +47,8 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await storeExtractionFeedback(profile.org_id, userId, parsed.data.items);
+    const orgId = profile.org_id;
+    const result = await storeExtractionFeedback(orgId, userId, parsed.data.items);
 
     res.json({
       stored: result.stored,
@@ -80,11 +81,11 @@ router.get('/accuracy', async (req: Request, res: Response) => {
       return;
     }
 
+    const orgId = profile.org_id;
     const credentialType = req.query.credentialType as string | undefined;
-    const rawDays = Number.parseInt(req.query.days as string, 10) || 30;
-    const days = Math.max(1, Math.min(rawDays, 365));
+    const days = Math.min(Math.max(1, parseInt(req.query.days as string, 10) || 30), 90);
 
-    const stats = await getExtractionAccuracy(credentialType, profile.org_id, days);
+    const stats = await getExtractionAccuracy(credentialType, orgId, days);
     res.json({ stats, days });
   } catch (err) {
     logger.error({ error: err }, 'Failed to get accuracy stats');

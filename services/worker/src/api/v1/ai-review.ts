@@ -9,7 +9,6 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { z } from 'zod';
 import {
   listReviewItems,
   updateReviewItem,
@@ -21,19 +20,6 @@ import { logger } from '../../utils/logger.js';
 
 const router = Router();
 
-const VALID_STATUSES = ['PENDING', 'INVESTIGATING', 'ESCALATED', 'APPROVED', 'DISMISSED'] as const;
-const UuidSchema = z.string().uuid();
-
-/** Helper: get profile with org + role */
-async function getAdminProfile(userId: string) {
-  const { data: profile } = await db
-    .from('profiles')
-    .select('org_id, role')
-    .eq('id', userId)
-    .single();
-  return profile;
-}
-
 // GET / — List review queue items
 router.get('/', async (req: Request, res: Response) => {
   const userId = req.authUserId;
@@ -43,7 +29,11 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getAdminProfile(userId);
+    const { data: profile } = await db
+      .from('profiles')
+      .select('org_id, role')
+      .eq('id', userId)
+      .single();
 
     if (!profile?.org_id) {
       res.status(403).json({ error: 'Organization membership required' });
@@ -55,17 +45,14 @@ router.get('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const statusParam = req.query.status as string | undefined;
-    const status = statusParam && VALID_STATUSES.includes(statusParam as typeof VALID_STATUSES[number])
-      ? statusParam as typeof VALID_STATUSES[number]
-      : undefined;
-    const limit = Math.max(1, Math.min(Number.parseInt(req.query.limit as string, 10) || 20, 100));
-    const offset = Math.max(0, Number.parseInt(req.query.offset as string, 10) || 0);
+    const status = req.query.status as string | undefined;
+    const limit = Math.max(0, parseInt(req.query.limit as string, 10) || 20);
+    const offset = Math.max(0, parseInt(req.query.offset as string, 10) || 0);
 
     const items = await listReviewItems({
       orgId: profile.org_id,
-      status,
-      limit,
+      status: status as 'PENDING' | 'INVESTIGATING' | 'ESCALATED' | 'APPROVED' | 'DISMISSED' | undefined,
+      limit: Math.min(limit, 100),
       offset,
     });
 
@@ -85,7 +72,11 @@ router.get('/stats', async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getAdminProfile(userId);
+    const { data: profile } = await db
+      .from('profiles')
+      .select('org_id, role')
+      .eq('id', userId)
+      .single();
 
     if (!profile?.org_id) {
       res.status(403).json({ error: 'Organization membership required' });
@@ -93,7 +84,7 @@ router.get('/stats', async (req: Request, res: Response) => {
     }
 
     if (profile.role !== 'ORG_ADMIN') {
-      res.status(403).json({ error: 'Admin access required to view queue stats' });
+      res.status(403).json({ error: 'Admin access required to view review queue stats' });
       return;
     }
 
@@ -114,14 +105,18 @@ router.patch('/:itemId', async (req: Request, res: Response) => {
   }
 
   const { itemId } = req.params;
-  const uuidParsed = UuidSchema.safeParse(itemId);
-  if (!uuidParsed.success) {
-    res.status(400).json({ error: 'Invalid itemId format' });
+  if (!itemId) {
+    res.status(400).json({ error: 'itemId is required' });
     return;
   }
 
   try {
-    const profile = await getAdminProfile(userId);
+    // Verify admin role
+    const { data: profile } = await db
+      .from('profiles')
+      .select('org_id, role')
+      .eq('id', userId)
+      .single();
 
     if (!profile?.org_id || profile.role !== 'ORG_ADMIN') {
       res.status(403).json({ error: 'Admin access required to review items' });
@@ -134,17 +129,16 @@ router.patch('/:itemId', async (req: Request, res: Response) => {
       return;
     }
 
-    // Pass org_id for cross-tenant protection
     const success = await updateReviewItem(
       itemId,
-      profile.org_id,
       userId,
+      profile.org_id,
       parsed.data.action,
       parsed.data.notes,
     );
 
     if (!success) {
-      res.status(404).json({ error: 'Review item not found' });
+      res.status(500).json({ error: 'Failed to update review item' });
       return;
     }
 

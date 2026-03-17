@@ -35,7 +35,6 @@ export function useExtractionFeedback() {
   const [submitting, setSubmitting] = useState(false);
   const [accuracyStats, setAccuracyStats] = useState<AccuracyStat[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const submitFeedback = useCallback(async (items: FeedbackItem[]) => {
     setSubmitting(true);
@@ -58,29 +57,20 @@ export function useExtractionFeedback() {
 
   const fetchAccuracy = useCallback(async (credentialType?: string, days?: number) => {
     setLoadingStats(true);
-    setError(null);
     try {
       const params = new URLSearchParams();
       if (credentialType) params.set('credentialType', credentialType);
       if (days) params.set('days', String(days));
 
       const res = await workerFetch(`/api/v1/ai/feedback/accuracy?${params}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setError((err as Record<string, string>).error ?? 'Failed to fetch accuracy');
-        setAccuracyStats([]);
-        return;
-      }
+      if (!res.ok) return;
 
       const data = await res.json() as { stats: AccuracyStat[] };
       setAccuracyStats(data.stats);
-    } catch {
-      setError('Failed to fetch accuracy');
-      setAccuracyStats([]);
     } finally {
       setLoadingStats(false);
     }
   }, []);
 
-  return { submitFeedback, submitting, fetchAccuracy, accuracyStats, loadingStats, error };
+  return { submitFeedback, submitting, fetchAccuracy, accuracyStats, loadingStats };
 }

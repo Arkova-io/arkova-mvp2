@@ -37,28 +37,21 @@ export function useIntegrityScore() {
   const [score, setScore] = useState<IntegrityScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [computing, setComputing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchScore = useCallback(async (anchorId: string) => {
     setLoading(true);
-    setError(null);
     try {
       const res = await workerFetch(`/api/v1/ai/integrity/${anchorId}`);
       if (!res.ok) {
-        setScore(null);
-        if (res.status !== 404) {
-          const err = await res.json().catch(() => ({}));
-          setError((err as Record<string, string>).error ?? 'Failed to fetch score');
+        if (res.status === 404) {
+          setScore(null);
+          return null;
         }
         return null;
       }
       const data = await res.json() as IntegrityScore;
       setScore(data);
       return data;
-    } catch {
-      setScore(null);
-      setError('Failed to fetch score');
-      return null;
     } finally {
       setLoading(false);
     }
@@ -93,5 +86,5 @@ export function useIntegrityScore() {
     }
   }, [fetchScore]);
 
-  return { score, loading, computing, error, fetchScore, computeScore };
+  return { score, loading, computing, fetchScore, computeScore };
 }
