@@ -903,6 +903,18 @@ export const INTEGRITY_DETAIL_LABELS = {
 } as const;
 
 // =============================================================================
+// ERROR BOUNDARY (AUDIT-07)
+// =============================================================================
+
+export const ERROR_BOUNDARY_LABELS = {
+  TITLE: 'Something went wrong',
+  DESCRIPTION: 'This section encountered an error. You can try again or navigate to another page.',
+  RETRY: 'Try Again',
+  GO_HOME: 'Dashboard',
+  SKIP_TO_CONTENT: 'Skip to main content',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 

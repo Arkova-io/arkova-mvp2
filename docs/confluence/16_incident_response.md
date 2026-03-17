@@ -8,9 +8,9 @@ This document defines Arkova's incident response procedures aligned with SOC 2 T
 ## Scope
 
 All Arkova production systems:
-- Frontend: `arkova-carson.vercel.app` (Vercel)
-- Worker: `arkova-worker-kvojbeutfa-uc.a.run.app` (GCP Cloud Run)
-- Database: Supabase project `vzwyaatejekddvltxyye`
+- Frontend: Vercel deployment (see internal runbook for hostnames)
+- Worker: GCP Cloud Run (see internal runbook for service URL)
+- Database: Supabase (see internal runbook for project ref)
 - Edge: Cloudflare Workers (reports, batch queue, AI fallback, MCP server)
 - DNS/CDN: Cloudflare
 

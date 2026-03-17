@@ -13,6 +13,7 @@ import { Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Button } from '@/components/ui/button';
+import { ERROR_BOUNDARY_LABELS } from '@/lib/copy';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -49,7 +50,7 @@ export function AppShell({
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg focus:outline-none"
       >
-        Skip to main content
+        {ERROR_BOUNDARY_LABELS.SKIP_TO_CONTENT}
       </a>
 
       {/* Sidebar */}

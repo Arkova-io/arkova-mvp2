@@ -111,14 +111,14 @@ export function App() {
           {/* Public routes — no auth required */}
           <Route path={ROUTES.LOGIN} element={<PublicOnly><LoginPage /></PublicOnly>} />
           <Route path={ROUTES.SIGNUP} element={<PublicOnly><SignUpPage /></PublicOnly>} />
-          <Route path={ROUTES.VERIFY} element={<RouteErrorBoundary><PublicVerifyPage /></RouteErrorBoundary>} />
-          <Route path={ROUTES.VERIFY_FORM} element={<RouteErrorBoundary><PublicVerifyPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.VERIFY} element={<RouteErrorBoundary section="PublicVerify"><PublicVerifyPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.VERIFY_FORM} element={<RouteErrorBoundary section="PublicVerify"><PublicVerifyPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
           <Route path={ROUTES.TERMS} element={<TermsPage />} />
           <Route path={ROUTES.CONTACT} element={<ContactPage />} />
-          <Route path={ROUTES.EMBED_VERIFY} element={<RouteErrorBoundary><EmbedVerifyPage /></RouteErrorBoundary>} />
-          <Route path={ROUTES.SEARCH} element={<RouteErrorBoundary><SearchPage /></RouteErrorBoundary>} />
-          <Route path={ROUTES.ISSUER_REGISTRY} element={<RouteErrorBoundary><IssuerRegistryPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.EMBED_VERIFY} element={<RouteErrorBoundary section="EmbedVerify"><EmbedVerifyPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.SEARCH} element={<RouteErrorBoundary section="Search"><SearchPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.ISSUER_REGISTRY} element={<RouteErrorBoundary section="IssuerRegistry"><IssuerRegistryPage /></RouteErrorBoundary>} />
 
           {/* Onboarding routes */}
           <Route path={ROUTES.ONBOARDING_ROLE} element={<AuthGuard><RouteGuard allow={['/onboarding/role']}><OnboardingRolePage /></RouteGuard></AuthGuard>} />
@@ -126,28 +126,28 @@ export function App() {
           <Route path={ROUTES.REVIEW_PENDING} element={<AuthGuard><RouteGuard allow={['/review-pending']}><ReviewPendingPage /></RouteGuard></AuthGuard>} />
 
           {/* Main app routes — auth required, onboarding must be complete */}
-          <Route path={ROUTES.DASHBOARD} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><DashboardPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.RECORDS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><MyRecordsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.MY_CREDENTIALS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><MyCredentialsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.RECORD_DETAIL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><RecordDetailPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.VERIFY_MY_RECORD} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><VerifyMyRecordPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.ORGANIZATION} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><OrganizationPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.MEMBER_DETAIL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><MemberDetailPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.SETTINGS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><SettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.SETTINGS_API_KEYS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><ApiKeySettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.SETTINGS_WEBHOOKS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><WebhookSettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.CREDENTIAL_TEMPLATES} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><CredentialTemplatesPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.DASHBOARD} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Dashboard"><DashboardPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.RECORDS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Records"><MyRecordsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.MY_CREDENTIALS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="MyCredentials"><MyCredentialsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.RECORD_DETAIL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="RecordDetail"><RecordDetailPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.VERIFY_MY_RECORD} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="VerifyMyRecord"><VerifyMyRecordPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.ORGANIZATION} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Organization"><OrganizationPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.MEMBER_DETAIL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="MemberDetail"><MemberDetailPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.SETTINGS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Settings"><SettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.SETTINGS_API_KEYS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="ApiKeys"><ApiKeySettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.SETTINGS_WEBHOOKS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Webhooks"><WebhookSettingsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.CREDENTIAL_TEMPLATES} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="CredentialTemplates"><CredentialTemplatesPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.HELP} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><HelpPage /></RouteGuard></AuthGuard>} />
 
           {/* AI Intelligence routes */}
-          <Route path={ROUTES.REVIEW_QUEUE} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><ReviewQueuePage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
-          <Route path={ROUTES.AI_REPORTS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><AIReportsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.REVIEW_QUEUE} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="ReviewQueue"><ReviewQueuePage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.AI_REPORTS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="AIReports"><AIReportsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
           {/* Admin routes */}
-          <Route path={ROUTES.ADMIN_TREASURY} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><TreasuryAdminPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.ADMIN_TREASURY} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Treasury"><TreasuryAdminPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
           {/* Billing routes */}
-          <Route path={ROUTES.BILLING} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary><PricingPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.BILLING} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Billing"><PricingPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.BILLING_SUCCESS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><CheckoutSuccessPage /></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.BILLING_CANCEL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><CheckoutCancelPage /></RouteGuard></AuthGuard>} />
 

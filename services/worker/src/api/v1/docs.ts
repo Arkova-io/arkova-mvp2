@@ -355,7 +355,7 @@ export const openApiSpec = {
         responses: {
           '200': { description: 'Search results with similarity scores', content: { 'application/json': { schema: { $ref: '#/components/schemas/SearchResponse' } } } },
           '401': { $ref: '#/components/responses/Unauthorized' },
-          '402': { description: 'Insufficient AI credits' },
+          '402': { description: 'Insufficient AI credits', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiError' } } } },
           '429': { $ref: '#/components/responses/RateLimited' },
           '503': { $ref: '#/components/responses/ServiceUnavailable' },
         },
@@ -388,7 +388,7 @@ export const openApiSpec = {
         responses: {
           '201': { description: 'Embedding generated and stored' },
           '401': { $ref: '#/components/responses/Unauthorized' },
-          '402': { description: 'Insufficient AI credits' },
+          '402': { description: 'Insufficient AI credits', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiError' } } } },
         },
       },
     },
@@ -401,7 +401,7 @@ export const openApiSpec = {
         security: [{ SupabaseJWT: [] }],
         requestBody: {
           required: true,
-          content: { 'application/json': { schema: { type: 'object', required: ['corrections'], properties: { corrections: { type: 'array', items: { type: 'object', properties: { fieldKey: { type: 'string' }, originalValue: { type: 'string' }, correctedValue: { type: 'string' } } } } } } } },
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/FeedbackRequest' } } },
         },
         responses: {
           '200': { description: 'Feedback recorded' },
@@ -435,7 +435,7 @@ export const openApiSpec = {
         tags: ['AI Intelligence'],
         security: [{ SupabaseJWT: [] }],
         responses: {
-          '200': { description: 'Review queue items' },
+          '200': { description: 'Review queue items', content: { 'application/json': { schema: { $ref: '#/components/schemas/ReviewQueueResponse' } } } },
           '401': { $ref: '#/components/responses/Unauthorized' },
           '403': { $ref: '#/components/responses/Forbidden' },
         },
@@ -657,6 +657,46 @@ export const openApiSpec = {
         properties: {
           anchorId: { type: 'string', format: 'uuid', description: 'Anchor ID to generate embedding for' },
           sourceText: { type: 'string', description: 'Optional PII-stripped text to embed (auto-generated from metadata if omitted)' },
+        },
+      },
+      FeedbackRequest: {
+        type: 'object',
+        required: ['corrections'],
+        properties: {
+          corrections: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['fieldKey', 'originalValue', 'correctedValue'],
+              properties: {
+                fieldKey: { type: 'string', description: 'Metadata field name' },
+                originalValue: { type: 'string', description: 'Original AI-extracted value' },
+                correctedValue: { type: 'string', description: 'Human-corrected value' },
+              },
+            },
+          },
+        },
+      },
+      ReviewQueueResponse: {
+        type: 'object',
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                anchor_id: { type: 'string', format: 'uuid' },
+                public_id: { type: 'string' },
+                label: { type: 'string' },
+                reason: { type: 'string' },
+                status: { type: 'string', enum: ['pending', 'investigating', 'escalated', 'approved', 'dismissed'] },
+                integrity_score: { type: 'number' },
+                created_at: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+          total: { type: 'integer' },
         },
       },
       IntegrityResponse: {

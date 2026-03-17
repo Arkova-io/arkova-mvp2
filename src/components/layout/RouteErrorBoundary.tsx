@@ -11,6 +11,11 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sentry } from '@/lib/sentry';
+import { ERROR_BOUNDARY_LABELS } from '@/lib/copy';
+import { ROUTES } from '@/lib/routes';
+
+/** Maximum characters to display from error messages (prevents leaking internal details). */
+const MAX_ERROR_MESSAGE_LENGTH = 200;
 
 interface Props {
   children: ReactNode;
@@ -21,6 +26,22 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+/**
+ * Sanitize an error message for display to end users.
+ * Truncates long messages and strips potential secrets/paths.
+ */
+function sanitizeErrorMessage(message: string): string {
+  // Strip filesystem paths (e.g., /Users/foo/bar/baz.ts)
+  let sanitized = message.replace(/\/[^\s:]+\.[jt]sx?/g, '[internal]');
+  // Strip anything that looks like a secret or token
+  sanitized = sanitized.replace(/(sk_|ak_|Bearer\s+)[^\s"')]+/gi, '[redacted]');
+  // Truncate
+  if (sanitized.length > MAX_ERROR_MESSAGE_LENGTH) {
+    sanitized = sanitized.slice(0, MAX_ERROR_MESSAGE_LENGTH) + '…';
+  }
+  return sanitized;
 }
 
 export class RouteErrorBoundary extends Component<Props, State> {
@@ -48,12 +69,12 @@ export class RouteErrorBoundary extends Component<Props, State> {
     console.error('[RouteErrorBoundary]', error, errorInfo);
   }
 
-  private handleRetry = (): void => {
+  private readonly handleRetry = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  private handleGoHome = (): void => {
-    window.location.href = '/dashboard';
+  private readonly handleGoHome = (): void => {
+    globalThis.location.href = ROUTES.DASHBOARD;
   };
 
   render(): ReactNode {
@@ -64,23 +85,23 @@ export class RouteErrorBoundary extends Component<Props, State> {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
             </div>
-            <h2 className="mb-2 text-lg font-semibold">Something went wrong</h2>
+            <h2 className="mb-2 text-lg font-semibold">{ERROR_BOUNDARY_LABELS.TITLE}</h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              This section encountered an error. You can try again or navigate to another page.
+              {ERROR_BOUNDARY_LABELS.DESCRIPTION}
             </p>
             {this.state.error && (
               <p className="mb-4 rounded bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
-                {this.state.error.message}
+                {sanitizeErrorMessage(this.state.error.message)}
               </p>
             )}
             <div className="flex justify-center gap-3">
               <Button variant="outline" size="sm" onClick={this.handleRetry}>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Try Again
+                {ERROR_BOUNDARY_LABELS.RETRY}
               </Button>
               <Button size="sm" onClick={this.handleGoHome}>
                 <Home className="mr-2 h-4 w-4" />
-                Dashboard
+                {ERROR_BOUNDARY_LABELS.GO_HOME}
               </Button>
             </div>
           </div>
