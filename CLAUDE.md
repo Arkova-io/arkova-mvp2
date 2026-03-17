@@ -65,6 +65,7 @@ If a folder contains an `agents.md`, read it before touching anything.
 | Payments | Stripe (SDK + webhooks) | Worker-only, never browser |
 | Chain | bitcoinjs-lib + AWS KMS (target) | MockChainClient for tests |
 | Testing | Vitest + Playwright + RLS test helpers | `npm test`, `npm run test:coverage`, `npm run test:e2e` |
+| Formal Verification | TLA PreCheck (TLA+ model checking) | `machines/bitcoinAnchor.machine.ts` — anchor lifecycle proven correct |
 | Ingress | Cloudflare Tunnel (`cloudflared`) | Zero Trust, no public ports |
 | Edge Compute | Cloudflare Workers + `wrangler` | Peripheral only (Queues, R2, AI fallback). NOT core worker logic. |
 | Observability | Sentry | PII scrubbing mandatory |
@@ -207,6 +208,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 | Webhooks | `docs/confluence/09_webhooks.md` |
 | Verification API | `docs/confluence/12_verification_api.md` |
 | Feature flags | `docs/confluence/13_switchboard.md` |
+| Anchor lifecycle | `machines/bitcoinAnchor.machine.ts` (re-verify with `check`) |
 | Story status | `docs/stories/` (group doc) + `00_stories_index.md` |
 
 ### Migration Procedure
@@ -261,6 +263,10 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 **GEO & SEO (5 not started, 2 partial):**
 - See `docs/stories/15_geo_seo.md` and `docs/BACKLOG.md` for details
 
+**TLA+ Verification Findings (2 open):**
+- TLA-01: `credential_type` not immutable after SECURED (needs migration to add trigger guard)
+- TLA-02: TLA+ check not in CI pipeline (add step for `machines/` changes)
+
 ### Remaining Production Blockers
 
 | Task | Detail |
@@ -296,6 +302,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 | Exposing `user_id`/`org_id`/`anchors.id` publicly | Only `public_id` + derived fields |
 | `generateFingerprint` in worker | Client-side only |
 | `jurisdiction: null` in API response | Omit when null (frozen schema) |
+| Changing anchor lifecycle without updating TLA+ model | Edit `machines/bitcoinAnchor.machine.ts` first, run `check` |
 | Raw API key in DB | HMAC-SHA256 hash |
 
 ---

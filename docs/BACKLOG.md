@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-17 (all 24 audit findings resolved — 24/24 fixed/resolved) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-17 (TLA+ verification findings added — 24/24 audit fixed + 2 new TLA findings) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -15,8 +15,9 @@ _Last updated: 2026-03-17 (all 24 audit findings resolved — 24/24 fixed/resolv
 | UAT Bugs | 29 | 29 | 0 | No |
 | Audit Findings | 24 | 24 resolved | 0 | No |
 | Operational Tasks | 7 | 0 | 7 | **YES** |
+| TLA+ Verification Findings | 3 | 1 fixed | 2 | No |
 | Code TODOs | 1 | — | 1 | No |
-| **Total Open Items** | | | **20** | |
+| **Total Open Items** | | | **22** | |
 
 ---
 
@@ -171,6 +172,32 @@ _All P8 stories complete including Phase II: P8-S6 (feedback loop), P8-S8 (integ
 | ID | Description | Remaining |
 |----|-------------|-----------|
 | INFRA-07 | Sentry integration | Source map upload + DSN env vars in production |
+
+---
+
+## TIER 5B: FORMAL VERIFICATION FINDINGS (2026-03-17)
+
+_From TLA+ model checking of Bitcoin anchor state machine (`machines/bitcoinAnchor.machine.ts`)._
+
+| # | ID | Category | Finding | Status | Action |
+|---|-----|----------|---------|--------|--------|
+| 1 | TLA-01 | Schema Gap | `credential_type` column is NOT immutable after SECURED — `protect_anchor_status_transition()` trigger does not guard it, unlike `metadata` | OPEN | Add guard to trigger (new migration) |
+| 2 | TLA-02 | CI Gate | TLA+ verification not in CI pipeline — model can drift from code | OPEN | Add `npx tla-precheck check` step to CI |
+| 3 | TLA-03 | Design Fix | Legal hold invariant was overly strict — disallowed valid legal hold on revoked anchors | **FIXED** | Invariant refined in model (PR #94) |
+
+### TLA-01: credential_type Immutability (OPEN)
+
+**Problem:** The `metadata` column is protected by `prevent_metadata_edit_after_secured()` trigger (migration 0030), but `credential_type` has no equivalent guard. A user could change the credential type of a SECURED anchor via UPDATE.
+
+**Impact:** LOW — RLS policies and frontend validation make this unlikely in practice, but it violates the immutability principle.
+
+**Fix:** New migration adding `credential_type` to `protect_anchor_status_transition()` trigger, blocking changes when status != 'PENDING'.
+
+### TLA-02: CI Gate for State Machine Verification (OPEN)
+
+**Problem:** The TLA+ spec and proof certificate exist but aren't checked in CI. Changes to the anchor lifecycle could invalidate the proof without anyone noticing.
+
+**Fix:** Add a CI step that runs `cd machines && npx tla-precheck check bitcoinAnchor` on PRs that touch `machines/` or `services/worker/src/jobs/anchor.ts` or `services/worker/src/chain/`.
 
 ---
 

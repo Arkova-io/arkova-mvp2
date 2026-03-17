@@ -277,6 +277,53 @@ npm run test:rls
 npm run lint:copy
 ```
 
+## Formal Verification
+
+_Added 2026-03-17_
+
+The Bitcoin anchor state machine has been formally verified using TLA+ model checking (TLA PreCheck). The specification lives in `machines/bitcoinAnchor.machine.ts`.
+
+### Verified State Machine
+
+```
+PENDING → PENDING_CHAIN → SECURED → REVOKED
+             ↓ (fail)         ↑
+             PENDING ─────────┘ (retry)
+
+Legal hold: toggled on SECURED or REVOKED anchors (blocks revocation)
+```
+
+### Proven Invariants (6/6)
+
+| # | Invariant | What It Proves |
+|---|-----------|----------------|
+| INV-1 | `securedRequiresChainTx` | SECURED always has `chain_tx_id` — no orphaned anchors |
+| INV-2 | `fingerprintImmutableAfterPending` | Fingerprint locked once processing begins |
+| INV-3 | `revokedIsTerminal` | No status transitions out of REVOKED |
+| INV-4 | `metadataImmutableAfterSecured` | Metadata frozen after SECURED |
+| INV-5 | `onlyWorkerSecures` | Only worker (service_role) can set SECURED — client bypass impossible |
+| INV-6 | `legalHoldPreventsSecuredToRevoked` | Legal hold blocks revocation transition |
+
+### Proof Certificate
+
+- **States explored:** 49 distinct (127 total)
+- **Transitions:** 126 edges across 2 concurrent anchors
+- **Graph equivalence:** TLA+ spec and TypeScript interpreter produce identical state graphs
+- **Certificate:** `machines/.generated-machines/BitcoinAnchor/pr/BitcoinAnchor.pr.certificate.json`
+
+### How To Re-verify
+
+```bash
+cd machines && npx tla-precheck check bitcoinAnchor   # verify invariants
+cd machines && npx tla-precheck build bitcoinAnchor   # regenerate adapter
+```
+
+When modifying the anchor lifecycle (new statuses, new transitions), update `machines/bitcoinAnchor.machine.ts` first and run `check` before writing any code.
+
+### Finding: credential_type Not Immutable After SECURED
+
+During verification research, we discovered that `credential_type` can be updated even after an anchor is SECURED. The `protect_anchor_status_transition()` trigger does NOT guard this column, unlike `metadata` (which has `prevent_metadata_edit_after_secured()`). This is tracked as a backlog item.
+
 ## Related Documentation
 
 - [00_index.md](./00_index.md) - Documentation reading guide
