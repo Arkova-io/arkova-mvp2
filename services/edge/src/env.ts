@@ -20,6 +20,10 @@ export interface Env {
   CF_AI_MODEL: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+
+  // Authentication (AUDIT-03)
+  CRON_SECRET: string;
+  ALLOWED_ORIGINS: string; // comma-separated list of allowed CORS origins
 }
 
 export interface BatchQueueMessage {

@@ -587,21 +587,26 @@ function setupScheduledJobs(chainInitialized: boolean): void {
 
 // Graceful shutdown
 function setupGracefulShutdown(): void {
+  let isShuttingDown = false;
+
   const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
     logger.info({ signal }, 'Received shutdown signal');
 
-    // Stop accepting new requests
-    server.close(() => {
-      logger.info('HTTP server closed');
-    });
-
-    // Allow ongoing requests to complete (30 second timeout)
-    setTimeout(() => {
+    // Force exit after 30 seconds if server.close() hangs
+    const forceTimer = setTimeout(() => {
       logger.warn('Forcing shutdown after timeout');
       process.exit(1);
     }, 30000);
+    forceTimer.unref();
 
-    process.exit(0);
+    // Stop accepting new requests, then exit after in-flight requests drain
+    server.close(() => {
+      logger.info('HTTP server closed — all connections drained');
+      process.exit(0);
+    });
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

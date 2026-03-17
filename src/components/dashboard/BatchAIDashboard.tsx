@@ -174,17 +174,20 @@ export function BatchAIDashboard() {
     }
   }, []);
 
+  // Initial fetch on mount
   useEffect(() => {
     fetchJobs();
+  }, [fetchJobs]);
 
-    // Auto-refresh every 5s while jobs may be processing
+  // Auto-refresh every 5s while jobs may be processing
+  useEffect(() => {
     const hasActiveJobs = jobs.some(
       (j) => j.status === 'queued' || j.status === 'processing',
     );
-    if (hasActiveJobs) {
-      const interval = setInterval(fetchJobs, 5000);
-      return () => clearInterval(interval);
-    }
+    if (!hasActiveJobs) return;
+
+    const interval = setInterval(fetchJobs, 5000);
+    return () => clearInterval(interval);
   }, [fetchJobs, jobs]);
 
   if (loading) {

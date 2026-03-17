@@ -135,6 +135,8 @@ interface WebhookPayload {
 interface WebhookEndpoint {
   id: string;
   url: string;
+  // Column is named secret_hash but stores the raw signing secret (see migration 0046).
+  // This IS the HMAC key — consumers receive this value at endpoint creation time.
   secret_hash: string;
   events: string[];
   is_active: boolean;

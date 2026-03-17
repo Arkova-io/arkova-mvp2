@@ -151,16 +151,33 @@ async function crawlDomains(domains: string[], env: Env): Promise<CrawlResponse>
 
 /** Validate domain format to prevent SSRF attacks */
 function isValidDomain(domain: string): boolean {
-  // Must be a simple domain (no protocol, no path, no port)
+  // Must be a simple domain (no protocol, no path, no port, no userinfo)
   if (domain.includes('/') || domain.includes(':') || domain.includes('@')) {
     return false;
   }
   // Must have at least one dot
   if (!domain.includes('.')) return false;
-  // Block internal/reserved domains
-  const blocked = ['localhost', '127.0.0.1', '0.0.0.0', '169.254', '10.', '172.16', '192.168'];
-  if (blocked.some((b) => domain.includes(b))) return false;
-  // Basic TLD check
+
+  // Block internal/reserved domains and IP-based SSRF vectors
+  const blocked = [
+    'localhost',
+    '127.', '0.0.0.0', '0.',           // IPv4 loopback + zero
+    '10.',                               // RFC 1918 Class A
+    '172.16.', '172.17.', '172.18.', '172.19.',  // RFC 1918 Class B (172.16-31.*)
+    '172.20.', '172.21.', '172.22.', '172.23.',
+    '172.24.', '172.25.', '172.26.', '172.27.',
+    '172.28.', '172.29.', '172.30.', '172.31.',
+    '192.168.',                          // RFC 1918 Class C
+    '169.254.',                          // Link-local / AWS metadata
+    '100.64.',                           // CGNAT
+    '::1', 'fe80:', '[::',              // IPv6 loopback + link-local + bracket notation
+    '.internal', '.local', '.corp',     // Internal TLDs / DNS rebinding vectors
+    'metadata.google.internal',          // GCP metadata
+  ];
+  if (blocked.some((b) => domain.toLowerCase().includes(b))) return false;
+
+  // Must match a valid domain pattern (letters, digits, hyphens, dots)
+  // TLD must be at least 2 chars and alphabetic
   return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain);
 }
 

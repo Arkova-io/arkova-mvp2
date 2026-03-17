@@ -41,7 +41,7 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
   // Fetch pending anchors eligible for batch processing
   const { data: pendingAnchors, error: fetchError } = await db
     .from('anchors')
-    .select('id, fingerprint')
+    .select('id, fingerprint, metadata')
     .eq('status', 'PENDING')
     .is('chain_tx_id', null)
     .order('created_at', { ascending: true })
@@ -91,6 +91,7 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
         chain_block_height: receipt.blockHeight,
         chain_timestamp: receipt.blockTimestamp,
         metadata: JSON.parse(JSON.stringify({
+          ...(anchor.metadata ?? {}),
           merkle_proof: proof.map((p) => ({ hash: p.hash, position: p.position })),
           merkle_root: tree.root,
           batch_id: batchId,

@@ -445,30 +445,28 @@ describe('worker server', () => {
         { signal: 'SIGTERM' },
         'Received shutdown signal'
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('HTTP server closed');
+      // Exit happens inside server.close callback (after connections drain)
+      expect(mockLogger.info).toHaveBeenCalledWith('HTTP server closed — all connections drained');
       expect(mockExit).toHaveBeenCalledWith(0);
 
       mockExit.mockRestore();
     });
 
-    it('forces exit after 30 second timeout', () => {
-      vi.useFakeTimers();
+    it('ignores duplicate shutdown signals (idempotency guard)', () => {
       const mockExit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as unknown as typeof process.exit);
+      mockExit.mockClear();
+      mockLogger.info.mockClear();
 
+      // Second SIGINT after the SIGTERM from the previous test — should be ignored
       process.emit('SIGINT');
 
-      // Immediate exit(0) called
-      expect(mockExit).toHaveBeenCalledWith(0);
-      mockExit.mockClear();
-
-      // Advance past 30-second forced shutdown timeout
-      vi.advanceTimersByTime(30000);
-
-      expect(mockLogger.warn).toHaveBeenCalledWith('Forcing shutdown after timeout');
-      expect(mockExit).toHaveBeenCalledWith(1);
+      // The shutdown handler should NOT fire again (isShuttingDown is already true)
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        { signal: 'SIGINT' },
+        'Received shutdown signal'
+      );
 
       mockExit.mockRestore();
-      vi.useRealTimers();
     });
   });
 
