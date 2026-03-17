@@ -261,11 +261,14 @@ export async function getReviewQueueStats(orgId: string): Promise<ReviewQueueSta
     const counts = await Promise.all(
       statuses.map(async (status) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { count } = await (db as any)
+        const { count, error } = await (db as any)
           .from('review_queue_items')
           .select('id', { count: 'exact', head: true })
           .eq('org_id', orgId)
           .eq('status', status);
+        if (error) {
+          logger.warn({ error, status, orgId }, 'Failed to count review queue items');
+        }
         return count ?? 0;
       }),
     );

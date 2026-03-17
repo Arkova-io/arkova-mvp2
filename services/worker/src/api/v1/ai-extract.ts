@@ -92,7 +92,9 @@ router.post('/', async (req: Request, res: Response) => {
       });
     } catch (extractionError) {
       // Refund the credit on extraction failure (best-effort)
-      await deductAICredits(orgId, userId, -1).catch(() => {});
+      await deductAICredits(orgId, userId, -1).catch((refundErr) => {
+        logger.warn({ error: refundErr, orgId, userId }, 'Failed to refund AI credit after extraction failure');
+      });
       throw extractionError;
     }
     const durationMs = Date.now() - startMs;

@@ -153,7 +153,8 @@ export function OrgRegistryTable({
     // Apply search filter (filename OR fingerprint)
     // SEC-NEW-08: Sanitize input to prevent PostgREST filter injection
     if (searchQuery.trim()) {
-      const q = searchQuery.trim().replace(/[%_\\().,]/g, '');
+      // Escape PostgREST ilike wildcards (% _) but preserve filename chars (. , _ → escaped)
+      const q = searchQuery.trim().replace(/[%\\]/g, '');
       if (q.length > 0) {
         query = query.or(`filename.ilike.%${q}%,fingerprint.ilike.%${q}%`);
       }
