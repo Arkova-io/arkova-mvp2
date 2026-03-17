@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-17 (audit findings tracked — 16/24 fixed across PRs #88-91) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-17 (all 4 audit branches merged to main — 16/24 fixed, 8 open) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
