@@ -169,12 +169,19 @@ function isValidDomain(domain: string): boolean {
     '172.28.', '172.29.', '172.30.', '172.31.',
     '192.168.',                          // RFC 1918 Class C
     '169.254.',                          // Link-local / AWS metadata
-    '100.64.',                           // CGNAT
+    // CGNAT (100.64.0.0/10) — precise range check below
     '::1', 'fe80:', '[::',              // IPv6 loopback + link-local + bracket notation
     '.internal', '.local', '.corp',     // Internal TLDs / DNS rebinding vectors
     'metadata.google.internal',          // GCP metadata
   ];
   if (blocked.some((b) => domain.toLowerCase().includes(b))) return false;
+
+  // CGNAT range check: 100.64.0.0 – 100.127.255.255 (100.64.0.0/10)
+  const cgnatMatch = domain.match(/^100\.(\d+)\./);
+  if (cgnatMatch) {
+    const second = parseInt(cgnatMatch[1], 10);
+    if (second >= 64 && second <= 127) return false;
+  }
 
   // Must match a valid domain pattern (letters, digits, hyphens, dots)
   // TLD must be at least 2 chars and alphabetic

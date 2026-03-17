@@ -137,10 +137,11 @@ export async function handleMcpRequest(
   const requestOrigin = request.headers.get('Origin') ?? '';
   const allowedOrigins = (env.ALLOWED_ORIGINS ?? 'https://arkova-carson.vercel.app,https://app.arkova.ai')
     .split(',')
-    .map((o) => o.trim());
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
   const corsOrigin = allowedOrigins.includes(requestOrigin)
     ? requestOrigin
-    : allowedOrigins[0];
+    : (allowedOrigins[0] ?? 'https://app.arkova.ai');
 
   // CORS preflight
   if (request.method === 'OPTIONS') {

@@ -81,8 +81,8 @@ async function handleExtract(request: Request, env: Env): Promise<Response> {
       fingerprint: string;
     };
 
-    if (!body.strippedText) {
-      return jsonResponse({ error: 'strippedText is required' }, 400);
+    if (!body.strippedText || typeof body.strippedText !== 'string') {
+      return jsonResponse({ error: 'strippedText is required and must be a string' }, 400);
     }
 
     // Input validation: limit size and sanitize to mitigate prompt injection
