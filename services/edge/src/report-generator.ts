@@ -33,7 +33,7 @@ export default {
       // Build R2 key
       const key = buildR2Key(body.orgId, body.reportType, new Date());
 
-      // Store in R2
+      // Store in R2 (put() throws on binding failure; no response.ok to check)
       await env.ARKOVA_REPORTS.put(key, content, {
         httpMetadata: {
           contentType: 'text/markdown',

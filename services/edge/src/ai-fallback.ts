@@ -52,9 +52,21 @@ async function handleHealth(env: Env): Promise<Response> {
   const start = Date.now();
 
   try {
-    // Ping Workers AI with a minimal request to check availability
     const model = env.CF_AI_MODEL || '@cf/nvidia/nemotron';
+
+    // Verify the AI binding is actually available (not just config)
+    const hasBinding = typeof env.ARKOVA_AI?.run === 'function';
     const latencyMs = Date.now() - start;
+
+    if (!hasBinding) {
+      return jsonResponse({
+        healthy: false,
+        provider: 'cloudflare-workers-ai',
+        model,
+        latencyMs,
+        error: 'ARKOVA_AI binding not available',
+      }, 503);
+    }
 
     return jsonResponse({
       healthy: true,
@@ -88,7 +100,8 @@ async function handleExtract(request: Request, env: Env): Promise<Response> {
     const model = env.CF_AI_MODEL || '@cf/nvidia/nemotron';
 
     // Call Workers AI for text analysis
-    const aiResult = await env.ARKOVA_AI.run(model, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aiResult = await (env.ARKOVA_AI as any).run(model, {
       prompt: `Extract credential metadata from this PII-stripped text. Return JSON with fields: credentialType, issuerName, issuedDate, expiryDate, fieldOfStudy.\n\nText: ${body.strippedText}`,
     }) as { response: string };
 

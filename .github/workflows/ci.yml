@@ -45,8 +45,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run npm audit (production dependencies)
+      - name: Run npm audit (root production dependencies)
         run: npm audit --audit-level=high --omit=dev
+
+      - name: Run npm audit (worker production dependencies)
+        working-directory: services/worker
+        run: npm ci && npm audit --audit-level=high --omit=dev
 
   # Type checking and linting
   typecheck-lint:
@@ -76,6 +80,9 @@ jobs:
 
       - name: Lint UI copy terms
         run: npm run lint:copy
+
+      - name: TypeScript check (edge workers)
+        run: npx tsc -p services/edge/tsconfig.json --noEmit
 
   # Verify generated types are up to date
   types-check:
