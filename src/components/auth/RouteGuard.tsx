@@ -41,9 +41,10 @@ export function RouteGuard({ children, allow }: Readonly<RouteGuardProps>) {
   const { loading, destination } = useProfile();
 
   // Show spinner while auth or profile is still loading.
-  // Also treat destination='/auth' as loading — it means the profile
-  // hasn't resolved yet (e.g., during full page reload). Redirecting
-  // on '/auth' would bounce authenticated users to login briefly.
+  // '/auth' is the RouteDestination default while useProfile is resolving —
+  // it's a profile state value (not a route path), so no named constant exists.
+  // Treating it as loading prevents bouncing authenticated users to login
+  // during full page reload before the profile fetch completes.
   if (loading || destination === '/auth') {
     return (
       <div className="flex items-center justify-center min-h-screen">

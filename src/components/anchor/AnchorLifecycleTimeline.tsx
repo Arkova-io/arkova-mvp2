@@ -59,7 +59,7 @@ function buildLifecycleEvents(data: AnchorLifecycleData): LifecycleEvent[] {
   }
 
   // Secured
-  if (data.status === 'PENDING') {
+  if (data.status === 'PENDING' || data.status === 'SUBMITTED') {
     events.push({
       label: LIFECYCLE_LABELS.SECURED,
       timestamp: null,

@@ -3,6 +3,8 @@
 -- Must be in its own migration because ALTER TYPE ... ADD VALUE
 -- cannot be used inside a transaction (PG restriction), and the
 -- Supabase CLI wraps each migration in an implicit transaction.
--- ROLLBACK: Cannot remove enum values in Postgres.
 
 ALTER TYPE anchor_status ADD VALUE IF NOT EXISTS 'SUBMITTED';
+
+-- ROLLBACK: Cannot remove enum values in Postgres.
+-- To rollback, recreate the type without SUBMITTED and migrate data.
