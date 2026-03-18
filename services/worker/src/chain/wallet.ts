@@ -37,7 +37,7 @@ export interface SignetKeypair {
 export function generateSignetKeypair(): SignetKeypair {
   const keyPair = ECPair.makeRandom({ network: SIGNET_NETWORK });
 
-  const { address } = bitcoin.payments.p2pkh({
+  const { address } = bitcoin.payments.p2wpkh({
     pubkey: Buffer.from(keyPair.publicKey),
     network: SIGNET_NETWORK,
   });
@@ -59,7 +59,7 @@ export const generateTestnet4Keypair = generateSignetKeypair;
 export function addressFromWif(wif: string): string {
   const keyPair = ECPair.fromWIF(wif, SIGNET_NETWORK);
 
-  const { address } = bitcoin.payments.p2pkh({
+  const { address } = bitcoin.payments.p2wpkh({
     pubkey: Buffer.from(keyPair.publicKey),
     network: SIGNET_NETWORK,
   });
