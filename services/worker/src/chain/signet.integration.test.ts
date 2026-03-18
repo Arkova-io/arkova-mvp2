@@ -116,7 +116,7 @@ describe('Signet Integration — Real TX Construction', () => {
     expect(payload.subarray(0, 4).toString()).toBe('ARKV');
     expect(payload.subarray(4).toString('hex')).toBe(TEST_FINGERPRINT);
 
-    // If there's a change output, it should go back to the same P2PKH address
+    // If there's a change output, it should go back to the same P2WPKH address
     if (tx.outs.length === 2) {
       const changeOut = tx.outs[1];
       expect(changeOut.value).toBeGreaterThan(0);

@@ -84,7 +84,7 @@ export interface SelectedUtxo {
   vout: number;
   /** Value in satoshis */
   valueSats: number;
-  /** Full raw transaction hex (for nonWitnessUtxo in PSBT) */
+  /** Full raw transaction hex (legacy — kept for RPC provider compat, unused by P2WPKH signing) */
   rawTxHex: string;
 }
 

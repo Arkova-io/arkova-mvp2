@@ -26,7 +26,7 @@ export const TESTNET4_NETWORK = bitcoin.networks.testnet;
 export interface SignetKeypair {
   /** WIF-encoded private key — NEVER log or commit */
   wif: string;
-  /** P2PKH address derived from the public key — safe to share */
+  /** P2WPKH (SegWit) address derived from the public key — safe to share */
   address: string;
 }
 
@@ -53,7 +53,7 @@ export function generateSignetKeypair(): SignetKeypair {
 export const generateTestnet4Keypair = generateSignetKeypair;
 
 /**
- * Derive the P2PKH address from a WIF-encoded private key.
+ * Derive the P2WPKH (SegWit) address from a WIF-encoded private key.
  * Validates the WIF is parseable for testnet-family networks (signet/testnet/testnet4).
  */
 export function addressFromWif(wif: string): string {
