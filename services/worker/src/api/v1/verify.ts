@@ -11,6 +11,7 @@
 import { Router } from 'express';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
+import { config } from '../../config.js';
 
 const router = Router();
 
@@ -119,14 +120,14 @@ export function buildVerificationResult(anchor: AnchorByPublicId): VerificationR
   }
   // BETA-11: explorer URL (additive, nullable — Constitution 1.8)
   if (anchor.chain_tx_id && /^[a-fA-F0-9]+$/.test(anchor.chain_tx_id)) {
-    const network = process.env.BITCOIN_NETWORK ?? 'testnet4';
+    const network = config.bitcoinNetwork;
     const baseMap: Record<string, string> = {
       testnet4: 'https://mempool.space/testnet4',
       testnet: 'https://mempool.space/testnet',
       signet: 'https://mempool.space/signet',
       mainnet: 'https://mempool.space',
     };
-    const base = baseMap[network] ?? baseMap.testnet4;
+    const base = baseMap[network] ?? baseMap.signet;
     result.explorer_url = `${base}/tx/${anchor.chain_tx_id}`;
   }
   // BETA-12: description (additive, nullable — Constitution 1.8)
