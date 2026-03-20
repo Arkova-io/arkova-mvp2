@@ -975,6 +975,22 @@ export const ERROR_BOUNDARY_LABELS = {
 } as const;
 
 // =============================================================================
+// VERIFICATION WALKTHROUGH (DEMO-02)
+// =============================================================================
+
+export const WALKTHROUGH_LABELS = {
+  TITLE: 'How Verification Works',
+  SUBTITLE: 'Your document is independently verifiable — no dependency on Arkova.',
+  STEP_1_TITLE: 'Fingerprint Your Document',
+  STEP_1_DESC: 'A SHA-256 algorithm creates a unique fingerprint from your document. Even a single changed character produces a completely different fingerprint.',
+  STEP_2_TITLE: 'Find It On the Network',
+  STEP_2_DESC: 'The fingerprint (and metadata fingerprint) are permanently written to a tamper-proof record on the network. Anyone can search for your fingerprint to confirm it exists.',
+  STEP_3_TITLE: 'Match = Verified',
+  STEP_3_DESC: 'If the fingerprint you compute matches the one on the network, the document is authentic and was secured at the recorded time. No Arkova account or service needed.',
+  METADATA_NOTE: 'AI-extracted metadata (degree, institution, dates) is also fingerprinted and anchored, enabling verification of both the document and its structured data.',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 
