@@ -362,18 +362,19 @@ function ReviewStep({
       {/* Column mapping */}
       <div className="space-y-1">
         <h4 className="text-sm font-medium mb-2">Column Mapping</h4>
+        <p className="text-xs text-muted-foreground mb-3">
+          Map your spreadsheet columns below. Fingerprint and filename are auto-generated if not mapped. Unmapped columns become metadata automatically.
+        </p>
         {renderSelect(
           'Fingerprint',
           mapping.fingerprint,
-          (v) => onMappingChange({ ...mapping, fingerprint: v }),
-          true
+          (v) => onMappingChange({ ...mapping, fingerprint: v })
         )}
         <Separator />
         {renderSelect(
           'Filename',
           mapping.filename,
-          (v) => onMappingChange({ ...mapping, filename: v }),
-          true
+          (v) => onMappingChange({ ...mapping, filename: v })
         )}
         <Separator />
         {renderSelect(
