@@ -74,12 +74,12 @@ Grants: `GRANT SELECT ON switchboard_flag_history TO authenticated;`
 
 ## Database Functions (migration 0021)
 
-### `get_flag(p_flag_id text) RETURNS boolean`
+### `get_flag(p_flag_key text) RETURNS boolean`
 
 Retrieves a flag's current value. Returns the default value if the flag does not exist.
 
 ```sql
-CREATE OR REPLACE FUNCTION get_flag(p_flag_id text)
+CREATE OR REPLACE FUNCTION get_flag(p_flag_key text)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -113,7 +113,7 @@ The trigger:
 ```typescript
 // Check a flag before performing an action
 const { data: enabled } = await db.rpc('get_flag', {
-  p_flag_id: 'ENABLE_PROD_NETWORK_ANCHORING'
+  p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING'
 });
 
 if (!enabled) {

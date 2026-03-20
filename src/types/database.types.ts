@@ -2025,7 +2025,7 @@ export type Database = {
           total_suggestions: number
         }[]
       }
-      get_flag: { Args: { p_flag_id: string }; Returns: boolean }
+      get_flag: { Args: { p_flag_key: string }; Returns: boolean }
       get_my_credentials: {
         Args: never
         Returns: {

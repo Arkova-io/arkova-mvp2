@@ -420,7 +420,7 @@ describe('P7-S14: Switchboard Flags', () => {
   it('get_flag returns flag value', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: value, error } = await (userClient.rpc as any)('get_flag', {
-      p_flag_id: 'ENABLE_NEW_CHECKOUTS',
+      p_flag_key: 'ENABLE_NEW_CHECKOUTS',
     });
 
     expect(error).toBeNull();
@@ -430,7 +430,7 @@ describe('P7-S14: Switchboard Flags', () => {
   it('get_flag returns false for non-existent flags', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: value, error } = await (userClient.rpc as any)('get_flag', {
-      p_flag_id: 'NON_EXISTENT_FLAG',
+      p_flag_key: 'NON_EXISTENT_FLAG',
     });
 
     expect(error).toBeNull();
@@ -549,7 +549,7 @@ describe('P7-S14: Switchboard Flags', () => {
   it('production anchoring flag defaults to false (safe default)', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: value } = await (serviceClient.rpc as any)('get_flag', {
-      p_flag_id: 'ENABLE_PROD_NETWORK_ANCHORING',
+      p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING',
     });
 
     expect(value).toBe(false);
