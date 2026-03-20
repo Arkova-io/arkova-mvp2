@@ -9,26 +9,27 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, Building2, Shield, FileDigit, CheckCircle, XCircle, User } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Search, Loader2, Building2, Shield, CheckCircle, XCircle, User, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { IssuerCard } from '@/components/search/IssuerCard';
 import { usePublicSearch } from '@/hooks/usePublicSearch';
 import { SEARCH_LABELS, CREDENTIAL_TYPE_LABELS } from '@/lib/copy';
 import { Badge } from '@/components/ui/badge';
-import { verifyPath } from '@/lib/routes';
+import { verifyPath, ROUTES } from '@/lib/routes';
 import { supabase } from '@/lib/supabase';
 
 type SearchType = 'issuer' | 'id' | 'fingerprint' | 'person';
+
+/** Auto-detect what the user is searching for based on input pattern */
+function detectSearchType(query: string): SearchType {
+  const trimmed = query.trim();
+  if (/^[a-f0-9]{64}$/i.test(trimmed)) return 'fingerprint';
+  if (/^ARK-/i.test(trimmed)) return 'id';
+  return 'issuer'; // Default: search issuers + person names
+}
 
 interface FingerprintResult {
   verified: boolean;
@@ -44,7 +45,7 @@ export function SearchPage() {
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState<SearchType>('issuer');
   const [hasSearched, setHasSearched] = useState(false);
-  const { issuerResults, searching, error, searchIssuers, clearResults } = usePublicSearch();
+  const { issuerResults, searching, error, searchIssuers } = usePublicSearch();
 
   const [fpResult, setFpResult] = useState<FingerprintResult | null>(null);
   const [fpSearching, setFpSearching] = useState(false);
@@ -134,27 +135,29 @@ export function SearchPage() {
     const trimmed = query.trim();
     if (!trimmed) return;
 
-    if (searchType === 'id') {
+    // Auto-detect search type from input
+    const detected = detectSearchType(trimmed);
+
+    if (detected === 'id') {
       navigate(verifyPath(trimmed));
       return;
     }
 
-    if (searchType === 'fingerprint') {
-      setHasSearched(true);
+    setHasSearched(true);
+
+    if (detected === 'fingerprint') {
+      setSearchType('fingerprint');
       await searchFingerprint(trimmed);
       return;
     }
 
-    if (searchType === 'person') {
-      setHasSearched(true);
-      await searchPerson(trimmed);
-      return;
-    }
-
-    // Issuer search
-    setHasSearched(true);
-    await searchIssuers(trimmed);
-  }, [query, searchType, navigate, searchIssuers, searchFingerprint, searchPerson]);
+    // For text queries: search issuers + person names in parallel
+    setSearchType('issuer');
+    await Promise.all([
+      searchIssuers(trimmed),
+      searchPerson(trimmed),
+    ]);
+  }, [query, navigate, searchIssuers, searchFingerprint, searchPerson]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -163,107 +166,65 @@ export function SearchPage() {
     [handleSearch],
   );
 
-  const handleSearchTypeChange = useCallback(
-    (value: string) => {
-      setSearchType(value as SearchType);
-      clearResults();
-      setFpResult(null);
-      setFpError(null);
-      setPersonResults([]);
-      setPersonError(null);
-      setHasSearched(false);
-    },
-    [clearResults],
-  );
-
   const isSearching = searching || fpSearching || personSearching;
   const displayError = error || fpError || personError;
 
-  const placeholder = searchType === 'fingerprint'
-    ? SEARCH_LABELS.FINGERPRINT_PLACEHOLDER
-    : searchType === 'person'
-      ? SEARCH_LABELS.PERSON_PLACEHOLDER
-      : SEARCH_LABELS.SEARCH_PLACEHOLDER;
-
   return (
-    <div className="min-h-screen bg-mesh-gradient">
-      <div className="bg-dot-pattern min-h-screen">
-        <div className="container max-w-3xl mx-auto px-4 py-12">
-          {/* Header */}
-          <div className="text-center mb-10 animate-in-view">
-            <div className="flex justify-center mb-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {SEARCH_LABELS.PAGE_TITLE}
-            </h1>
-            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-              {SEARCH_LABELS.PAGE_SUBTITLE}
-            </p>
-          </div>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-3xl mx-auto px-4 py-8">
+        {/* Back navigation */}
+        <Link
+          to={ROUTES.DASHBOARD}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
 
-          {/* Search form */}
-          <Card className="glass-card shadow-card-rest mb-8 animate-in-view stagger-1">
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Select value={searchType} onValueChange={handleSearchTypeChange}>
-                  <SelectTrigger className="w-full sm:w-[160px] shrink-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="issuer">
-                      <span className="flex items-center gap-2">
-                        <Building2 className="h-3.5 w-3.5" />
-                        {SEARCH_LABELS.SEARCH_BY_ISSUER}
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="id">
-                      <span className="flex items-center gap-2">
-                        <Search className="h-3.5 w-3.5" />
-                        {SEARCH_LABELS.SEARCH_BY_ID}
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="fingerprint">
-                      <span className="flex items-center gap-2">
-                        <FileDigit className="h-3.5 w-3.5" />
-                        {SEARCH_LABELS.SEARCH_BY_FINGERPRINT}
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="person">
-                      <span className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5" />
-                        {SEARCH_LABELS.SEARCH_BY_PERSON}
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder={placeholder}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className={searchType === 'fingerprint' ? 'pl-9 font-mono text-sm' : 'pl-9'}
-                  />
-                </div>
-                <Button
-                  onClick={handleSearch}
-                  disabled={isSearching || !query.trim()}
-                  className="shadow-glow-sm hover:shadow-glow-md"
-                >
-                  {isSearching ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  {SEARCH_LABELS.SEARCH_BUTTON}
-                </Button>
+        {/* Header */}
+        <div className="text-center mb-10 animate-in-view">
+          <div className="flex justify-center mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {SEARCH_LABELS.PAGE_TITLE}
+          </h1>
+          <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+            Search by issuer name, verification ID, or document fingerprint
+          </p>
+        </div>
+
+        {/* Unified search form */}
+        <Card className="glass-card shadow-card-rest mb-8 animate-in-view stagger-1">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by issuer name, verification ID, or fingerprint..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="pl-9"
+                />
               </div>
-            </CardContent>
-          </Card>
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching || !query.trim()}
+                className="shadow-glow-sm hover:shadow-glow-md"
+              >
+                {isSearching ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                {SEARCH_LABELS.SEARCH_BUTTON}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
           {/* Error */}
           {displayError && (
@@ -274,8 +235,8 @@ export function SearchPage() {
             </Card>
           )}
 
-          {/* Issuer results */}
-          {searchType === 'issuer' && hasSearched && !searching && (
+          {/* Issuer results (shown for text queries) */}
+          {(searchType === 'issuer' || searchType === 'person') && hasSearched && !searching && (
             <div className="space-y-3">
               {issuerResults.length > 0 ? (
                 issuerResults.map((issuer, i) => (
@@ -304,8 +265,8 @@ export function SearchPage() {
             <FingerprintResultCard result={fpResult} onViewRecord={(id) => navigate(verifyPath(id))} />
           )}
 
-          {/* Person results */}
-          {searchType === 'person' && hasSearched && !personSearching && (
+          {/* Person results (shown for text queries alongside issuer results) */}
+          {hasSearched && !personSearching && personResults.length > 0 && searchType !== 'fingerprint' && (
             <div className="space-y-3">
               {personResults.length > 0 ? (
                 <>
@@ -369,7 +330,6 @@ export function SearchPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
