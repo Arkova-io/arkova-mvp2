@@ -114,7 +114,13 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
   const StatusIcon = status.icon;
 
   return (
-    <div className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors">
+    <div
+      className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer"
+      onClick={onView}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onView(); }}
+    >
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
         <FileText className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -149,38 +155,40 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
         </p>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Actions</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onView}>
-            <Eye className="mr-2 h-4 w-4" />
-            View Record
-          </DropdownMenuItem>
-          {record.status === 'SECURED' && (
-            <DropdownMenuItem onClick={onDownload}>
-              <Download className="mr-2 h-4 w-4" />
-              Download Proof
+      <div role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onView}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Record
             </DropdownMenuItem>
-          )}
-          {record.status !== 'REVOKED' && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onRevoke}
-                className="text-destructive focus:text-destructive"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Revoke Record
+            {record.status === 'SECURED' && (
+              <DropdownMenuItem onClick={onDownload}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Proof
               </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            )}
+            {record.status !== 'REVOKED' && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={onRevoke}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Revoke Record
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
