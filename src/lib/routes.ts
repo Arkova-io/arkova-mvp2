@@ -48,6 +48,8 @@ export const ROUTES = {
   AI_REPORTS: '/organization/ai-reports',
 
   // Admin routes (internal ops)
+  ADMIN_OVERVIEW: '/admin/overview',
+  ADMIN_HEALTH: '/admin/health',
   ADMIN_TREASURY: '/admin/treasury',
 
   // Billing routes

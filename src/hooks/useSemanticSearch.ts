@@ -60,7 +60,7 @@ export function useSemanticSearch(): UseSemanticSearchReturn {
           return;
         }
 
-        const workerUrl = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+        const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
         const params = new URLSearchParams({
           q: query,
           threshold: String(threshold),

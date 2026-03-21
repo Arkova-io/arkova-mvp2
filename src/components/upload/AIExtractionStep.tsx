@@ -97,7 +97,7 @@ export function AIExtractionStep({
 
       setProgress(30);
 
-      const workerUrl = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+      const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
       const response = await fetch(`${workerUrl}/api/v1/ai/extract-batch`, {
         method: 'POST',
         headers: {

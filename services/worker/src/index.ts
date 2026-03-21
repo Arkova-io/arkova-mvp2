@@ -602,6 +602,52 @@ app.get('/api/treasury/status', rateLimiters.checkout, async (req, res) => {
 });
 
 // =========================================================================
+// Admin Platform Stats — Arkova platform admin only
+// =========================================================================
+app.options('/api/admin/platform-stats', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/platform-stats', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const { handlePlatformStats } = await import('./api/admin-stats.js');
+    await handlePlatformStats(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Platform stats request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
+// Admin System Health — Arkova platform admin only
+// =========================================================================
+app.options('/api/admin/system-health', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/system-health', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const { handleSystemHealth } = await import('./api/admin-health.js');
+    await handleSystemHealth(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'System health request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
 // API Documentation — accessible without auth or feature flag (P4.5-TS-04)
 // =========================================================================
 app.use('/api/docs', docsRouter);

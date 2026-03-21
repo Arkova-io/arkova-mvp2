@@ -143,7 +143,7 @@ export function useBulkAnchors(): UseBulkAnchorsReturn {
         // Auto-create recipient profiles for records with email addresses (BETA-04)
         const recipientRecords = records.filter(r => r.email);
         if (recipientRecords.length > 0) {
-          const workerUrl = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+          const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
             // Fire-and-forget — don't block on recipient creation
