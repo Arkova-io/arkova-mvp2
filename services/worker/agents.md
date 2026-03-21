@@ -1,5 +1,5 @@
 # agents.md — services/worker
-_Last updated: 2026-03-14_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 
@@ -23,7 +23,7 @@ Express-based worker service handling privileged server-side operations: anchor 
 
 ## Test Coverage Status (Final — HARDENING-5)
 
-**363 worker tests across 17 test files. All pass 80%+ per-file thresholds.**
+**1,043 worker tests across 67 test files. All pass 80%+ per-file thresholds.**
 
 | File | Test File | Tests | Coverage | Sprint |
 |------|-----------|-------|----------|--------|

@@ -1,5 +1,5 @@
 # agents.md — components
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 Domain-specific React components organized by feature area. Each subfolder has a barrel `index.ts` export. `ui/` contains shadcn/ui primitives (do not edit).

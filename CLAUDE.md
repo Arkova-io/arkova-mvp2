@@ -1,7 +1,7 @@
 # ARKOVA — Claude Code Engineering Directive
 
 > **Version:** 2026-03-21 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
-> **Stats:** 74 migrations | 2,009 tests | 176 stories (166 complete, 94%) | 24/24 audit findings resolved
+> **Stats:** 75 migrations | 2,018 tests | 176 stories (164 complete, 93%) | 24/24 audit findings resolved
 
 Read this file before every task. Rules here override all other documents.
 
@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 74 files (0001-0074, 0033 skipped, 0068 split into 0068a/0068b). Last: `0074_fix_search_public_credentials.sql`. All migrations applied to production (0059-0074 applied 2026-03-20/21).
+**Current:** 75 files (0001-0075, 0033 skipped, 0068 split into 0068a/0068b). Last: `0075_domain_org_lookup.sql`. All migrations applied to production (0059-0075 applied 2026-03-20/21).
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -244,13 +244,13 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 | P7 Go-Live | 11/13 | 0 | 2 | 85% |
 | P4.5 Verification API | 13/13 | 0 | 0 | 100% |
 | DH Deferred Hardening | 12/12 | 0 | 0 | 100% |
-| MVP Launch Gaps | 26/27 | 0 | 1 | 96% |
+| MVP Launch Gaps | 24/27 | 0 | 3 | 89% |
 | P8 AI Intelligence | 19/19 | 0 | 0 | 100% |
 | INFRA Edge & Ingress | 7/8 | 1 | 0 | 88% |
 | UAT + UF | 27/27 | 0 | 0 | 100% |
 | GEO & SEO | 6/12 | 2 | 4 | 50% |
 | Beta (BETA-01–13) | 13/13 | 0 | 0 | 100% |
-| **Total** | **166/176** | **2/176** | **8/176** | **~94%** |
+| **Total** | **164/176** | **3/176** | **9/176** | **~93%** |
 
 ### Incomplete Stories
 
@@ -375,5 +375,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-21 | 74 migrations | 2,009 tests | 176 stories (166 complete, 94%) | 24/24 audit findings resolved_
+_Directive version: 2026-03-21 | 75 migrations | 2,018 tests | 176 stories (164 complete, 93%) | 24/24 audit findings resolved_
 _Reference docs: `docs/reference/` (FILE_MAP, BRAND, TESTING, STORY_ARCHIVE)_

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-_Last updated: 2026-03-17_
+_Last updated: 2026-03-21_
 
 ## Purpose
 
@@ -132,7 +132,7 @@ arkova/
 │           └── mcp-tools.ts       # verify_credential + search_credentials tools
 ├── supabase/
 │   ├── config.toml                # Supabase local config
-│   ├── migrations/                # 72 SQL migrations (0001–0072, 0033 skipped, 0068 split into 0068a/0068b)
+│   ├── migrations/                # 75 SQL migrations (0001–0075, 0033 skipped, 0068 split into 0068a/0068b)
 │   └── seed.sql                   # Demo data (UMich Registrar, Midwest Medical, individual)
 ├── tests/
 │   └── rls/                       # RLS integration test helpers
@@ -160,7 +160,7 @@ Key principles:
 
 See [02_data_model.md](./02_data_model.md) for the complete data model.
 
-### Table Inventory (32+ tables across 72 migrations)
+### Table Inventory (32+ tables across 75 migrations)
 
 | Table | Migration | Purpose |
 |-------|-----------|---------|

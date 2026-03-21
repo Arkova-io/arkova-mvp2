@@ -44,7 +44,7 @@ _Last updated: 2026-03-21 (PRs #117-120: Synthetic Sentinel design system, MCP d
 
 | # | ID | Issue | Status |
 |---|-----|-------|--------|
-| 9 | ~~OPS-01~~ | ~~Apply migrations 0059-0071 to production Supabase + regenerate types~~ | **DONE** — All migrations applied (0059-0073) |
+| 9 | ~~OPS-01~~ | ~~Apply migrations 0059-0071 to production Supabase + regenerate types~~ | **DONE** — All migrations applied (0059-0075) |
 | 10 | OPS-02 | Run `scripts/strip-demo-seeds.sql` on production | PENDING |
 | 11 | OPS-03 | Set Sentry DSN env vars (Vercel + Cloud Run) | PENDING |
 | 12 | OPS-04 | Sentry source map upload plugin | PENDING |

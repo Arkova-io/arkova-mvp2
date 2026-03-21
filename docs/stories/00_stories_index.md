@@ -31,14 +31,14 @@ For a new developer joining the project, read in this order:
 | P7 | Go-Live | 13 | 11 | 0 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 13 | 0 | 0 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
 | DH | Deferred Hardening | 12 | 12 | 0 | 0 | [10_deferred_hardening.md](./10_deferred_hardening.md) |
-| MVP | Launch Gaps | 27 | 25 | 0 | 2 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
+| MVP | Launch Gaps | 27 | 24 | 0 | 3 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
 | P8 | AI Intelligence | 19 | 19 | 0 | 0 | [12_p8_ai_intelligence.md](./12_p8_ai_intelligence.md) |
 | INFRA | Infrastructure & Edge | 8 | 7 | 1 | 0 | [13_infrastructure_edge.md](./13_infrastructure_edge.md) |
 | UAT | Bug Fix Sprints (5+6) | 17 | 17 | 0 | 0 | [14_uat_sprints.md](./14_uat_sprints.md) |
 | UF | User Flow Gaps | 10 | 10 | 0 | 0 | [14_user_flow_gaps.md](./14_user_flow_gaps.md) |
 | GEO | GEO & SEO Optimization | 12 | 6 | 2 | 4 | [15_geo_seo.md](./15_geo_seo.md) |
 | BETA | Beta Readiness | 13 | 13 | 0 | 0 | [16_beta_readiness.md](./16_beta_readiness.md) |
-| **Total** | | **176** | **165** | **3** | **8** | |
+| **Total** | | **176** | **164** | **3** | **9** | |
 
 ### All Stories by ID
 

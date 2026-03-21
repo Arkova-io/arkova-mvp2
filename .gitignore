@@ -69,8 +69,17 @@ docs/stories/docx/
 
 # Claude agent skills
 .agents/
-.claude/skills/
+.claude/
 skills-lock.json
+
+# Nested repos (separate git projects)
+arkova-marketing/
+arkova-demo/
+
+# Demo assets and loose screenshots
+demo-assets/
+/prod-*.png
+/swagger-*.png
 
 # Bug report artifacts (screenshots)
 docs/bugs/*.png

@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 166/176 stories complete (94%) incl. 13 Beta stories (BETA-01–13). 2,009 tests (966 frontend + 1,043 worker). 74 migration files (0001-0074, 0033 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet** (switched from testnet4 2026-03-18). Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **7+ real Signet transactions confirmed end-to-end.** All feature gates fixed (p_flag_key + column names). Worker rev 00030 deployed. Frontend on arkova-26.vercel.app. **Design system: "Synthetic Sentinel"** (Inter + Space Grotesk, #00d4ff cyan, tonal layering). MCP server live at edge.arkova.ai.
+**Overall progress:** 164/176 stories complete (93%) incl. 13 Beta stories (BETA-01–13). 2,018 tests (975 frontend + 1,043 worker). 75 migration files (0001-0075, 0033 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet** (switched from testnet4 2026-03-18). Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **7+ real Signet transactions confirmed end-to-end.** All feature gates fixed (p_flag_key + column names). Worker rev 00030 deployed. Frontend on arkova-26.vercel.app. **Design system: "Synthetic Sentinel"** (Inter + Space Grotesk, #00d4ff cyan, tonal layering). MCP server live at edge.arkova.ai.
 
 ### Open Blockers
 
@@ -89,7 +89,7 @@ All HIGH+ launch blockers resolved:
 
 ### What's Production-Ready
 
-- Database layer (74 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
+- Database layer (75 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance + individual anchor creation
 - Public verification portal (5-section display, verification event logging)

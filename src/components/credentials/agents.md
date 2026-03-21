@@ -1,5 +1,5 @@
 # agents.md — credentials
-_Last updated: 2026-03-16_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 Credential display components. `CredentialRenderer` is the core component that renders a credential using template field schema + anchor metadata. `CredentialTemplatesManager` handles CRUD for credential templates.

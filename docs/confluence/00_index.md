@@ -10,7 +10,7 @@ This directory contains 19 architecture and design documents for the Arkova plat
 **New to the project? Start here:**
 1. **00** (this file) — Overview, test accounts, reading order
 2. **01** — System architecture and tech stack
-3. **02** — Complete data model (20 tables, all enums)
+3. **02** — Data model (32+ tables, all enums)
 4. **03** — Security and RLS policies
 
 **Working on a specific area? Jump to:**
@@ -85,7 +85,7 @@ npm run dev
 
 ### Production
 
-The production site is deployed at `https://arkova-carson.vercel.app` connected to production Supabase (`vzwyaatejekddvltxyye`). Migrations 0001-0058 applied to production. 0059-0072 pending. Seed data loaded, Stripe Price IDs configured.
+The production site is deployed at `https://arkova-26.vercel.app` connected to production Supabase (`vzwyaatejekddvltxyye`). All 75 migrations (0001-0075) applied to production. Seed data loaded, Stripe Price IDs configured.
 
 ---
 
