@@ -140,6 +140,32 @@ export function useBulkAnchors(): UseBulkAnchorsReturn {
           results: allResults,
         };
 
+        // Auto-create recipient profiles for records with email addresses (BETA-04)
+        const recipientRecords = records.filter(r => r.email);
+        if (recipientRecords.length > 0) {
+          const workerUrl = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            // Fire-and-forget — don't block on recipient creation
+            Promise.allSettled(
+              recipientRecords.map(r =>
+                fetch(`${workerUrl}/api/recipients`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    email: r.email,
+                    fullName: r.metadata?.recipient_name ?? r.metadata?.recipient ?? r.filename.replace('.credential', ''),
+                    credentialLabel: r.credentialType ?? 'Credential',
+                  }),
+                }).catch(() => { /* non-fatal */ })
+              )
+            );
+          }
+        }
+
         // Refresh entitlement counts after successful bulk creation
         await refreshEntitlements();
 
