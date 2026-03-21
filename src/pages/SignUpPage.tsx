@@ -13,7 +13,7 @@ export function SignUpPage() {
   return (
     <AuthLayout
       title="Create your account"
-      description="Start securing your documents today"
+      description="Join the closed beta and start securing your documents"
     >
       <SignUpForm
         onSuccess={() => navigate(ROUTES.DASHBOARD)}

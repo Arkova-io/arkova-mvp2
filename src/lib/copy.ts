@@ -1044,6 +1044,18 @@ export const DEVELOPER_PAGE_LABELS = {
 } as const;
 
 // =============================================================================
+// BETA GATE
+// =============================================================================
+
+export const BETA_GATE_LABELS = {
+  DESCRIPTION: 'Arkova is in closed beta. Enter your invite code to create an account.',
+  CODE_LABEL: 'Invite code',
+  CODE_PLACEHOLDER: 'Enter your invite code',
+  CONTINUE: 'Continue',
+  INVALID_CODE: 'Invalid invite code. Please check your invitation email and try again.',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 

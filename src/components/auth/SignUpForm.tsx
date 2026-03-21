@@ -4,16 +4,22 @@
  * Handles new user registration.
  * Shows "Check your email" success state after signup.
  * Note: Role is assigned during onboarding, not signup.
+ *
+ * Beta gate: When VITE_BETA_INVITE_CODE is set, users must enter
+ * a valid invite code before the signup form is shown.
  */
 
 import { useState, FormEvent } from 'react';
-import { User, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmailConfirmation } from '@/components/onboarding/EmailConfirmation';
+import { BETA_GATE_LABELS } from '@/lib/copy';
+
+const BETA_INVITE_CODE = import.meta.env.VITE_BETA_INVITE_CODE as string | undefined;
 
 interface SignUpFormProps {
   onSuccess?: () => void;
@@ -26,9 +32,21 @@ export function SignUpForm({ onSuccess, onLoginClick }: Readonly<SignUpFormProps
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteVerified, setInviteVerified] = useState(!BETA_INVITE_CODE);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [signupComplete, setSignupComplete] = useState(false);
   const [resending, setResending] = useState(false);
+
+  const handleInviteSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+    if (inviteCode.trim() === BETA_INVITE_CODE) {
+      setInviteVerified(true);
+    } else {
+      setValidationError(BETA_GATE_LABELS.INVALID_CODE);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -78,6 +96,57 @@ export function SignUpForm({ onSuccess, onLoginClick }: Readonly<SignUpFormProps
   }
 
   const displayError = validationError || error;
+
+  // Beta invite code gate
+  if (!inviteVerified) {
+    return (
+      <form onSubmit={handleInviteSubmit} className="space-y-5">
+        <div className="text-center space-y-2">
+          <ShieldCheck className="h-8 w-8 mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {BETA_GATE_LABELS.DESCRIPTION}
+          </p>
+        </div>
+
+        {validationError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{validationError}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="inviteCode">{BETA_GATE_LABELS.CODE_LABEL}</Label>
+          <Input
+            id="inviteCode"
+            type="text"
+            value={inviteCode}
+            onChange={(e) => { setInviteCode(e.target.value); setValidationError(null); }}
+            placeholder={BETA_GATE_LABELS.CODE_PLACEHOLDER}
+            required
+            autoFocus
+          />
+        </div>
+
+        <Button type="submit" className="w-full" size="lg">
+          {BETA_GATE_LABELS.CONTINUE}
+        </Button>
+
+        {onLoginClick && (
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              Sign in
+            </button>
+          </p>
+        )}
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
