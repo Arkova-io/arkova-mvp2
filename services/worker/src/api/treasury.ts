@@ -19,12 +19,7 @@ import { createUtxoProvider } from '../chain/utxo-provider.js';
 import { createFeeEstimator } from '../chain/fee-estimator.js';
 import { logger } from '../utils/logger.js';
 import { db } from '../utils/db.js';
-
-/** Platform admin emails — must match TreasuryAdminPage.tsx whitelist */
-const PLATFORM_ADMIN_EMAILS = [
-  'carson@arkova.ai',
-  'sarah@arkova.ai',
-];
+import { isPlatformAdmin } from '../utils/platformAdmin.js';
 
 export interface TreasuryStatusResponse {
   wallet: {
@@ -47,21 +42,6 @@ export interface TreasuryStatusResponse {
     last24hCount: number;
   };
   error?: string;
-}
-
-/**
- * Verify the requesting user is a platform admin (Arkova internal).
- * Checks email against the hardcoded whitelist.
- */
-async function isPlatformAdmin(userId: string): Promise<boolean> {
-  const { data: profile } = await db
-    .from('profiles')
-    .select('email')
-    .eq('id', userId)
-    .single();
-
-  if (!profile?.email) return false;
-  return PLATFORM_ADMIN_EMAILS.includes(profile.email);
 }
 
 export async function handleTreasuryStatus(

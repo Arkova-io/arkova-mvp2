@@ -286,12 +286,10 @@ export function DashboardPage() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg font-semibold">My Records</CardTitle>
           <div className="flex gap-2">
-            {profile?.role === 'ORG_ADMIN' && (
-              <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                {ORG_PAGE_LABELS.BULK_UPLOAD}
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              {ORG_PAGE_LABELS.BULK_UPLOAD}
+            </Button>
             <Button onClick={() => setSecureDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               {SECURE_DIALOG_LABELS.TITLE}
@@ -494,7 +492,7 @@ export function DashboardPage() {
         onSuccess={handleSecureSuccess}
       />
 
-      {/* Bulk Upload Dialog (ORG_ADMIN only) */}
+      {/* Bulk Upload Dialog */}
       <Dialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

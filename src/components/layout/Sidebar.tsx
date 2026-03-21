@@ -26,6 +26,8 @@ import {
   Sun,
   Monitor,
   Code2,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
@@ -60,6 +62,8 @@ const mainNavItems: NavItem[] = [
 const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
 
 const adminNavItems: NavItem[] = [
+  { label: 'Overview', icon: BarChart3, to: ROUTES.ADMIN_OVERVIEW },
+  { label: 'System Health', icon: Activity, to: ROUTES.ADMIN_HEALTH },
   { label: NAV_LABELS.TREASURY, icon: Landmark, to: ROUTES.ADMIN_TREASURY },
 ];
 

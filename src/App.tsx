@@ -53,6 +53,8 @@ const SearchPage = React.lazy(() => import('@/pages/SearchPage').then(m => ({ de
 const IssuerRegistryPage = React.lazy(() => import('@/pages/IssuerRegistryPage').then(m => ({ default: m.IssuerRegistryPage })));
 const MyCredentialsPage = React.lazy(() => import('@/pages/MyCredentialsPage').then(m => ({ default: m.MyCredentialsPage })));
 const TreasuryAdminPage = React.lazy(() => import('@/pages/TreasuryAdminPage').then(m => ({ default: m.TreasuryAdminPage })));
+const PlatformOverviewPage = React.lazy(() => import('@/pages/PlatformOverviewPage').then(m => ({ default: m.PlatformOverviewPage })));
+const SystemHealthPage = React.lazy(() => import('@/pages/SystemHealthPage').then(m => ({ default: m.SystemHealthPage })));
 const MemberDetailPage = React.lazy(() => import('@/pages/MemberDetailPage').then(m => ({ default: m.MemberDetailPage })));
 const AuthCallbackPage = React.lazy(() => import('@/pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ReviewQueuePage = React.lazy(() => import('@/pages/ReviewQueuePage').then(m => ({ default: m.ReviewQueuePage })));
@@ -154,6 +156,8 @@ export function App() {
           <Route path={ROUTES.AI_REPORTS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="AIReports"><AIReportsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
           {/* Admin routes */}
+          <Route path={ROUTES.ADMIN_OVERVIEW} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Platform Overview"><PlatformOverviewPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.ADMIN_HEALTH} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="System Health"><SystemHealthPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.ADMIN_TREASURY} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Treasury"><TreasuryAdminPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
           {/* Billing routes */}

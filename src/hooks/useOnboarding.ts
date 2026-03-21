@@ -24,6 +24,13 @@ interface OnboardingState {
   result: OnboardingResult | null;
 }
 
+interface OrgMatch {
+  found: boolean;
+  org_id?: string;
+  org_name?: string;
+  domain?: string;
+}
+
 interface OnboardingActions {
   setRole: (role: UserRole) => Promise<OnboardingResult | null>;
   createOrg: (data: {
@@ -31,6 +38,8 @@ interface OnboardingActions {
     displayName: string;
     domain: string | null;
   }) => Promise<OnboardingResult | null>;
+  lookupOrgByEmail: (email: string) => Promise<OrgMatch | null>;
+  joinOrgByDomain: (orgId: string) => Promise<OnboardingResult | null>;
   clearError: () => void;
 }
 
@@ -110,6 +119,53 @@ export function useOnboarding(): OnboardingState & OnboardingActions {
     []
   );
 
+  const lookupOrgByEmail = useCallback(async (email: string): Promise<OrgMatch | null> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: rpcError } = await (supabase.rpc as any)(
+        'lookup_org_by_email_domain',
+        { p_email: email }
+      );
+
+      if (rpcError) {
+        return null;
+      }
+
+      return data as OrgMatch;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const joinOrgByDomain = useCallback(async (orgId: string): Promise<OnboardingResult | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: rpcError } = await (supabase.rpc as any)(
+        'join_org_by_domain',
+        { p_org_id: orgId }
+      );
+
+      if (rpcError) {
+        setError(rpcError.message);
+        setLoading(false);
+        return null;
+      }
+
+      const onboardingResult = data as OnboardingResult;
+      setResult(onboardingResult);
+      setLoading(false);
+      return onboardingResult;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to join organization';
+      setError(message);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -120,6 +176,8 @@ export function useOnboarding(): OnboardingState & OnboardingActions {
     result,
     setRole,
     createOrg,
+    lookupOrgByEmail,
+    joinOrgByDomain,
     clearError,
   };
 }
