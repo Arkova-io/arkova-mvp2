@@ -15,14 +15,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 /** PatentsView rate limit: 45 requests/minute → ~1333ms between requests */
 const USPTO_RATE_LIMIT_MS = 1400;
 
-/** PatentsView API base URL (transitioning to data.uspto.gov as of March 2026) */
-const PATENTSVIEW_API_URL = 'https://api.patentsview.org/patents/query';
+/** PatentsView v1 API (requires API key — register at https://patentsview.org/apis/purpose) */
+const PATENTSVIEW_API_URL = 'https://search.patentsview.org/api/v1/patent/';
 
 /** Batch size for API queries */
 const QUERY_BATCH_SIZE = 100;
 
 interface PatentResult {
-  patent_number: string;
+  patent_id: string;
   patent_title: string;
   patent_abstract: string;
   patent_date: string;
@@ -32,7 +32,7 @@ interface PatentResult {
 interface PatentsViewResponse {
   patents: PatentResult[];
   count: number;
-  total_patent_count: number;
+  total_hits: number;
 }
 
 /**
@@ -81,25 +81,22 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
   let page = 1;
   let hasMore = true;
 
+  let totalInserted = 0;
+  let totalSkipped = 0;
+
   while (hasMore) {
-    const queryBody = {
-      q: {
-        _gte: { patent_date: startDate },
-      },
-      f: ['patent_number', 'patent_title', 'patent_abstract', 'patent_date', 'patent_type'],
-      o: {
-        page,
-        per_page: QUERY_BATCH_SIZE,
-      },
-      s: [{ patent_date: 'asc' }],
-    };
+    // PatentsView v1 API uses GET with query params
+    const params = new URLSearchParams({
+      q: JSON.stringify({ _gte: { patent_date: startDate } }),
+      f: JSON.stringify(['patent_id', 'patent_title', 'patent_abstract', 'patent_date', 'patent_type']),
+      o: JSON.stringify({ page, per_page: QUERY_BATCH_SIZE }),
+      s: JSON.stringify([{ patent_date: 'asc' }]),
+    });
 
     let response: Response;
     try {
-      response = await fetch(PATENTSVIEW_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(queryBody),
+      response = await fetch(`${PATENTSVIEW_API_URL}?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
       });
     } catch (err) {
       logger.error({ error: err, page }, 'USPTO API request failed');
@@ -107,7 +104,8 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
     }
 
     if (!response.ok) {
-      logger.error({ status: response.status, page }, 'USPTO API returned error');
+      const body = await response.text().catch(() => '');
+      logger.error({ status: response.status, page, body: body.slice(0, 200) }, 'USPTO API returned error');
       break;
     }
 
@@ -119,23 +117,26 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
       break;
     }
 
-    logger.info({ page, count: patents.length, total: result.total_patent_count }, 'USPTO batch received');
+    logger.info({ page, count: patents.length, total: result.total_hits }, 'USPTO batch received');
 
     for (const patent of patents) {
+      const patentId = patent.patent_id;
+
       // Check for duplicates
       const { data: existing } = await supabase
         .from('public_records')
         .select('id')
         .eq('source', 'uspto')
-        .eq('source_id', patent.patent_number)
+        .eq('source_id', patentId)
         .limit(1);
 
       if (existing && existing.length > 0) {
+        totalSkipped++;
         continue;
       }
 
       const contentForHash = JSON.stringify({
-        patent_number: patent.patent_number,
+        patent_id: patentId,
         title: patent.patent_title,
         abstract: patent.patent_abstract,
         date: patent.patent_date,
@@ -143,13 +144,13 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
 
       const { error: insertError } = await supabase.from('public_records').insert({
         source: 'uspto',
-        source_id: patent.patent_number,
-        source_url: `https://patents.google.com/patent/US${patent.patent_number}`,
+        source_id: patentId,
+        source_url: `https://patents.google.com/patent/US${patentId}`,
         record_type: 'patent_grant',
         title: patent.patent_title,
         content_hash: computeContentHash(contentForHash),
         metadata: {
-          patent_number: patent.patent_number,
+          patent_id: patentId,
           patent_type: patent.patent_type,
           patent_date: patent.patent_date,
           abstract: patent.patent_abstract,
@@ -157,7 +158,9 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
       });
 
       if (insertError) {
-        logger.error({ patentNumber: patent.patent_number, error: insertError }, 'Failed to insert USPTO record');
+        logger.error({ patentId, error: insertError }, 'Failed to insert USPTO record');
+      } else {
+        totalInserted++;
       }
     }
 
@@ -172,5 +175,5 @@ export async function fetchUsptoPAtents(supabase: SupabaseClient): Promise<void>
     await delay(USPTO_RATE_LIMIT_MS);
   }
 
-  logger.info({ pagesProcessed: page }, 'USPTO fetch complete');
+  logger.info({ totalInserted, totalSkipped, pagesProcessed: page }, 'USPTO fetch complete');
 }

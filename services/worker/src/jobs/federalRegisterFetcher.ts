@@ -87,17 +87,16 @@ export async function fetchFederalRegisterDocuments(supabase: SupabaseClient): P
   let totalInserted = 0;
 
   while (hasMore) {
-    const params = new URLSearchParams({
-      'conditions[publication_date][gte]': startDate,
-      'conditions[publication_date][lte]': endDate,
-      per_page: String(PER_PAGE),
-      page: String(page),
-      order: 'oldest',
-      'fields[]': [
-        'document_number', 'title', 'type', 'abstract',
-        'publication_date', 'html_url', 'pdf_url', 'agencies', 'citation',
-      ].join(','),
-    });
+    const params = new URLSearchParams();
+    params.set('conditions[publication_date][gte]', startDate);
+    params.set('conditions[publication_date][lte]', endDate);
+    params.set('per_page', String(PER_PAGE));
+    params.set('page', String(page));
+    params.set('order', 'oldest');
+    // Federal Register API requires repeated fields[] params for each field
+    for (const field of ['document_number', 'title', 'type', 'abstract', 'publication_date', 'html_url', 'pdf_url', 'agencies', 'citation']) {
+      params.append('fields[]', field);
+    }
 
     let response: Response;
     try {
