@@ -11,8 +11,19 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { generateFingerprint } from '@/lib/fileHasher';
 
+/** Check if a file is a bulk upload format (CSV/XLSX) */
+export function isBulkUploadFile(file: File): boolean {
+  const ext = file.name.toLowerCase().split('.').pop() ?? '';
+  return ['csv', 'xlsx', 'xls', 'tsv'].includes(ext)
+    || file.type === 'text/csv'
+    || file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    || file.type === 'application/vnd.ms-excel';
+}
+
 interface FileUploadProps {
   onFileSelect: (file: File, fingerprint: string) => void;
+  /** Called when a bulk upload file (CSV/XLSX) or multiple files are detected */
+  onBulkDetected?: (files: File[]) => void;
   disabled?: boolean;
 }
 
@@ -22,7 +33,7 @@ interface SelectedFile {
   processing: boolean;
 }
 
-export function FileUpload({ onFileSelect, disabled }: Readonly<FileUploadProps>) {
+export function FileUpload({ onFileSelect, onBulkDetected, disabled }: Readonly<FileUploadProps>) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,16 +72,25 @@ export function FileUpload({ onFileSelect, disabled }: Readonly<FileUploadProps>
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+      // Multiple files or CSV/XLSX → bulk mode
+      if (files.length > 1 || isBulkUploadFile(files[0])) {
+        onBulkDetected?.(Array.from(files));
+        return;
+      }
       processFile(files[0]);
     }
-  }, [disabled, processFile]);
+  }, [disabled, processFile, onBulkDetected]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      if (files.length > 1 || isBulkUploadFile(files[0])) {
+        onBulkDetected?.(Array.from(files));
+        return;
+      }
       processFile(files[0]);
     }
-  }, [processFile]);
+  }, [processFile, onBulkDetected]);
 
   const handleRemove = useCallback(() => {
     setSelectedFile(null);
@@ -157,7 +177,7 @@ export function FileUpload({ onFileSelect, disabled }: Readonly<FileUploadProps>
               Drag and drop your document here
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              or click to browse files
+              Single document, CSV/XLSX for bulk upload, or multiple files
             </p>
             <Button
               type="button"

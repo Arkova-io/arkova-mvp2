@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileUpload } from './FileUpload';
+import { BulkUploadWizard } from '@/components/upload';
 import { TemplateSelector } from './TemplateSelector';
 import type { TemplateOption } from './TemplateSelector';
 import { AIFieldSuggestions } from './AIFieldSuggestions';
@@ -55,7 +56,7 @@ interface SecureDocumentDialogProps {
   onSuccess?: () => void;
 }
 
-type Step = 'upload' | 'extracting' | 'template' | 'confirm' | 'processing' | 'success' | 'error';
+type Step = 'upload' | 'extracting' | 'template' | 'confirm' | 'processing' | 'success' | 'error' | 'bulk';
 
 interface FileData {
   file: File;
@@ -100,6 +101,10 @@ export function SecureDocumentDialog({
 
   const handleFileSelect = useCallback((file: File, fingerprint: string) => {
     setFileData({ file, fingerprint });
+  }, []);
+
+  const handleBulkDetected = useCallback((_files: File[]) => {
+    setStep('bulk');
   }, []);
 
   // Run AI extraction after file upload
@@ -278,14 +283,16 @@ export function SecureDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={step === 'bulk' ? 'max-w-3xl max-h-[90vh] overflow-y-auto' : 'sm:max-w-lg max-h-[90vh] overflow-y-auto'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            {SECURE_DIALOG_LABELS.TITLE}
+            {step === 'bulk' ? 'Bulk Upload' : SECURE_DIALOG_LABELS.TITLE}
           </DialogTitle>
           <DialogDescription>
-            {SECURE_DIALOG_LABELS.DESCRIPTION}
+            {step === 'bulk'
+              ? 'Upload a CSV or XLSX file to secure multiple documents at once'
+              : SECURE_DIALOG_LABELS.DESCRIPTION}
           </DialogDescription>
         </DialogHeader>
 
@@ -293,7 +300,20 @@ export function SecureDocumentDialog({
           {step === 'upload' && (
             <FileUpload
               onFileSelect={handleFileSelect}
+              onBulkDetected={handleBulkDetected}
               disabled={false}
+            />
+          )}
+
+          {step === 'bulk' && (
+            <BulkUploadWizard
+              onComplete={() => {
+                handleClose();
+                onSuccess?.();
+              }}
+              onCancel={() => {
+                setStep('upload');
+              }}
             />
           )}
 
