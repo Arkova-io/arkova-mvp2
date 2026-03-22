@@ -1,12 +1,20 @@
 /**
- * Public Record Batch Anchoring Job
+ * Public Record Anchoring Job
  *
- * Anchors public records (EDGAR, USPTO, Federal Register) to Bitcoin via Merkle batching.
- * Processes unanchored records in large batches (10,000-100,000), builds Merkle tree,
- * submits root to chain, then stores individual proofs.
+ * Creates individual anchor records for each public record (EDGAR, USPTO, etc.),
+ * then Merkle-batches their fingerprints into a single Bitcoin OP_RETURN transaction.
+ * Each document gets its own anchor visible in Treasury with its own fingerprint.
+ *
+ * Flow:
+ * 1. Resolve platform admin user_id (carson@arkova.ai) for anchor ownership
+ * 2. Fetch unanchored public_records
+ * 3. Create individual anchor records (status: PENDING) for each
+ * 4. Build Merkle tree from all fingerprints
+ * 5. Submit Merkle root to Bitcoin
+ * 6. Update all anchors to SUBMITTED with chain tx_id and Merkle proofs
+ * 7. Link public_records.anchor_id to their individual anchors
  *
  * Gated by ENABLE_PUBLIC_RECORD_ANCHORING switchboard flag.
- * Cost: ~$0.002-$0.003 per document at scale ($50-200/mo for 1M docs).
  *
  * Constitution refs:
  *   - 1.4: Treasury keys never logged
@@ -20,28 +28,65 @@ import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Max records per batch — Merkle tree performance limit */
-export const PUBLIC_RECORD_BATCH_SIZE = 10_000;
+export const PUBLIC_RECORD_BATCH_SIZE = 500;
 
 /** Minimum records to trigger a batch */
-export const MIN_BATCH_SIZE = 10;
+export const MIN_BATCH_SIZE = 1;
+
+/** Platform admin email — pipeline anchors are owned by this account */
+const PIPELINE_OWNER_EMAIL = 'carson@arkova.ai';
 
 export interface PublicRecordAnchorResult {
   processed: number;
+  anchorsCreated: number;
   batchId: string | null;
   merkleRoot: string | null;
   txId: string | null;
 }
 
 /**
- * Process unanchored public records as a Merkle-batched Bitcoin anchor.
- *
- * Flow:
- * 1. Query public_records WHERE anchor_id IS NULL, LIMIT batch size
- * 2. Build Merkle tree from content_hash values
- * 3. Submit Merkle root to Bitcoin via single OP_RETURN transaction
- * 4. Create anchor record for the batch
- * 5. Store individual Merkle proofs in each record's metadata
- * 6. Link public_records.anchor_id to batch anchor
+ * Map public record source/type to a display-friendly filename for the anchor.
+ */
+function buildAnchorFilename(record: {
+  source: string;
+  source_id: string;
+  title: string | null;
+  record_type: string;
+}): string {
+  const prefix = record.source === 'edgar'
+    ? 'SEC'
+    : record.source === 'openalex'
+      ? 'OA'
+      : record.source === 'uspto'
+        ? 'USPTO'
+        : record.source === 'federal_register'
+          ? 'FR'
+          : record.source.toUpperCase();
+
+  // Use title if available, otherwise source_id
+  const name = record.title
+    ? record.title.slice(0, 180)
+    : `${record.record_type}-${record.source_id}`;
+
+  return `[${prefix}] ${name}`;
+}
+
+/**
+ * Map public record source to credential_type enum.
+ * SEC filings → PROFESSIONAL, patents → LICENSE, academic → CERTIFICATE, regulations → OTHER
+ */
+function mapCredentialType(source: string): string {
+  switch (source) {
+    case 'edgar': return 'PROFESSIONAL';
+    case 'uspto': return 'LICENSE';
+    case 'openalex': return 'CERTIFICATE';
+    case 'federal_register': return 'OTHER';
+    default: return 'OTHER';
+  }
+}
+
+/**
+ * Process unanchored public records: create individual anchors + Merkle-batch to chain.
  */
 export async function processPublicRecordAnchoring(
   supabase?: SupabaseClient,
@@ -54,35 +99,107 @@ export async function processPublicRecordAnchoring(
   });
   if (!enabled) {
     logger.info('ENABLE_PUBLIC_RECORD_ANCHORING is disabled — skipping');
-    return { processed: 0, batchId: null, merkleRoot: null, txId: null };
+    return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
   }
+
+  // Resolve platform admin user_id for anchor ownership
+  const { data: adminProfile, error: adminError } = await client
+    .from('profiles')
+    .select('id, org_id')
+    .eq('email', PIPELINE_OWNER_EMAIL)
+    .single();
+
+  if (adminError || !adminProfile) {
+    logger.error({ error: adminError }, `Platform admin ${PIPELINE_OWNER_EMAIL} not found — cannot create anchors`);
+    return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
+  }
+
+  const ownerId = adminProfile.id as string;
+  const ownerOrgId = (adminProfile.org_id as string) ?? null;
 
   // Fetch unanchored public records
   const { data: records, error: fetchError } = await client
     .from('public_records')
-    .select('id, content_hash, metadata')
+    .select('id, source, source_id, source_url, record_type, title, content_hash, metadata')
     .is('anchor_id', null)
     .order('created_at', { ascending: true })
     .limit(PUBLIC_RECORD_BATCH_SIZE);
 
   if (fetchError) {
     logger.error({ error: fetchError }, 'Failed to fetch unanchored public records');
-    return { processed: 0, batchId: null, merkleRoot: null, txId: null };
+    return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
   }
 
   if (!records || records.length < MIN_BATCH_SIZE) {
-    logger.info({ count: records?.length ?? 0 }, 'Not enough unanchored records for batch');
-    return { processed: 0, batchId: null, merkleRoot: null, txId: null };
+    logger.info({ count: records?.length ?? 0 }, 'No unanchored records to process');
+    return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
   }
 
-  const fingerprints = records.map((r) => r.content_hash);
+  logger.info({ recordCount: records.length }, 'Creating individual anchors for public records');
 
-  logger.info({ recordCount: fingerprints.length }, 'Building Merkle tree for public records batch');
+  // Step 1: Create individual anchor records for each public record
+  const anchorInserts = records.map((r) => ({
+    user_id: ownerId,
+    org_id: ownerOrgId,
+    fingerprint: r.content_hash,
+    filename: buildAnchorFilename(r),
+    credential_type: mapCredentialType(r.source),
+    status: 'PENDING' as const,
+    metadata: {
+      pipeline_source: r.source,
+      source_id: r.source_id,
+      source_url: r.source_url,
+      record_type: r.record_type,
+    },
+  }));
 
-  // Build Merkle tree from content hashes
+  // Insert individually, skipping duplicates (partial unique index prevents upsert)
+  const createdAnchors: Array<{ id: string; fingerprint: string }> = [];
+
+  for (const anchor of anchorInserts) {
+    const { data: inserted, error: insertError } = await client
+      .from('anchors')
+      .insert(anchor)
+      .select('id, fingerprint')
+      .single();
+
+    if (insertError) {
+      // 23505 = unique_violation — record already anchored, skip
+      if (insertError.code === '23505') {
+        // Look up existing anchor to link the public record
+        const { data: existing } = await client
+          .from('anchors')
+          .select('id, fingerprint')
+          .eq('user_id', ownerId)
+          .eq('fingerprint', anchor.fingerprint)
+          .is('deleted_at', null)
+          .single();
+        if (existing) {
+          createdAnchors.push(existing as { id: string; fingerprint: string });
+        }
+        continue;
+      }
+      logger.error({ error: insertError, fingerprint: anchor.fingerprint }, 'Failed to create anchor');
+      continue;
+    }
+
+    if (inserted) {
+      createdAnchors.push(inserted as { id: string; fingerprint: string });
+    }
+  }
+
+  logger.info({ created: createdAnchors.length, total: records.length }, 'Anchor records created');
+
+  if (createdAnchors.length === 0) {
+    logger.warn('No new anchors created (all may be duplicates)');
+    return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
+  }
+
+  // Step 2: Build Merkle tree from all fingerprints in this batch
+  const fingerprints = createdAnchors.map((a) => a.fingerprint);
   const tree = buildMerkleTree(fingerprints);
 
-  // Submit Merkle root to Bitcoin
+  // Step 3: Submit Merkle root to Bitcoin
   let receipt;
   try {
     const chainClient = getInitializedChainClient();
@@ -92,49 +209,58 @@ export async function processPublicRecordAnchoring(
     });
   } catch (error) {
     logger.error({ error, merkleRoot: tree.root }, 'Public record batch chain submission failed');
-    return { processed: 0, batchId: null, merkleRoot: tree.root, txId: null };
+    // Anchors stay PENDING — will be picked up on next run
+    return { processed: 0, anchorsCreated: createdAnchors.length, batchId: null, merkleRoot: tree.root, txId: null };
   }
 
-  const batchId = `pr_batch_${Date.now()}_${records.length}`;
+  const batchId = `pr_batch_${Date.now()}_${createdAnchors.length}`;
   const txId = receipt.receiptId;
 
   logger.info(
-    { batchId, merkleRoot: tree.root, txId, recordCount: records.length },
-    'Public record batch anchored to chain',
+    { batchId, merkleRoot: tree.root, txId, anchorCount: createdAnchors.length },
+    'Merkle root anchored to chain',
   );
 
-  // Create an anchor record for this batch
-  const { data: anchorRecord, error: anchorError } = await client
-    .from('anchors')
-    .insert({
-      fingerprint: tree.root,
-      status: 'SUBMITTED',
-      chain_tx_id: txId,
-      metadata: {
-        type: 'public_record_batch',
-        batch_id: batchId,
-        record_count: records.length,
-        merkle_root: tree.root,
-      },
-    })
-    .select('id')
-    .single();
-
-  if (anchorError || !anchorRecord) {
-    logger.error({ error: anchorError, batchId }, 'Failed to create batch anchor record');
-    return { processed: 0, batchId, merkleRoot: tree.root, txId };
-  }
-
-  // Update each public record with its Merkle proof + anchor_id
+  // Step 4: Update each anchor with chain tx and Merkle proof, set status SUBMITTED
+  // Also link public_records.anchor_id
   let updateCount = 0;
-  for (const record of records) {
-    const proof = tree.proofs.get(record.content_hash);
-    const existingMetadata = (record.metadata as Record<string, unknown>) ?? {};
+  const anchorByFingerprint = new Map(createdAnchors.map((a) => [a.fingerprint, a.id]));
 
-    const { error: updateError } = await client
+  for (const record of records) {
+    const anchorId = anchorByFingerprint.get(record.content_hash);
+    if (!anchorId) continue;
+
+    const proof = tree.proofs.get(record.content_hash);
+
+    // Update anchor: PENDING → SUBMITTED with chain data
+    const { error: anchorUpdateError } = await client
+      .from('anchors')
+      .update({
+        status: 'SUBMITTED',
+        chain_tx_id: txId,
+        metadata: {
+          pipeline_source: record.source,
+          source_id: record.source_id,
+          source_url: record.source_url,
+          record_type: record.record_type,
+          merkle_proof: proof ?? [],
+          merkle_root: tree.root,
+          batch_id: batchId,
+        },
+      })
+      .eq('id', anchorId);
+
+    if (anchorUpdateError) {
+      logger.error({ anchorId, error: anchorUpdateError }, 'Failed to update anchor with chain data');
+      continue;
+    }
+
+    // Link public_record → anchor
+    const existingMetadata = (record.metadata as Record<string, unknown>) ?? {};
+    const { error: recordUpdateError } = await client
       .from('public_records')
       .update({
-        anchor_id: anchorRecord.id,
+        anchor_id: anchorId,
         metadata: {
           ...existingMetadata,
           merkle_proof: proof ?? [],
@@ -145,20 +271,21 @@ export async function processPublicRecordAnchoring(
       })
       .eq('id', record.id);
 
-    if (updateError) {
-      logger.error({ recordId: record.id, error: updateError }, 'Failed to update public record with proof');
+    if (recordUpdateError) {
+      logger.error({ recordId: record.id, error: recordUpdateError }, 'Failed to link public record to anchor');
     } else {
       updateCount++;
     }
   }
 
   logger.info(
-    { batchId, processed: updateCount, total: records.length, txId },
-    'Public record batch anchoring complete',
+    { batchId, processed: updateCount, anchorsCreated: createdAnchors.length, txId },
+    'Public record anchoring complete — individual anchors visible in Treasury',
   );
 
   return {
     processed: updateCount,
+    anchorsCreated: createdAnchors.length,
     batchId,
     merkleRoot: tree.root,
     txId,

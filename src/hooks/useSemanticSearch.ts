@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { WORKER_URL } from '../lib/workerClient';
 
 export interface SemanticSearchResult {
   anchorId: string;
@@ -60,7 +61,7 @@ export function useSemanticSearch(): UseSemanticSearchReturn {
           return;
         }
 
-        const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
+        const workerUrl = WORKER_URL;
         const params = new URLSearchParams({
           q: query,
           threshold: String(threshold),

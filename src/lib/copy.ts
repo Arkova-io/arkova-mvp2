@@ -1107,6 +1107,19 @@ export const PIPELINE_LABELS = {
   SOURCE_USPTO: 'USPTO Patents',
   SOURCE_FEDERAL_REGISTER: 'Federal Register',
   SOURCE_MCP: 'MCP Submissions',
+  SOURCE_OPENALEX: 'OpenAlex Academic',
+  RECORDS_BROWSER_TITLE: 'Records Browser',
+  RECORDS_BROWSER_DESCRIPTION: 'Browse and filter all ingested public records',
+  FILTER_ALL_SOURCES: 'All Sources',
+  FILTER_ALL_TYPES: 'All Types',
+  FILTER_ALL_STATUSES: 'All Statuses',
+  FILTER_ANCHORED: 'Anchored',
+  FILTER_UNANCHORED: 'Not Anchored',
+  FILTER_SEARCH_PLACEHOLDER: 'Search by title or source ID...',
+  RECORDS_NO_RESULTS: 'No records match the current filters.',
+  RECORDS_SHOWING: 'Showing',
+  RECORDS_OF: 'of',
+  RECORDS_LOAD_MORE: 'Load More',
 } as const;
 
 // =============================================================================
