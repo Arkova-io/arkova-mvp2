@@ -213,27 +213,38 @@ export async function fetchEdgarFilings(supabase: SupabaseClient): Promise<{
           continue;
         }
 
+        // Extract entity name — EFTS _source may use entity_name directly
+        // or only provide display_names array like "APPLE INC (AAPL) (CIK 0000320193)"
+        const entityName = src.entity_name
+          || (src.display_names?.[0]?.split(/\s{2,}/)?.[0]?.trim())
+          || 'Unknown Entity';
+
+        // Form type — may be in form_type or inferred from search query
+        const formTypeValue = src.form_type || formType;
+
+        // Filing date
+        const fileDate = src.file_date || '';
+
         const contentForHash = JSON.stringify({
           accession: hit._id,
-          form_type: src.form_type,
-          entity_name: src.entity_name,
-          file_date: src.file_date,
+          form_type: formTypeValue,
+          entity_name: entityName,
+          file_date: fileDate,
         });
 
         const cik = src.ciks?.[0] ?? '';
-        const sourceUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=${encodeURIComponent(src.form_type)}&dateb=&owner=include&count=40&search_text=&action=getcompany`;
 
         const { error: insertError } = await supabase.from('public_records').insert({
           source: 'edgar',
           source_id: hit._id,
           source_url: `https://www.sec.gov/Archives/edgar/data/${cik}/${accession}`,
           record_type: 'sec_filing',
-          title: `${src.entity_name} — ${src.form_type} (${src.file_date})`,
+          title: `${entityName} — ${formTypeValue} (${fileDate})`,
           content_hash: computeContentHash(contentForHash),
           metadata: {
-            form_type: src.form_type,
-            entity_name: src.entity_name,
-            filing_date: src.file_date,
+            form_type: formTypeValue,
+            entity_name: entityName,
+            filing_date: fileDate,
             period_of_report: src.period_of_report,
             tickers: src.tickers ?? [],
             ciks: src.ciks ?? [],

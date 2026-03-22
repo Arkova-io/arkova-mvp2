@@ -195,11 +195,33 @@ export async function processPublicRecordAnchoring(
     return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
   }
 
-  // Step 2: Build Merkle tree from all fingerprints in this batch
+  // Step 2: Link public_records.anchor_id FIRST (even before chain submission)
+  // This ensures records are linked to their anchors regardless of chain status
+  let linkCount = 0;
+  const anchorByFingerprint = new Map(createdAnchors.map((a) => [a.fingerprint, a.id]));
+
+  for (const record of records) {
+    const anchorId = anchorByFingerprint.get(record.content_hash);
+    if (!anchorId) continue;
+
+    const { error: linkError } = await client
+      .from('public_records')
+      .update({ anchor_id: anchorId })
+      .eq('id', record.id)
+      .is('anchor_id', null);
+
+    if (!linkError) {
+      linkCount++;
+    }
+  }
+
+  logger.info({ linked: linkCount, total: records.length }, 'Public records linked to anchors');
+
+  // Step 3: Build Merkle tree from all fingerprints in this batch
   const fingerprints = createdAnchors.map((a) => a.fingerprint);
   const tree = buildMerkleTree(fingerprints);
 
-  // Step 3: Submit Merkle root to Bitcoin
+  // Step 4: Submit Merkle root to Bitcoin
   let receipt;
   try {
     const chainClient = getInitializedChainClient();
@@ -209,8 +231,8 @@ export async function processPublicRecordAnchoring(
     });
   } catch (error) {
     logger.error({ error, merkleRoot: tree.root }, 'Public record batch chain submission failed');
-    // Anchors stay PENDING — will be picked up on next run
-    return { processed: 0, anchorsCreated: createdAnchors.length, batchId: null, merkleRoot: tree.root, txId: null };
+    // Anchors stay PENDING — chain submission will be retried on next run
+    return { processed: linkCount, anchorsCreated: createdAnchors.length, batchId: null, merkleRoot: tree.root, txId: null };
   }
 
   const batchId = `pr_batch_${Date.now()}_${createdAnchors.length}`;
@@ -221,10 +243,8 @@ export async function processPublicRecordAnchoring(
     'Merkle root anchored to chain',
   );
 
-  // Step 4: Update each anchor with chain tx and Merkle proof, set status SUBMITTED
-  // Also link public_records.anchor_id
+  // Step 5: Update each anchor with chain tx and Merkle proof, set status SUBMITTED
   let updateCount = 0;
-  const anchorByFingerprint = new Map(createdAnchors.map((a) => [a.fingerprint, a.id]));
 
   for (const record of records) {
     const anchorId = anchorByFingerprint.get(record.content_hash);
@@ -255,12 +275,11 @@ export async function processPublicRecordAnchoring(
       continue;
     }
 
-    // Link public_record → anchor
+    // Update public_record metadata with Merkle proof info
     const existingMetadata = (record.metadata as Record<string, unknown>) ?? {};
     const { error: recordUpdateError } = await client
       .from('public_records')
       .update({
-        anchor_id: anchorId,
         metadata: {
           ...existingMetadata,
           merkle_proof: proof ?? [],
@@ -272,7 +291,7 @@ export async function processPublicRecordAnchoring(
       .eq('id', record.id);
 
     if (recordUpdateError) {
-      logger.error({ recordId: record.id, error: recordUpdateError }, 'Failed to link public record to anchor');
+      logger.error({ recordId: record.id, error: recordUpdateError }, 'Failed to update public record metadata');
     } else {
       updateCount++;
     }

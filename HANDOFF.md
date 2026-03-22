@@ -12,84 +12,31 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 166/178 stories complete (~93%) incl. 13 Beta stories (BETA-01–13). 2,050+ tests. 80 migration files (0001-0080, 0033 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 14/16 COMPLETE. GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed** (incl. Merkle batch anchor `5d652cf4...`). Worker rev 00043 deployed. Frontend on arkova-26.vercel.app (app.arkova.ai). **Pipeline LIVE:** 2,540 public records (2,340 EDGAR + 200 OpenAlex), 100 embeddings, Nessie RAG returning real results. MCP server live at edge.arkova.ai.
+**Overall progress:** 168/178 stories complete (~94%) incl. 13 Beta stories (BETA-01–13). 2,050+ tests. 80 migration files (0001-0080, 0033 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 14/16 COMPLETE. GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed** (incl. Merkle batch anchor `5d652cf4...`). Worker rev 00044 deploying. Frontend on arkova-26.vercel.app (app.arkova.ai). **Pipeline LIVE:** 2,540 public records (2,340 EDGAR + 200 OpenAlex), 100 embeddings, Nessie RAG returning real results. MCP server live at edge.arkova.ai. **Individual anchoring rewritten** — each document gets its own anchor visible in Treasury.
 
 ### Open Blockers
 
 | ID | Issue | Severity | Status | Next Action |
 |----|-------|----------|--------|-------------|
-| ~~CRIT-2~~ | ~~Bitcoin chain client~~ | ~~**OPS-ONLY**~~ | ~~CODE COMPLETE~~ | ~~AWS KMS key provisioning, mainnet treasury funding. See `docs/confluence/15_operational_runbook.md`.~~ |
-| ~~CRIT-3~~ | ~~Stripe plan change/downgrade~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-14~~ | ~~PR #43~~ |
-| ~~UAT-S5~~ | ~~UAT Sprint 5 — 9 critical/high UI bugs~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-15~~ | ~~PR #47~~ |
-| ~~UAT-S6~~ | ~~UAT Sprint 6 — 8 medium/low UI polish bugs~~ | ~~MEDIUM~~ | ~~RESOLVED 2026-03-15~~ | ~~PR #48~~ |
+| ~~CRIT-2~~ | ~~Bitcoin chain client~~ | ~~**OPS-ONLY**~~ | ~~CODE COMPLETE~~ | ~~AWS KMS key provisioning, mainnet treasury funding.~~ |
 
 **No active code blockers.** All remaining items are operational (infrastructure provisioning).
 
-### MVP Launch Gap Stories (testnet launch blockers)
+### Recent Changes (2026-03-22, Session 2)
 
-All HIGH+ launch blockers resolved:
+**PR #128:** `feat/pipeline-records-browser-anchoring` — awaiting review/merge
 
-| Story | Priority | Description | Status |
-|-------|----------|-------------|--------|
-| ~~MVP-01~~ | ~~CRITICAL~~ | ~~Worker production deployment~~ | ~~COMPLETE (OPS-ONLY — env vars, Stripe webhook). See runbook.~~ |
-| ~~MVP-02~~ | ~~HIGH~~ | ~~Global toast/notification system~~ | ~~COMPLETE (PRs #36, #37, #40)~~ |
-| ~~MVP-03~~ | ~~HIGH~~ | ~~Legal pages~~ | ~~COMPLETE~~ |
-| ~~MVP-04~~ | ~~HIGH~~ | ~~Brand assets~~ | ~~COMPLETE (PR #30)~~ |
-| ~~MVP-05~~ | ~~HIGH~~ | ~~Error boundary + 404~~ | ~~COMPLETE~~ |
-| ~~MVP-11~~ | ~~HIGH~~ | ~~Stripe plan change/downgrade~~ | ~~COMPLETE (PR #43)~~ |
-
-### P8 AI Intelligence — 19/19 COMPLETE (All phases done)
-
-| Story | Description | Status |
-|-------|-------------|--------|
-| P8-S1 | Gemini API Integration (GeminiProvider + circuit breaker) | **COMPLETE** — 13 tests |
-| P8-S2 | AI Cost Tracking (migration 0059 + credits RPCs) | **COMPLETE** — 17 tests |
-| P8-S3 | AI Feature Flags (3 switchboard flags + middleware) | **COMPLETE** — 17 tests |
-| P8-S4 | AI Extraction Service (POST /api/v1/ai/extract) | **COMPLETE** — 6 tests |
-| P8-S5 | AI Extraction UI (OCR + PII strip + suggestions) | **COMPLETE** — 18 tests |
-| P8-S7 | Cloudflare Crawler (university ingestion) | **COMPLETE** — 5 tests |
-| P8-S10 | pgvector Embedding Schema (migration 0060) | **COMPLETE** — merged PR #71 |
-| P8-S11 | Embedding Generation Pipeline | **COMPLETE** — 18 tests |
-| P8-S12 | Semantic Search UI | **COMPLETE** — 20 tests |
-| P8-S13 | Batch AI Processing (Cloudflare Queues) | **COMPLETE** — 4 tests |
-| P8-S14 | Batch AI Dashboard | **COMPLETE** — 5 tests |
-| P8-S15 | R2 Report Storage (zero-egress signed URLs) | **COMPLETE** — 4 tests |
-| P8-S17 | AI Provider Abstraction (IAIProvider + factory + fallback) | **COMPLETE** — 16 tests |
-| P8-S18 | Client-Side PII Stripping (Constitution 4A) | **COMPLETE** — 27 tests |
-| P8-S19 | Agentic Verification Endpoint | **COMPLETE** — 5 tests |
-| P8-S6 | Extraction Learning / Feedback Loop (Phase II) | **COMPLETE** — migration 0064, 8 tests |
-| P8-S8 | Duplicate Detection / Integrity Scoring (Phase II) | **COMPLETE** — migration 0064, 10 tests |
-| P8-S9 | Admin Review Queue (Phase II) | **COMPLETE** — migration 0064, 8 tests |
-| P8-S16 | AI Reports Dashboard (Phase II) | **COMPLETE** — 6 tests |
-
-### Sentry Integration
-
-| Component | Status |
-|-----------|--------|
-| Worker (`@sentry/node` + profiling) | **COMPLETE** — PII scrubbing, 21 tests |
-| Frontend (`@sentry/react` + replay) | **COMPLETE** — PII scrubbing, 9 tests |
-| ErrorBoundary wired to Sentry | **COMPLETE** |
-
-### Cloudflare Infrastructure
-
-| Component | Status |
-|-----------|--------|
-| DLP policy (SSN/Tax ID block) | **COMPLETE** — script + 12 verification tests |
-| Load Balancer (health checks) | **COMPLETE** — script ready |
-| Edge worker bindings (R2, Queues, AI) | **COMPLETE** — wrangler.toml uncommented |
-
-### AI Documentation & MCP Server (Phase 4)
-
-| Component | Status |
-|-----------|--------|
-| `public/llms.txt` | **COMPLETE** — 12 validation tests |
-| `public/AGENTS.md` | **COMPLETE** — tool docs + OAuth instructions |
-| MCP Server (P8-S19) | **COMPLETE** — verify + search tools, OAuth/API key auth, 8 tests |
-| MCP tools module | **COMPLETE** — shared logic for verify_credential + search_credentials |
+| Change | Files | Detail |
+|--------|-------|--------|
+| Records Browser | `PipelineAdminPage.tsx`, `copy.ts` | Filterable table (source, type, anchor status, search), pagination (25/page), responsive |
+| Individual anchoring | `publicRecordAnchor.ts` | Each pipeline doc → own anchor in `anchors` table, visible in Treasury with `[SEC]`/`[OA]` prefix |
+| Stale chunk fix | `AIExtractionStep.tsx`, `aiExtraction.ts`, `useSemanticSearch.ts`, `useBulkAnchors.ts` | Dynamic `await import()` → static imports |
+| Recipient fix | `useBulkAnchors.ts` | Added missing `orgId` to `/api/recipients` calls |
+| Env var | Vercel | `VITE_CRON_SECRET` set for Pipeline Control buttons |
 
 ### What's Production-Ready
 
-- Database layer (75 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
+- Database layer (80 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance + individual anchor creation
 - Public verification portal (5-section display, verification event logging)
@@ -99,334 +46,106 @@ All HIGH+ launch blockers resolved:
 - Stripe webhook handlers + billing UI
 - PDF + JSON proof downloads
 - CSV bulk upload
-- Onboarding flow
 - Bitcoin chain client (code complete, operational items remain)
 - Sentry error tracking with PII scrubbing (frontend + worker)
-- AI provider abstraction (IAIProvider interface, factory, mock, CF fallback)
 - AI extraction pipeline (Gemini, OCR, PII stripping, credit tracking)
 - Semantic search (pgvector embeddings, cosine similarity)
-- Edge worker infrastructure (batch queue, report storage, crawler, AI fallback)
-- AI documentation (llms.txt + AGENTS.md for agent discovery)
-- Remote MCP server deployed at edge.arkova.ai (Cloudflare Worker, Streamable HTTP, OAuth + API key auth)
-- GDPR compliance (PII erasure RPCs, audit log anonymization, data retention policies)
-- **"Precision Engine" UI design system** (PRs #117-120, replacing Nordic Vault) — Inter + Space Grotesk fonts, #0d141b bg, #00d4ff primary cyan, tonal layering. Updated: tailwind.config.ts, index.css, Sidebar, AppShell, AuthLayout, StatCard, DashboardPage, SearchPage.
-- **DevelopersPage** at /developers (public, Stitch wireframe design)
-- **Credential template library** — 16 production templates + type-specific visual cards in CredentialRenderer (DEMO-04)
-- **AI extraction on all file types** — ocrWorker supports .txt, .csv, .md, etc. (not just PDFs)
-- **User Flow Gaps (UF-01 through UF-10) ALL COMPLETE** — CredentialRenderer, public search, recipient inbox, PENDING status UX, metadata entry, usage tracking, enhanced verification, share flow, breadcrumbs/nav polish, onboarding checklist
-- **GCP Infrastructure** — Cloud Run (worker deployed), Secret Manager (7 secrets), Cloud Scheduler (4 cron jobs)
-- **Bitcoin anchoring pipeline (Signet)** — 6+ real transactions confirmed end-to-end. PENDING -> SUBMITTED -> SECURED lifecycle working. Realtime toasts with mempool.space explorer links.
-- **Unified search page** — auto-detects fingerprint vs text input, public route with back navigation
-
-### GEO & SEO Optimization (NEW — 12 stories)
-
-| Story | Priority | Description | Status |
-|-------|----------|-------------|--------|
-| GEO-01 | CRITICAL | SSR for marketing site (crawlers see empty div) | **COMPLETE** (PR #2, Vite SSR prerender) |
-| GEO-02 | CRITICAL | Fix LinkedIn entity collision + expand sameAs | PARTIAL (sameAs fixed; LinkedIn page + Wikidata external) |
-| GEO-03 | CRITICAL | Publish /privacy and /terms on marketing site | **COMPLETE** (pages exist and routed in arkova-marketing) |
-| GEO-04 | HIGH | About page with team bios + Person schema | NOT STARTED |
-| GEO-05 | HIGH | Enhanced schema (WebSite, speakable, AggregateOffer) | **COMPLETE** (speakable + AggregateOffer deployed) |
-| GEO-06 | HIGH | Deploy upgraded llms.txt | **COMPLETE** |
-| GEO-07 | HIGH | Fix broken og:image + complete meta tags | **COMPLETE** |
-| GEO-08 | HIGH | Content expansion — 5 core pages | NOT STARTED |
-| GEO-09 | MEDIUM | Community & brand presence launch | NOT STARTED |
-| GEO-10 | MEDIUM | IndexNow for Bing/Copilot | NOT STARTED |
-| GEO-11 | MEDIUM | YouTube explainers + VideoObject schema | NOT STARTED |
-| GEO-12 | MEDIUM | Security headers + technical SEO hardening | **COMPLETE** (vercel.json headers) |
-
-**GEO Audit Score:** 42→63→~72/100 (re-audited 2026-03-16) | **Target:** 80/100
-**GEO-03:** COMPLETE (Privacy + Terms pages exist in arkova-marketing site). 6/12 GEO stories complete.
-**Reports:** `docs/archive/geo/` (GEO-AUDIT-REPORT, GEO-CRAWLER-ACCESS, GEO-LLMSTXT-ANALYSIS, GEO-SCHEMA-REPORT)
+- MCP server at edge.arkova.ai
+- GDPR compliance (PII erasure RPCs, audit log anonymization)
+- Synthetic Sentinel design system (PRs #117-120)
+- 16 credential templates + type-specific visual cards
+- Pipeline: EDGAR + OpenAlex fetchers, embedder, Nessie RAG
+- Pipeline admin page with records browser + controls
 
 ---
 
 ## Session Log
 
-> **Full session history (25+ entries, 2026-03-14 through 2026-03-17) archived to `docs/archive/session-log.md`.**
-> Only the most recent session is kept here. Older entries are in the archive.
+### Session: 2026-03-22 (Session 2) — Pipeline Records Browser + Individual Anchoring
 
-### Session: 2026-03-21 — Precision Engine Design System + MCP Deploy + Credential Templates
+**PR #128 created.** Records browser, individual anchoring, bulk upload fixes.
 
-**PRs #117-120 merged to main.** Major design system migration, MCP server deployment, credential template library.
+**Pipeline Records Browser:**
+- Added to PipelineAdminPage below existing stats/controls
+- Filters: source (EDGAR/USPTO/Fed Register/OpenAlex), record type (dynamic), anchor status (Anchored/Pending), text search (title/source ID)
+- Pagination: 25/page with prev/next controls and page indicator
+- Responsive: hides Type, Source ID, Fingerprint, Date on smaller screens
+- Each row shows: source icon, title, type badge, source ID, fingerprint (truncated), status badge, ingested date, external link
 
-**Design system migration (Precision Engine):**
-- Replaced Nordic Vault aesthetic app-wide
-- New fonts: Inter + Space Grotesk (was DM Sans + JetBrains Mono)
-- New colors: #0d141b bg, #00d4ff primary cyan, tonal layering
-- Updated: tailwind.config.ts, index.css, Sidebar, AppShell, AuthLayout, StatCard, DashboardPage, SearchPage
-- New DevelopersPage at /developers (public, Stitch wireframe design)
+**Individual anchoring rewrite:**
+- `publicRecordAnchor.ts` completely rewritten
+- Each public record creates its own anchor in `anchors` table (was: one batch anchor for all)
+- Anchors owned by `carson@arkova.ai` (platform admin) with `[SEC]`/`[OA]`/`[USPTO]`/`[FR]` filename prefix
+- Merkle batching still used for Bitcoin tx (cost efficient: 1 tx per 500 docs)
+- Handles duplicate fingerprints via unique constraint detection (23505 error → look up existing)
+- Status flow: PENDING → SUBMITTED (after chain tx) → SECURED (after confirmation checker)
 
-**Credential templates & rendering:**
-- CredentialRenderer upgraded with type-specific visual cards (DEMO-04 COMPLETE)
-- 16 credential templates created in production Supabase
+**Bulk upload fixes:**
+- Stale chunk: 4 files converted from `await import('@/lib/workerClient')` to static imports
+- Recipient creation: added missing `orgId` parameter — was silently failing with 400
 
-**AI extraction improvements:**
-- AI extraction now runs on ALL file types (not just PDFs) — ocrWorker supports .txt, .csv, .md, etc.
-- AI-extracted metadata now saves by default (suggested fields included, not just accepted)
+**Deployment:**
+- Worker rev 00044 deploying to Cloud Run
+- VITE_CRON_SECRET added to Vercel production env vars
+- Frontend will auto-deploy from main after PR merge
 
-**Bug fixes:**
-- Bulk upload: stale closure error display, target_id uuid type error in RPC
-- search_public_credentials RPC fixed (referenced non-existent 'title' column) — migration 0074
-- Auto-create recipient profiles on bulk upload wired (BETA-04)
+### Session: 2026-03-22 (Session 1) — Pipeline Activation (Phase 1.5 Sprint 5)
 
-**Infrastructure:**
-- MCP server deployed to Cloudflare Workers at edge.arkova.ai (secrets set, health check verified)
-- GEMINI_API_KEY set on Cloud Run (rev 00029 -> 00030)
-- Worker deployed rev 00030 (Swagger dark theme)
-- Professional subscription created for UMich demo org
-- AI credit allocation (500/month) for demo org
-- 14 test documents created in demo-assets/test-docs/
-- Vercel frontend auto-deploying from all pushes to main
+**Commit e6f9664 pushed to main.** Pipeline end-to-end operational.
 
-**Stats:** 2,009 tests (unchanged). 74 migration files. Worker rev 00030. DEMO-04 COMPLETE.
+- Migrations 0077-0080 applied to production
+- EDGAR + OpenAlex fetchers created and run
+- 2,540 public records ingested (2,340 EDGAR + 200 OpenAlex)
+- 100 embeddings generated (gemini-embedding-001)
+- 1 Merkle batch anchored to signet
+- Nessie RAG returning real SEC filing results
+- Worker rev 00043 deployed
+- Gemini embedding model fixed: gemini-embedding-001 via v1beta REST API
+- Dockerfile fixed: native module build deps added
 
-### Session: 2026-03-20 — E2E Demo Readiness + Anchoring Pipeline Fix
+### Session: 2026-03-21 — Synthetic Sentinel + MCP Deploy + Credential Templates
 
-**PR #106 merged + multiple fixes pushed to main.** Full anchoring pipeline proven working on Signet.
-
-**Key changes:**
-- AI extraction wired into SecureDocumentDialog (feature-gated)
-- Feature gate column fixes (flag_key/enabled -> id/value) — ALL /api/v1/* endpoints were returning 503
-- Explorer links + bulk upload on dashboard + seed plans/subscriptions for demo org
-- Allow spending unconfirmed UTXOs on signet/testnet (treasury had only unconfirmed change)
-- Removed chain_confirmations from anchor updates (migration 0068b can't run inside transaction)
-- Bulk upload UX: removed required markers from auto-generated fields
-- Record rows clickable to navigate to detail page
-- Unified search page: auto-detect input type, back nav, dark mode fix
-
-**Critical bugs found and fixed:**
-- featureGate.ts + aiFeatureGate.ts queried wrong column names — ALL /api/v1/* endpoints returned 503
-- chain_confirmations column doesn't exist yet (migration 0068b transaction issue) — anchor processing failed after Signet broadcast
-- SUBMITTED enum value not added by migration 0068a (same ALTER TYPE ADD VALUE transaction issue) — must be added manually after db reset
-- UTXO provider only returned confirmed UTXOs — blocked anchoring with unconfirmed change
-- RecordDetailPage didn't pass chainTxId/chainBlockHeight to AssetDetailView
-- Demo org had no subscription (free tier 3-record cap blocked demo)
-
-**Proven working:** 6+ real Signet transactions broadcast and confirmed (txids: 393675c6..., cf424af1..., 177cdb97..., c69d3671..., 4d646924..., etc.). Full pipeline: PENDING -> broadcast -> SUBMITTED -> check-confirmations -> SECURED. Realtime toasts with mempool.space links.
-
-**IMPORTANT post-db-reset step:** After `supabase db reset`, must manually run:
-```bash
-docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U postgres -c "ALTER TYPE anchor_status ADD VALUE IF NOT EXISTS 'SUBMITTED';"
-docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U postgres -c "NOTIFY pgrst, 'reload schema';"
-```
-
-**Test counts:** 929 frontend + 1,010 worker = 1,939 total.
-
-### Session: 2026-03-20 — E2E Journey Validation + 7 Bug Fixes
-
-**Full E2E validation of 7 user journeys** using Playwright MCP + real Supabase + Signet:
-
-**7 bugs found and fixed:**
-- **BUG-E2E-01 (CRITICAL):** UTXO provider defaulted to testnet4 URL even when `BITCOIN_NETWORK=signet`. Fixed with network-aware `MEMPOOL_URLS` lookup map in `utxo-provider.ts`. Updated `client.ts`, `treasury.ts` callers.
-- **BUG-E2E-02 (MEDIUM):** `ExplorerLink.tsx` fallback defaulted to testnet4 instead of signet.
-- **BUG-E2E-03 (MEDIUM):** `TreasuryAdminPage.tsx` had banned term "BITCOIN" in UI (Constitution 1.3 violation) and wrong env var `VITE_CHAIN_NETWORK`.
-- **BUG-E2E-04 (HIGH):** `recipients.ts:71` used invalid role `'MEMBER'` (not in enum). Fixed to `'ORG_MEMBER'`.
-- **BUG-E2E-05 (MEDIUM):** `featureGate.ts` and `aiFeatureGate.ts` failed typecheck — `switchboard_flags.value` column missing from generated types. Added type assertion workaround.
-- **BUG-E2E-06 (LOW):** `sender.test.ts` type error — `resendApiKey` typed as `string` but set to `undefined`.
-- **BUG-E2E-07 (LOW):** Missing `supertest` dev dependency in worker.
-
-**Journey results:** J1 (7/9), J2 (4/6), J3 (6/8), J4 (PASS), J5 (4/5), J6 (3/5), J7 (PASS). Main blocker: Signet treasury UTXO unconfirmed (faucet tx pending).
-
-**Test counts:** 929 frontend + 1,009 worker = 1,938 total. Typecheck: clean. Copy lint: clean.
-**Report:** `docs/bugs/e2e_journey_validation.md`
-
-### Session: 2026-03-17 — P2WPKH SegWit Upgrade + Boolean Env Fix (PR #102)
-
-**Chain client upgraded from legacy P2PKH to native SegWit (P2WPKH):**
-- All `bitcoin.payments.p2pkh` → `bitcoin.payments.p2wpkh` across signet.ts, wallet.ts, scripts
-- PSBT construction: `nonWitnessUtxo` (full raw tx) → `witnessUtxo` (script + value) — eliminates 1 HTTP call per UTXO
-- Transaction vsize estimates updated: ~157 vbytes with change (was ~239), ~126 without (was ~205)
-- Treasury address format: `tb1...` (bech32) instead of `m/n...` (base58)
-- All 68 chain tests updated for witness-based signatures (empty scriptSig, witness[sig, pubkey])
-
-**Critical boolean env parsing bug fixed:**
-- `z.coerce.boolean()` treats any non-empty string as truthy — `USE_MOCKS=false` was parsed as `true`
-- Fixed with `z.preprocess((v) => v === 'true' || v === true, z.boolean())` for both `useMocks` and `enableProdNetworkAnchoring`
-
-**PR #102 review findings fixed:**
-- H1: Removed unused `rawTxHex` fetching in `MempoolUtxoProvider.listUnspent()` (saves 1 HTTP call per UTXO)
-- M1-M3: Updated stale P2PKH comments in wallet.ts, signet.ts, integration test
-- Follow-up: File rename `signet.ts` → `bitcoin.ts` deferred (too many import changes for this PR)
-
-**Treasury funding:** testnet4 address `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r` — txs dropped from mempool, re-sent. E2E anchoring test pending confirmation.
-
-**Test counts:** 874 frontend + 1,001 worker = 1,875 total. Migration count: 71 (0001-0071, 0033 skipped).
-
-### Session: 2026-03-18 — UAT Report #4 + Migration Fixes + Bug Fixes (PR #105)
-
-**5 migration bugs fixed** that blocked `supabase start` / `supabase db reset`:
-- 0061: `invite_member()` param rename needed `DROP FUNCTION` first (PG restriction)
-- 0064: Duplicate `report_status` enum + wrong `switchboard_flags` column names
-- 0067: Wrong column name (`webhook_id` → `endpoint_id`) + wrong table (`ai_review_queue` → `review_queue_items`)
-- 0068: `ALTER TYPE ADD VALUE` can't run inside transaction — split into 0068a (enum) + 0068b (DDL)
-- seed.sql: Invalid template UUIDs (`tttttttt` not valid hex)
-
-**UAT Report #4:** 37 tests across 9 sections, 92% pass rate:
-- 17/19 prior bugs from UAT Reports #2 and #3 confirmed **FIXED**
-- Key fixes verified: Revoke action, template metadata in Issue Credential form, Settings sub-page navigation, Bulk Upload button, mobile card layout, DM Sans + JetBrains Mono fonts, PENDING verification display
-- 2 remaining: UAT2-05 (record names not `<Link>`, partial), UAT2-12/14 (untested, low priority)
-
-**2 new bugs found and fixed:**
-- BUG-UAT4-01: Switchboard `getFlag()` console spam — now warns once per flag, toast IDs prevent stacking
-- BUG-UAT4-02: RouteGuard redirect during full page reload — treats `/auth` destination as loading state
-
-**PR review findings addressed:**
-- H1: AnchorLifecycleTimeline now handles `SUBMITTED` status (shows "Secured" as in-progress)
-- M1: RouteGuard comment clarifies `/auth` is a RouteDestination value, not a route path
-- M2: Migration 0068a ROLLBACK comment moved to bottom per convention
-
-**Test counts:** 929 frontend + 1,001 worker = 1,930 total. Migration count: 71 files (0001-0071, 0033 skipped, 0068 split into 0068a/0068b).
-**PR #105:** `fix/migration-bugs-uat4` — open, ready for merge.
-
-### Session: 2026-03-18 — Beta Sprints 1-3 Merged (BETA-01 through BETA-13)
-
-**Three Beta Sprint PRs reviewed, fixed, and merged to main:**
-- **PR #98 (Sprint 1):** BETA-01 through BETA-05 — mempool tracking, revocation tx, email, auto-user, xlsx upload
-- **PR #100 (Sprint 2):** BETA-06 through BETA-10 — AI batch extraction, 2FA/MFA, template selection, LinkedIn badge, semantic search
-- **PR #101 (Sprint 3):** BETA-11 through BETA-13 — explorer links, description field, realtime toasts
-
-**PR review findings fixed before merge:**
-- H1: Description + credential_type now pass through Zod validateAnchorCreate() (Constitution 1.2)
-- H2: chain_tx_id validated as hex before URL interpolation (XSS prevention)
-- M1: ExplorerLink.tsx default changed from signet to testnet4 (matches worker)
-- M2: Migration 0071 rollback comments completed with full trigger restore
-- M3: break-words CSS on description display (overflow prevention)
-- M4: Added EXPIRED + SUBMITTED toast transition tests
-
-**Test counts:** 874 frontend + 1,001 worker = 1,875 total. Migration count: 71 (0001-0071, 0033 skipped).
-**Vercel:** Production deployment READY at arkova-carson.vercel.app.
-**Branches cleaned:** feat/beta-sprint1, feat/beta-sprint2, feat/beta-sprint3 deleted.
-
-### Session: 2026-03-17 — Close Out All 8 Remaining Audit Findings
-
-**All 8 open audit findings (AUDIT-12, 17, 18, 19, 21, 22, 23, 24) resolved:**
-- **AUDIT-12 (Testing):** 8 new test files for untested hooks (+42 frontend tests): useTheme, useTreasuryStatus, useAIReports, useExtractionFeedback, useIntegrityScore, useReviewQueue, usePublicSearch, useCredentialTemplate
-- **AUDIT-17 (Schema):** Migration `0067_add_performance_indexes.sql` — 12 composite indexes on frequently queried columns (anchors, audit_events, webhook_delivery_logs, verification_events, subscriptions, ai_usage_events, review_queue, ai_reports, extraction_feedback)
-- **AUDIT-18 (Monitoring):** Structured health check endpoint — critical checks (DB) determine HTTP status, informational checks (stripe/sentry/ai config) in `?detailed=true` response only
-- **AUDIT-19 (API):** Resolved as false positive — rate limit headers already consistent across all endpoints
-- **AUDIT-21 (Types):** `callRpc<T>()` typed wrapper in `services/worker/src/utils/rpc.ts` eliminates 9 `as any` casts in worker. 13 frontend casts deferred to OPS-01 type regeneration.
-- **AUDIT-22 (Logging):** Investigated — `console.log` in sentry.ts and `console.error` in config.ts are intentional due to circular dependency (logger → config). Documented with AUDIT-22 comments.
-- **AUDIT-23 (Edge):** Resolved as false positive — edge worker bindings already fully typed in `services/edge/src/env.ts`
-- **AUDIT-24 (Docs):** `docs/confluence/01_architecture_overview.md` fully updated — P8 AI architecture section, expanded tech stack, 32+ table inventory, processing pipeline, credit system, provider abstraction, review queue states, edge worker routes
-
-**Also fixed:** Pre-existing TS error in `batch-anchor.ts` (spread type on `Json` metadata field)
-
-**Test counts:** 1,814 total (867 frontend + 947 worker). Migration count: 67 (0001-0067, 0033 skipped).
-**Docs updated:** BACKLOG.md (24/24 audit findings resolved), CLAUDE.md (stats), HANDOFF.md (session log), `docs/confluence/01_architecture_overview.md` (P8 AI architecture)
+PRs #117-120 merged. Design system migration, MCP at edge.arkova.ai, 16 credential templates, DEMO-04.
 
 <!-- Older sessions archived to docs/archive/session-log.md -->
+
+---
+
+## GEO & SEO Optimization (12 stories)
+
+| Story | Priority | Description | Status |
+|-------|----------|-------------|--------|
+| GEO-01 | CRITICAL | SSR for marketing site | **COMPLETE** |
+| GEO-02 | CRITICAL | Fix LinkedIn entity collision | PARTIAL |
+| GEO-03 | CRITICAL | Publish /privacy and /terms | **COMPLETE** |
+| GEO-04 | HIGH | About page with team bios | NOT STARTED |
+| GEO-05 | HIGH | Enhanced schema | **COMPLETE** |
+| GEO-06 | HIGH | Deploy upgraded llms.txt | **COMPLETE** |
+| GEO-07 | HIGH | Fix broken og:image | **COMPLETE** |
+| GEO-08 | HIGH | Content expansion — 5 pages | NOT STARTED |
+| GEO-09 | MEDIUM | Community & brand presence | NOT STARTED |
+| GEO-10 | MEDIUM | IndexNow for Bing/Copilot | NOT STARTED |
+| GEO-11 | MEDIUM | YouTube explainers | NOT STARTED |
+| GEO-12 | MEDIUM | Security headers | **COMPLETE** |
+
+---
 
 ## Decision Log (Phase 3/4)
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-03-14 | Methodology upgrade: TDD + Architecture-first + Security self-review + Playwright verification | Systematic quality gates before every code change |
-| 2026-03-14 | MEMORY.md archived, HANDOFF.md replaces it | Clean state tracking for Phase 3/4 without legacy clutter |
-| 2026-03-14 | IAIProvider as single abstraction for all AI providers | Vendor independence; hot-swap via AI_PROVIDER env var |
-| 2026-03-14 | Cloudflare fallback in degraded mode (heuristic) when no Workers AI binding | Express worker can still provide basic extraction without edge deployment |
-| 2026-03-14 | SSRF protection in crawler via domain allowlist pattern | Prevent internal network scanning via crawl endpoint |
-| 2026-03-14 | Batch queue throttle: 5 concurrent, 200ms delay | Prevent Gemini API rate limit exhaustion |
-| 2026-03-14 | MCP server uses WebStandardStreamableHTTPServerTransport (stateful mode) | Native Cloudflare Workers compat; session management via crypto.randomUUID() |
-| 2026-03-14 | MCP auth: dual-mode (API key + OAuth Bearer) | API keys for machine-to-machine; OAuth for enterprise SSO |
-| 2026-03-14 | llms.txt + AGENTS.md in public/ for agent discovery | Cloudflare AI Tooling style guide compliance |
-
----
-
-## Phase 4 Readiness (Verification API — Post-Launch)
-
-**Status:** **13/13 P4.5 stories COMPLETE.** Full Verification API with batch processing, job polling, usage tracking, OpenAPI docs, API key management UI, and load tests. Migrations 0057-0058. P8-S19 (Agentic Verification) also **COMPLETE** via MCP server.
-
----
-
-## Files Changed — Phase 2/3/4 Initial Build (2026-03-14)
-
-> Historical reference from the session that created HANDOFF.md. Later sessions tracked in Session Log above.
-
-### Phase 2 Compliance
-| File | Action |
-|------|--------|
-| `services/worker/src/utils/sentry.ts` | NEW — Worker Sentry init + PII scrubbing |
-| `services/worker/src/utils/sentry.test.ts` | NEW — 16 tests |
-| `services/worker/src/utils/sentry-verification.test.ts` | NEW — 5 verification tests |
-| `services/worker/src/index.ts` | MODIFIED — Sentry init + error handler |
-| `src/lib/sentry.ts` | NEW — Frontend Sentry init + PII scrubbing |
-| `src/lib/sentry.test.ts` | NEW — 9 tests |
-| `src/main.tsx` | MODIFIED — initSentry() call |
-| `src/components/layout/ErrorBoundary.tsx` | MODIFIED — Sentry.captureException |
-| `infra/cloudflare/dlp-policy.ts` | NEW — DLP SSN/Tax ID block script |
-| `infra/cloudflare/load-balancer.ts` | NEW — LB health check script |
-| `tests/infra/dlp-verification.test.ts` | NEW — 12 DLP tests |
-
-### Phase 3 AI Intelligence
-| File | Action |
-|------|--------|
-| `services/worker/src/ai/types.ts` | NEW — IAIProvider interface |
-| `services/worker/src/ai/types.test.ts` | NEW — 4 tests |
-| `services/worker/src/ai/factory.ts` | NEW — Provider factory |
-| `services/worker/src/ai/factory.test.ts` | NEW — 8 tests |
-| `services/worker/src/ai/cloudflare-fallback.ts` | NEW — CF Workers AI fallback |
-| `services/worker/src/ai/cloudflare-fallback.test.ts` | NEW — 4 tests |
-| `services/worker/src/ai/mock.ts` | NEW — Mock provider for tests |
-| `services/edge/src/env.ts` | NEW — Typed CF environment bindings |
-| `services/edge/src/batch-queue.ts` | REWRITTEN — Real queue consumer |
-| `services/edge/src/batch-queue-logic.ts` | NEW — Throttled batch processing |
-| `services/edge/src/report-generator.ts` | REWRITTEN — R2 storage + signed URLs |
-| `services/edge/src/report-logic.ts` | NEW — Report generation + R2 keys |
-| `services/edge/src/ai-fallback.ts` | REWRITTEN — Nemotron endpoints |
-| `services/edge/src/cloudflare-crawler.ts` | NEW — University directory ingestion |
-| `services/edge/src/crawler-logic.ts` | NEW — HTML parsing + ground truth records |
-| `services/edge/src/index.ts` | MODIFIED — Added /crawl route |
-| `services/edge/wrangler.toml` | MODIFIED — All bindings uncommented |
-| `tests/infra/batch-queue.test.ts` | NEW — 4 tests |
-| `tests/infra/r2-report.test.ts` | NEW — 4 tests |
-| `tests/infra/crawler.test.ts` | NEW — 5 tests |
-
-### Phase 4 Agentic Upsell & Documentation
-| File | Action |
-|------|--------|
-| `public/llms.txt` | NEW — LLM-optimized API documentation |
-| `public/AGENTS.md` | NEW — Agent integration guide with MCP tools |
-| `services/edge/src/mcp-server.ts` | NEW — Cloudflare MCP server (Streamable HTTP + OAuth) |
-| `services/edge/src/mcp-tools.ts` | NEW — Tool definitions + handlers (verify + search) |
-| `services/edge/src/index.ts` | MODIFIED — Added /mcp route |
-| `tests/infra/llms-txt.test.ts` | NEW — 12 validation tests |
-| `tests/infra/mcp-server.test.ts` | NEW — 8 tool + handler tests |
+| 2026-03-22 | Pipeline anchoring creates individual anchors per document | Each document must be visible in Treasury — batch-only is insufficient |
+| 2026-03-22 | VITE_CRON_SECRET exposed to browser (admin-only page) | Pipeline controls need auth header; page is gated to platform admins |
+| 2026-03-14 | IAIProvider as single abstraction for all AI providers | Vendor independence |
+| 2026-03-14 | MCP server uses Streamable HTTP transport | Native Cloudflare Workers compat |
 
 ---
 
 ## Bug Tracker
 
-| ID | Date | Summary | Severity | Status | Detail |
-|----|------|---------|----------|--------|--------|
-| ~~BUG-AUDIT-01~~ | ~~2026-03-12~~ | ~~No global toast system~~ | ~~HIGH~~ | ~~RESOLVED 2026-03-15~~ | ~~All mutation hooks have toasts (PRs #36, #37, #40)~~ |
-| ~~BUG-AUDIT-02~~ | ~~2026-03-12~~ | ~~Dead footer links~~ | ~~HIGH~~ | ~~RESOLVED~~ | ~~Pages created + routed (committed)~~ |
-| BUG-AUDIT-03 | 2026-03-12 | No favicon/logo/OG tags | HIGH | COMPLETE | PR #30 merged |
-
----
-
-## Verification Pending
-
-**MCP Server verification:** Deployed at edge.arkova.ai. Test with MCP Inspector:
-```bash
-npx @modelcontextprotocol/inspector https://edge.arkova.ai/mcp
-```
-Then call `verify_credential` with `{ "public_id": "ARK-2026-001" }` and `search_credentials` with `{ "query": "University of Michigan" }`.
-
-**Health check:** `curl https://edge.arkova.ai/health` — returns `{"status":"ok","service":"arkova-edge"}`.
-
-**llms.txt validation:** Verify at `https://edge.arkova.ai/llms.txt` — should return valid markdown under 5KB with all required sections.
-
-**Crawl test on live university domain:** Run:
-```bash
-curl -X POST https://edge.arkova.ai/crawl \
-  -H 'Content-Type: application/json' \
-  -d '{"domains":["umich.edu"]}'
-```
-Then verify in Supabase:
-```sql
-SELECT institution_name, domain, source, confidence_score,
-       embedding IS NOT NULL as has_embedding
-FROM institution_ground_truth
-WHERE source = 'cloudflare_crawl';
-```
+| ID | Date | Summary | Severity | Status |
+|----|------|---------|----------|--------|
+| BUG-1.6 | 2026-03-22 | Forgot password error | MEDIUM | OPEN |
+| BUG-2.3 | 2026-03-22 | Org admin onboarding error | MEDIUM | OPEN |
+| BUG-5.8 | 2026-03-22 | QR code blank page | LOW | OPEN (VITE_APP_URL set) |
+| BUG-2.5 | 2026-03-22 | Checklist doesn't show org admin steps | LOW | OPEN |
