@@ -28,15 +28,17 @@ export function useRevokeAnchor(): UseRevokeAnchorReturn {
     });
 
     if (rpcError) {
-      // Handle specific error codes
-      if (rpcError.message.includes('insufficient_privilege')) {
-        throw new Error('You do not have permission to revoke this anchor.');
-      } else if (rpcError.message.includes('already revoked')) {
-        throw new Error('This anchor has already been revoked.');
-      } else if (rpcError.message.includes('legal hold')) {
-        throw new Error('Cannot revoke an anchor under legal hold.');
+      // Handle specific error codes — Supabase returns ERRCODE in .code, message text in .message
+      const errMsg = (rpcError.message ?? '').toLowerCase();
+      const errCode = (rpcError.code ?? '').toLowerCase();
+      if (errCode === 'insufficient_privilege' || errCode === '42501' || errMsg.includes('insufficient_privilege') || errMsg.includes('permission')) {
+        throw new Error('You do not have permission to revoke this record.');
+      } else if (errMsg.includes('already revoked') || errMsg.includes('revoked')) {
+        throw new Error('This record has already been revoked.');
+      } else if (errMsg.includes('legal hold')) {
+        throw new Error('Cannot revoke a record under legal hold.');
       } else {
-        throw new Error(rpcError.message || 'Failed to revoke anchor.');
+        throw new Error(rpcError.message || 'Failed to revoke record.');
       }
     }
 

@@ -28,7 +28,7 @@ export const ProofPackageSchema = z.object({
 
   // Verification status
   verification: z.object({
-    status: z.enum(['PENDING', 'SECURED', 'REVOKED']),
+    status: z.enum(['PENDING', 'SUBMITTED', 'SECURED', 'REVOKED', 'EXPIRED']),
     verified: z.boolean(),
     public_id: z.string().nullable(),
   }),
@@ -70,7 +70,7 @@ interface AnchorData {
   filename: string;
   file_size: number | null;
   file_mime: string | null;
-  status: 'PENDING' | 'SECURED' | 'REVOKED';
+  status: 'PENDING' | 'SUBMITTED' | 'SECURED' | 'REVOKED' | 'EXPIRED';
   public_id: string | null;
   chain_tx_id: string | null;
   chain_block_height: number | null;

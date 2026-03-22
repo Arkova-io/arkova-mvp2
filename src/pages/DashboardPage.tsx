@@ -120,7 +120,7 @@ export function DashboardPage() {
       const query = searchQuery.trim().toLowerCase();
       result = result.filter(r =>
         r.filename.toLowerCase().includes(query) ||
-        r.fingerprint.toLowerCase().includes(query)
+        (r.fingerprint ?? '').toLowerCase().includes(query)
       );
     }
 

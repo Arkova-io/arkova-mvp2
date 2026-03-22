@@ -97,8 +97,8 @@ export function AIExtractionStep({
 
       setProgress(30);
 
-      const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
-      const response = await fetch(`${workerUrl}/api/v1/ai/extract-batch`, {
+      const { workerFetch } = await import('@/lib/workerClient');
+      const response = await workerFetch('/api/v1/ai/extract-batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
