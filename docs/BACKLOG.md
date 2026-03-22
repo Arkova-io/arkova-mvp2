@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-22 (PRs #117-120: Precision Engine design system, MCP deploy to edge.arkova.ai, DEMO-04 complete, migration 0075) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-22 (PR #127 merged: Phase 1.5 Sprints 1-4 complete, security fixes, stale branches cleaned) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -12,16 +12,18 @@ _Last updated: 2026-03-22 (PRs #117-120: Precision Engine design system, MCP dep
 | **BETA Readiness Stories** | **13** | **13** | **0** | No (all complete) |
 | BETA Activation Items | 2 | 2 | 0 | No (signet confirmed) |
 | E2E Validation Bugs | 7 | 7 fixed | 0 | No |
-| Demo Readiness (DEMO) | 4 | 3 | 1 | No (enhancement) |
-| Stories (NOT STARTED) | 8 | — | 8 | No (post-launch) |
-| Stories (PARTIAL) | 2 | — | 2 | 1 blocking (INFRA-07) |
+| Demo Readiness (DEMO) | 4 | 4 | 0 | No |
+| Phase 1.5 Foundation | 15 | 12 | 3 | No |
+| Stories (NOT STARTED) | 7 | — | 7 | No (post-launch) |
+| Stories (PARTIAL) | 2 | — | 2 | No (external/ops) |
 | Security Findings | 12 | 12 fixed | 0 | No |
 | UAT Bugs | 29 | 29 | 0 | No |
 | Audit Findings | 24 | 24 resolved | 0 | No |
+| GitHub CodeQL | 29 | 9 fixed | 20 | No (false positives) |
 | Operational Tasks | 8 | 2 | 6 | **YES** |
 | TLA+ Verification Findings | 3 | 3 fixed | 0 | No |
 | Code TODOs | 1 | — | 1 | No |
-| **Total Open Items** | | | **17** | |
+| **Total Open Items** | | | **12** | |
 
 ---
 
@@ -210,7 +212,7 @@ _All P8 stories complete including Phase II: P8-S6 (feedback loop), P8-S8 (integ
 ### GEO & SEO — 5 not started
 | ID | Description | Priority |
 |----|-------------|----------|
-| GEO-03 | Publish /privacy and /terms on marketing site | CRITICAL |
+| ~~GEO-03~~ | ~~Publish /privacy and /terms on marketing site~~ | ~~CRITICAL~~ — **COMPLETE** (pages exist in arkova-marketing) |
 | GEO-08 | Content expansion — 5 core pages | HIGH |
 | GEO-09 | Community & brand presence launch | MEDIUM |
 | GEO-10 | IndexNow for Bing/Copilot | MEDIUM |
@@ -298,25 +300,24 @@ _From E2E journey validation across 7 user flows. Report: `docs/bugs/e2e_journey
 
 | ID | Story | Priority | Status | Sprint | Depends On |
 |----|-------|----------|--------|--------|------------|
-| PH1-UI-01 | Design system refresh (match arkova.ai) | P0 | NOT STARTED | S1 | — |
+| ~~PH1-UI-01~~ | ~~Design system refresh (match arkova.ai)~~ | P0 | **COMPLETE** | S1 | — |
 | PH1-DATA-01 | EDGAR full-text fetcher enhancement | P0 | NOT STARTED | S1 | Migration 0077 |
-| PH1-DATA-02 | USPTO patent fetcher | P0 | NOT STARTED | S1 | Migration 0077 |
-| PH1-DATA-04 | Merkle batch anchoring for public records | P0 | NOT STARTED | S2 | PH1-DATA-01 |
-| PH1-PAY-01 | x402 Express middleware integration | P0 | NOT STARTED | S2 | Migration 0078 |
-| PH1-DATA-03 | Federal Register fetcher | P1 | NOT STARTED | S2 | Migration 0077 |
-| PH1-INT-01 | Vector DB enhancement for public records | P0 | NOT STARTED | S3 | Migration 0077 |
-| PH1-INT-02 | RAG retrieval endpoint (Nessie query) | P0 | NOT STARTED | S3 | PH1-INT-01 |
+| ~~PH1-DATA-02~~ | ~~USPTO patent fetcher~~ | P0 | **COMPLETE** | S1 | Migration 0077 |
+| ~~PH1-DATA-04~~ | ~~Merkle batch anchoring for public records~~ | P0 | **COMPLETE** | S2 | PH1-DATA-01 |
+| ~~PH1-PAY-01~~ | ~~x402 Express middleware integration~~ | P0 | **COMPLETE** | S2 | Migration 0078 |
+| ~~PH1-DATA-03~~ | ~~Federal Register fetcher~~ | P1 | **COMPLETE** | S2 | Migration 0077 |
+| ~~PH1-INT-01~~ | ~~Vector DB enhancement for public records~~ | P0 | **COMPLETE** | S3 | Migration 0077 |
+| ~~PH1-INT-02~~ | ~~RAG retrieval endpoint (Nessie query)~~ | P0 | **COMPLETE** | S3 | PH1-INT-01 |
 | PH1-PAY-02 | Self-hosted x402 facilitator | P0 | NOT STARTED | S3 | PH1-PAY-01 |
-| PH1-INT-03 | Gemini RAG integration | P1 | NOT STARTED | S4 | PH1-INT-02 |
-| PH1-SDK-01 | TypeScript SDK (@arkova/sdk) | P1 | NOT STARTED | S4 | PH1-PAY-01 |
-| PH1-SDK-03 | MCP server enhancement (nessie tools) | P1 | NOT STARTED | S4 | PH1-INT-02 |
-| PH1-DATA-05 | Pipeline monitoring dashboard | P1 | NOT STARTED | S4 | PH1-DATA-01 |
-| PH1-PAY-03 | Payment analytics & revenue tracking | P1 | NOT STARTED | S4 | PH1-PAY-01 |
+| ~~PH1-INT-03~~ | ~~Gemini RAG integration~~ | P1 | **COMPLETE** | S4 | PH1-INT-02 |
+| ~~PH1-SDK-01~~ | ~~TypeScript SDK (@arkova/sdk)~~ | P1 | **COMPLETE** | S4 | PH1-PAY-01 |
+| ~~PH1-SDK-03~~ | ~~MCP server enhancement (nessie tools)~~ | P1 | **COMPLETE** | S4 | PH1-INT-02 |
+| ~~PH1-DATA-05~~ | ~~Pipeline monitoring dashboard~~ | P1 | **COMPLETE** | S4 | PH1-DATA-01 |
+| ~~PH1-PAY-03~~ | ~~Payment analytics & revenue tracking~~ | P1 | **COMPLETE** | S4 | PH1-PAY-01 |
 | PH1-SDK-02 | Python SDK (arkova-python) | P2 | NOT STARTED | S5 | PH1-PAY-01 |
 
-**PRs already created (infrastructure):**
-- PR #126: `feature/nessie-dataset-pipeline` — Migration 0077 (public_records), EDGAR fetcher, training exporter
-- PR #125: `feature/x402-payment-infrastructure` — Migration 0078 (x402_payments), x402 packages, config
+**PR #127 merged 2026-03-22:** Sprints 1-4 complete (12/15 stories). PRs #125, #126 superseded and closed.
+**Remaining:** PH1-DATA-01 (EDGAR full-text), PH1-PAY-02 (facilitator deploy), PH1-SDK-02 (Python SDK)
 
 ---
 
