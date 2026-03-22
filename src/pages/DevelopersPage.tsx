@@ -273,7 +273,6 @@ export function DevelopersPage() {
             </div>
           </div>
         </section>
-      </main>
 
         {/* API Requirements + Rate Limits */}
         <section className="px-6 py-20 bg-[#151c24]">
@@ -348,6 +347,7 @@ export function DevelopersPage() {
             </div>
           </div>
         </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-[#bbc9cf]/15">

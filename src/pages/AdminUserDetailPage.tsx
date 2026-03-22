@@ -27,8 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/routes';
 import { workerFetch } from '@/lib/workerClient';
-
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin } from '@/lib/platform';
 
 interface UserProfile {
   id: string;
@@ -93,7 +92,7 @@ export function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = PLATFORM_ADMIN_EMAILS.includes(authUser?.email ?? '');
+  const isAdmin = isPlatformAdmin(authUser?.email);
 
   useEffect(() => {
     if (!isAdmin || !id) return;
@@ -101,54 +100,20 @@ export function AdminUserDetailPage() {
     setLoading(true);
     setError(null);
 
-    // Fetch user details — reuse admin users endpoint with search by ID
-    // Since we don't have a dedicated detail endpoint, we fetch from admin list + supabase
     const fetchUserDetail = async () => {
       try {
-        // 1. Fetch user profile via admin users endpoint (search by id)
-        const usersRes = await workerFetch(`/api/admin/users?search=${encodeURIComponent(id)}&limit=50`);
-        if (!usersRes.ok) {
-          setError('Failed to load user');
+        const res = await workerFetch(`/api/admin/users/${encodeURIComponent(id)}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: 'Failed to load user' }));
+          setError(body.error ?? 'User not found');
           setLoading(false);
           return;
         }
-        const usersData = await usersRes.json();
-        const foundUser = (usersData.users ?? []).find((u: UserProfile) => u.id === id);
-        if (!foundUser) {
-          setError('User not found');
-          setLoading(false);
-          return;
-        }
-        setUserProfile(foundUser);
-        setOrgName((foundUser as UserProfile & { org_name?: string }).org_name ?? null);
-
-        // 2. Fetch user's records
-        const recordsRes = await workerFetch(`/api/admin/records?search=&limit=100`);
-        if (recordsRes.ok) {
-          const recordsData = await recordsRes.json();
-          // Filter to this user's records
-          const userRecords = (recordsData.records ?? []).filter(
-            (r: UserRecord & { user_id?: string }) => r.user_id === id
-          );
-          setRecords(userRecords.slice(0, 20));
-        }
-
-        // 3. Fetch subscription info
-        const subsRes = await workerFetch(`/api/admin/subscriptions?limit=100`);
-        if (subsRes.ok) {
-          const subsData = await subsRes.json();
-          const userSub = (subsData.subscriptions ?? []).find(
-            (s: UserSubscription & { user_id?: string }) => s.user_id === id
-          );
-          if (userSub) {
-            setSubscription({
-              id: userSub.id,
-              status: userSub.status,
-              plan_name: userSub.plans?.name ?? null,
-              current_period_end: userSub.current_period_end,
-            });
-          }
-        }
+        const data = await res.json();
+        setUserProfile(data.user);
+        setOrgName(data.user.org_name ?? null);
+        setRecords(data.records ?? []);
+        setSubscription(data.subscription ?? null);
       } catch {
         setError('Failed to load user details');
       } finally {

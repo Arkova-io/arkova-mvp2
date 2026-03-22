@@ -56,7 +56,7 @@ import { ROUTES } from '@/lib/routes';
 import { PIPELINE_LABELS } from '@/lib/copy';
 import { supabase } from '@/lib/supabase';
 
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin, mempoolTxUrl, mempoolAddressUrl } from '@/lib/platform';
 
 interface PipelineStats {
   totalRecords: number;
@@ -106,7 +106,7 @@ export function PipelineAdminPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const isAdmin = PLATFORM_ADMIN_EMAILS.includes(user?.email ?? '');
+  const isAdmin = isPlatformAdmin(user?.email);
 
   // Tables from migrations 0077-0080 not yet in generated types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -825,7 +825,7 @@ export function PipelineAdminPage() {
                                 {anchorDetails.chain_tx_id ? (
                                   <>
                                     <a
-                                      href={`https://mempool.space/signet/tx/${anchorDetails.chain_tx_id}`}
+                                      href={mempoolTxUrl(anchorDetails.chain_tx_id)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-xs font-mono text-[#00d4ff] hover:text-[#00d4ff]/80 truncate max-w-[200px] flex items-center gap-1"
@@ -842,7 +842,7 @@ export function PipelineAdminPage() {
                                   </>
                                 ) : (
                                   <a
-                                    href="https://mempool.space/signet/address/tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r"
+                                    href={mempoolAddressUrl()}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1"

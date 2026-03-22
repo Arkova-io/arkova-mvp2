@@ -30,8 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ROUTES } from '@/lib/routes';
-
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin } from '@/lib/platform';
 
 interface AdminSubscription {
   id: string;
@@ -57,7 +56,7 @@ export function AdminSubscriptionsPage() {
 
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'ALL');
 
-  const isAdmin = PLATFORM_ADMIN_EMAILS.includes(user?.email ?? '');
+  const isAdmin = isPlatformAdmin(user?.email);
 
   const doFetch = useCallback((p = 1) => {
     fetchList({ page: p, filters: { status: statusFilter === 'ALL' ? '' : statusFilter } });

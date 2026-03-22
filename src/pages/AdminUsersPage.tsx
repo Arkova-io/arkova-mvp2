@@ -32,8 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ROUTES } from '@/lib/routes';
-
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin } from '@/lib/platform';
 
 interface AdminUser {
   id: string;
@@ -55,7 +54,7 @@ export function AdminUsersPage() {
   const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || 'ALL');
 
-  const isAdmin = PLATFORM_ADMIN_EMAILS.includes(user?.email ?? '');
+  const isAdmin = isPlatformAdmin(user?.email);
 
   const doFetch = useCallback((p = 1) => {
     fetchList({ page: p, search: searchInput, filters: { role: roleFilter === 'ALL' ? '' : roleFilter } });
@@ -118,7 +117,7 @@ export function AdminUsersPage() {
             className="pl-9"
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setSearchParams({ search: searchInput, role: v === 'ALL' ? '' : v, page: '1' }); fetchList({ page: 1, search: searchInput, filters: { role: v === 'ALL' ? '' : v } }); }}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="All Roles" />
           </SelectTrigger>

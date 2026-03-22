@@ -39,6 +39,7 @@ import { useCredentialTemplate } from '@/hooks/useCredentialTemplate';
 import { formatFingerprint } from '@/lib/fileHasher';
 import { LIFECYCLE_LABELS, CREDENTIAL_TYPE_LABELS, SHARE_LABELS, EXPLORER_LABELS } from '@/lib/copy';
 import { ExplorerLink } from '@/components/ui/ExplorerLink';
+import { mempoolAddressUrl } from '@/lib/platform';
 import { verifyUrl } from '@/lib/routes';
 
 interface AnchorRecord {
@@ -362,7 +363,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
               <div className="space-y-2">
                 <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
                 <a
-                  href="https://mempool.space/signet/address/tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r"
+                  href={mempoolAddressUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"

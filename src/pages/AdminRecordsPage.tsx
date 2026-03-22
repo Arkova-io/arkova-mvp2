@@ -32,8 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ROUTES } from '@/lib/routes';
-
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin } from '@/lib/platform';
 
 interface AdminRecord {
   id: string;
@@ -61,7 +60,7 @@ export function AdminRecordsPage() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'ALL');
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'ALL');
 
-  const isAdmin = PLATFORM_ADMIN_EMAILS.includes(user?.email ?? '');
+  const isAdmin = isPlatformAdmin(user?.email);
 
   const doFetch = useCallback((p = 1) => {
     fetchList({ page: p, search: searchInput, filters: { status: statusFilter === 'ALL' ? '' : statusFilter, type: typeFilter === 'ALL' ? '' : typeFilter } });
@@ -124,7 +123,7 @@ export function AdminRecordsPage() {
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); const sf = v === 'ALL' ? '' : v; const tf = typeFilter === 'ALL' ? '' : typeFilter; setSearchParams({ search: searchInput, status: sf, type: tf, page: '1' }); fetchList({ page: 1, search: searchInput, filters: { status: sf, type: tf } }); }}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
@@ -136,7 +135,7 @@ export function AdminRecordsPage() {
             <SelectItem value="REVOKED">Revoked</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); const sf = statusFilter === 'ALL' ? '' : statusFilter; const tf = v === 'ALL' ? '' : v; setSearchParams({ search: searchInput, status: sf, type: tf, page: '1' }); fetchList({ page: 1, search: searchInput, filters: { status: sf, type: tf } }); }}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>

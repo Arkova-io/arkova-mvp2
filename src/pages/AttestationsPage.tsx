@@ -287,7 +287,7 @@ export function AttestationsPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({ error: 'Failed to create attestation' }));
         setFormError(err.error || 'Failed to create attestation');
         setSubmitting(false);
         return;
@@ -678,6 +678,7 @@ export function AttestationsPage() {
               )}
               <div className="space-y-2">
                 <Label>Reason for Revocation *</Label>
+                <p className="text-xs text-muted-foreground">Minimum 3 characters required</p>
                 <Textarea
                   value={revokeReason}
                   onChange={(e) => setRevokeReason(e.target.value)}

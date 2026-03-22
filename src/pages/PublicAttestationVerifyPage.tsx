@@ -69,6 +69,8 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; b
   PENDING: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', label: 'Anchoring in Progress' },
   REVOKED: { icon: Ban, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', label: 'Revoked' },
   EXPIRED: { icon: XCircle, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Expired' },
+  CHALLENGED: { icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', label: 'Challenged' },
+  DRAFT: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Draft' },
 };
 
 export function PublicAttestationVerifyPage() {
@@ -179,6 +181,23 @@ export function PublicAttestationVerifyPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Expiry Notice */}
+              {attestation.status === 'EXPIRED' && attestation.expires_at && (
+                <Card className="border-muted bg-muted/5">
+                  <CardContent className="py-4">
+                    <div className="flex items-start gap-3">
+                      <XCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-muted-foreground">This attestation has expired</p>
+                        <p className="text-xs text-[#bbc9cf] mt-1">
+                          Expired: {new Date(attestation.expires_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Revocation Notice */}
               {attestation.status === 'REVOKED' && (
@@ -303,7 +322,7 @@ export function PublicAttestationVerifyPage() {
                     <div>
                       <span className="text-[10px] uppercase tracking-wider text-[#bbc9cf] font-semibold">Network Receipt</span>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {attestation.chain_proof.explorer_url ? (
+                        {attestation.chain_proof.explorer_url && attestation.chain_proof.explorer_url.startsWith('https://') ? (
                           <a
                             href={attestation.chain_proof.explorer_url}
                             target="_blank"
