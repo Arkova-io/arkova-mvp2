@@ -54,7 +54,7 @@ export function SearchPage() {
   // Person search state
   interface PersonResult {
     public_id: string;
-    label: string;
+    title: string | null;
     credential_type: string | null;
     status: string;
     created_at: string;
@@ -283,7 +283,7 @@ export function SearchPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
-                              {result.label || 'Untitled Record'}
+                              {result.title || result.public_id || 'Untitled Record'}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               {result.credential_type && (
