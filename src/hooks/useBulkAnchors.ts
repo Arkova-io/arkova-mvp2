@@ -8,6 +8,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { WORKER_URL } from '@/lib/workerClient';
 import type { BulkAnchorRecord } from '@/lib/csvParser';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { ENTITLEMENT_LABELS, TOAST } from '@/lib/copy';
@@ -143,26 +144,37 @@ export function useBulkAnchors(): UseBulkAnchorsReturn {
         // Auto-create recipient profiles for records with email addresses (BETA-04)
         const recipientRecords = records.filter(r => r.email);
         if (recipientRecords.length > 0) {
-          const { WORKER_URL: workerUrl } = await import('@/lib/workerClient');
+          const workerUrl = WORKER_URL;
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            // Fire-and-forget — don't block on recipient creation
-            Promise.allSettled(
-              recipientRecords.map(r =>
-                fetch(`${workerUrl}/api/recipients`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({
-                    email: r.email,
-                    fullName: r.metadata?.recipient_name ?? r.metadata?.recipient ?? r.filename.replace('.credential', ''),
-                    credentialLabel: r.credentialType ?? 'Credential',
-                  }),
-                }).catch(() => { /* non-fatal */ })
-              )
-            );
+            // Fetch org_id from user's profile — required by /api/recipients endpoint
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('org_id')
+              .eq('id', session.user.id)
+              .single();
+            const orgId = userProfile?.org_id;
+
+            if (orgId) {
+              // Fire-and-forget — don't block on recipient creation
+              Promise.allSettled(
+                recipientRecords.map(r =>
+                  fetch(`${workerUrl}/api/recipients`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                      email: r.email,
+                      orgId,
+                      fullName: r.metadata?.recipient_name ?? r.metadata?.recipient ?? r.filename.replace('.credential', ''),
+                      credentialLabel: r.credentialType ?? 'Credential',
+                    }),
+                  }).catch(() => { /* non-fatal */ })
+                )
+              );
+            }
           }
         }
 

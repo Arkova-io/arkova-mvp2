@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
+import { workerFetch } from '@/lib/workerClient';
 import type { CsvColumn, CsvRow, ColumnMapping } from '@/lib/csvParser';
 
 export interface BatchExtractionResult {
@@ -97,7 +98,6 @@ export function AIExtractionStep({
 
       setProgress(30);
 
-      const { workerFetch } = await import('@/lib/workerClient');
       const response = await workerFetch('/api/v1/ai/extract-batch', {
         method: 'POST',
         headers: {
