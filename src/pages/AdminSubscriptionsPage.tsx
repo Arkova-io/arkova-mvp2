@@ -46,7 +46,7 @@ export function AdminSubscriptionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const { items, total, page, loading, error, fetchList } = useAdminList<AdminSubscription>('/api/admin/subscriptions');
+  const { items, total, page, limit, loading, error, fetchList } = useAdminList<AdminSubscription>('/api/admin/subscriptions');
 
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? '');
 
@@ -89,7 +89,7 @@ export function AdminSubscriptionsPage() {
     );
   }
 
-  const totalPages = Math.ceil(total / 25);
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>

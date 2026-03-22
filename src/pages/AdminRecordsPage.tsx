@@ -48,7 +48,7 @@ export function AdminRecordsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const { items, total, page, loading, error, fetchList } = useAdminList<AdminRecord>('/api/admin/records');
+  const { items, total, page, limit, loading, error, fetchList } = useAdminList<AdminRecord>('/api/admin/records');
 
   const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') ?? '');
@@ -91,7 +91,7 @@ export function AdminRecordsPage() {
     );
   }
 
-  const totalPages = Math.ceil(total / 25);
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>

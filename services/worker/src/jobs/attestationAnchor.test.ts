@@ -2,7 +2,7 @@
  * Unit tests for processAttestationAnchoring()
  *
  * Tests: flag disabled, no pending attestations, successful anchoring,
- * chain submission failure, partial update failure.
+ * chain submission failure, partial update failure, race condition.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -12,7 +12,7 @@ const {
   mockSubmitFingerprint,
   mockLogger,
   mockDbFrom,
-  mockRpc,
+  mockCallRpc,
 } = vi.hoisted(() => {
   const mockSubmitFingerprint = vi.fn();
   const mockLogger = {
@@ -22,19 +22,23 @@ const {
     debug: vi.fn(),
   };
 
-  const mockRpc = vi.fn();
+  const mockCallRpc = vi.fn();
   const mockDbFrom = vi.fn();
 
-  return { mockSubmitFingerprint, mockLogger, mockDbFrom, mockRpc };
+  return { mockSubmitFingerprint, mockLogger, mockDbFrom, mockCallRpc };
 });
 
 // Mock modules
 vi.mock('../utils/db.js', () => ({
-  db: { from: mockDbFrom, rpc: mockRpc },
+  db: { from: mockDbFrom, rpc: vi.fn() },
 }));
 
 vi.mock('../utils/logger.js', () => ({
   logger: mockLogger,
+}));
+
+vi.mock('../utils/rpc.js', () => ({
+  callRpc: mockCallRpc,
 }));
 
 vi.mock('../chain/client.js', () => ({
@@ -58,19 +62,23 @@ describe('processAttestationAnchoring', () => {
   });
 
   it('should skip when ENABLE_ATTESTATION_ANCHORING flag is disabled', async () => {
-    mockRpc.mockResolvedValueOnce({ data: false });
+    mockCallRpc.mockResolvedValueOnce({ data: false });
 
     const result = await processAttestationAnchoring();
 
     expect(result.processed).toBe(0);
-    expect(mockRpc).toHaveBeenCalledWith('get_flag', { p_flag_key: 'ENABLE_ATTESTATION_ANCHORING' });
+    expect(result.skipped).toBe(0);
+    expect(mockCallRpc).toHaveBeenCalledWith(
+      expect.anything(),
+      'get_flag',
+      { p_flag_key: 'ENABLE_ATTESTATION_ANCHORING' },
+    );
     expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('disabled'));
   });
 
   it('should return early when no pending attestations exist', async () => {
-    mockRpc.mockResolvedValueOnce({ data: true });
+    mockCallRpc.mockResolvedValueOnce({ data: true });
 
-    // Mock attestations query chain
     const queryChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -88,40 +96,32 @@ describe('processAttestationAnchoring', () => {
   });
 
   it('should anchor pending attestations and update to ACTIVE', async () => {
-    mockRpc.mockResolvedValueOnce({ data: true });
+    mockCallRpc.mockResolvedValueOnce({ data: true });
 
     const mockAttestations = [
       { id: 'att-1', public_id: 'ARK-TST-VER-ABC123', fingerprint: 'fp_1' },
       { id: 'att-2', public_id: 'ARK-TST-AUD-DEF456', fingerprint: 'fp_2' },
     ];
 
-    // Query chain for fetching attestations
-    const queryChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      not: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: mockAttestations, error: null }),
-    };
-
-    // Update chain for updating attestations
-    const updateChain = {
-      eq: vi.fn().mockReturnThis(),
-    };
-    // First eq returns updateChain, second eq resolves
-    updateChain.eq = vi.fn()
-      .mockReturnValueOnce({ eq: vi.fn().mockResolvedValueOnce({ error: null }) })
-      .mockReturnValueOnce({ eq: vi.fn().mockResolvedValueOnce({ error: null }) });
-
     let callCount = 0;
     mockDbFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return queryChain; // First call: select attestations
-      // Subsequent calls: update attestations
+      if (callCount === 1) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          not: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: mockAttestations, error: null }),
+        };
+      }
+      // Update calls — return data with one item to indicate row matched
       return {
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({ data: [{ id: 'updated' }], error: null }),
+            }),
           }),
         }),
       };
@@ -135,6 +135,7 @@ describe('processAttestationAnchoring', () => {
     const result = await processAttestationAnchoring();
 
     expect(result.processed).toBe(2);
+    expect(result.skipped).toBe(0);
     expect(result.txId).toBe('tx_att_123');
     expect(result.merkleRoot).toBe('merkle_root_2');
     expect(result.batchId).toMatch(/^att_batch_/);
@@ -145,7 +146,7 @@ describe('processAttestationAnchoring', () => {
   });
 
   it('should handle chain submission failure gracefully', async () => {
-    mockRpc.mockResolvedValueOnce({ data: true });
+    mockCallRpc.mockResolvedValueOnce({ data: true });
 
     const mockAttestations = [
       { id: 'att-1', public_id: 'ARK-TST-VER-ABC123', fingerprint: 'fp_1' },
@@ -174,7 +175,7 @@ describe('processAttestationAnchoring', () => {
   });
 
   it('should handle DB fetch error', async () => {
-    mockRpc.mockResolvedValueOnce({ data: true });
+    mockCallRpc.mockResolvedValueOnce({ data: true });
 
     const queryChain = {
       select: vi.fn().mockReturnThis(),
@@ -191,8 +192,55 @@ describe('processAttestationAnchoring', () => {
     expect(mockLogger.error).toHaveBeenCalled();
   });
 
+  it('should detect race condition when attestation status changed', async () => {
+    mockCallRpc.mockResolvedValueOnce({ data: true });
+
+    const mockAttestations = [
+      { id: 'att-1', public_id: 'ARK-TST-VER-ABC123', fingerprint: 'fp_1' },
+    ];
+
+    let callCount = 0;
+    mockDbFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          not: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: mockAttestations, error: null }),
+        };
+      }
+      // Update returns empty array — row was already updated by another worker
+      return {
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        }),
+      };
+    });
+
+    mockSubmitFingerprint.mockResolvedValue({
+      receiptId: 'tx_att_race',
+      timestamp: new Date().toISOString(),
+    });
+
+    const result = await processAttestationAnchoring();
+
+    expect(result.processed).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.txId).toBe('tx_att_race');
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ attestationId: 'att-1' }),
+      expect.stringContaining('status changed'),
+    );
+  });
+
   it('should handle individual attestation update failure', async () => {
-    mockRpc.mockResolvedValueOnce({ data: true });
+    mockCallRpc.mockResolvedValueOnce({ data: true });
 
     const mockAttestations = [
       { id: 'att-1', public_id: 'ARK-TST-VER-ABC123', fingerprint: 'fp_1' },
@@ -216,8 +264,11 @@ describe('processAttestationAnchoring', () => {
       return {
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({
-              error: shouldFail ? { message: 'Update failed' } : null,
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({
+                data: shouldFail ? null : [{ id: 'ok' }],
+                error: shouldFail ? { message: 'Update failed' } : null,
+              }),
             }),
           }),
         }),
@@ -231,7 +282,7 @@ describe('processAttestationAnchoring', () => {
 
     const result = await processAttestationAnchoring();
 
-    expect(result.processed).toBe(1); // One succeeded, one failed
+    expect(result.processed).toBe(1);
     expect(result.txId).toBe('tx_att_456');
   });
 

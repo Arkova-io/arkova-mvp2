@@ -14,11 +14,21 @@ import { logger } from '../utils/logger.js';
 import { db } from '../utils/db.js';
 import { isPlatformAdmin } from '../utils/platformAdmin.js';
 
+/** Default page size — shared with frontend useAdminList hook */
+export const ADMIN_PAGE_SIZE = 25;
+
+/** Escape ilike wildcard characters to prevent filter injection */
+function escapeIlike(input: string): string {
+  return input.replace(/[%_\\]/g, '\\$&');
+}
+
 /** Parse pagination params with defaults */
 function parsePagination(req: Request): { page: number; limit: number; search: string } {
   const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 25));
-  const search = (req.query.search as string || '').trim();
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || ADMIN_PAGE_SIZE));
+  const rawSearch = (req.query.search as string || '').trim();
+  // Sanitize search: escape ilike wildcards + limit length
+  const search = escapeIlike(rawSearch).slice(0, 200);
   return { page, limit, search };
 }
 
@@ -42,7 +52,7 @@ export async function handleAdminUsers(
   try {
     let query = db
       .from('profiles')
-      .select('id, email, full_name, account_type, org_id, created_at, updated_at, deleted_at', { count: 'exact' })
+      .select('id, email, full_name, role, org_id, created_at, updated_at, deleted_at', { count: 'exact' })
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -51,7 +61,7 @@ export async function handleAdminUsers(
       query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
     }
     if (roleFilter) {
-      query = query.eq('account_type', roleFilter);
+      query = query.eq('role', roleFilter as 'INDIVIDUAL' | 'ORG_ADMIN' | 'ORG_MEMBER');
     }
 
     const { data: users, count, error } = await query;
@@ -63,7 +73,7 @@ export async function handleAdminUsers(
     }
 
     // Enrich with org names
-    const orgIds = [...new Set((users ?? []).map((u) => u.org_id).filter(Boolean))];
+    const orgIds = [...new Set((users ?? []).map((u) => u.org_id).filter((id): id is string => id != null))];
     let orgMap: Record<string, string> = {};
     if (orgIds.length > 0) {
       const { data: orgs } = await db
@@ -120,10 +130,11 @@ export async function handleAdminRecords(
       query = query.or(`filename.ilike.%${search}%,public_id.ilike.%${search}%,fingerprint.ilike.%${search}%`);
     }
     if (statusFilter) {
-      query = query.eq('status', statusFilter);
+      // Status filter from user input — Supabase returns 0 rows for invalid values (safe)
+      query = query.eq('status', statusFilter as 'PENDING' | 'SUBMITTED' | 'SECURED' | 'REVOKED' | 'EXPIRED');
     }
     if (typeFilter) {
-      query = query.eq('credential_type', typeFilter);
+      query = query.eq('credential_type', typeFilter as 'DEGREE' | 'LICENSE' | 'CERTIFICATE' | 'TRANSCRIPT' | 'PROFESSIONAL' | 'OTHER');
     }
 
     const { data: records, count, error } = await query;
@@ -175,7 +186,7 @@ export async function handleAdminSubscriptions(
     return;
   }
 
-  const { page, limit, search } = parsePagination(req);
+  const { page, limit } = parsePagination(req);
   const offset = (page - 1) * limit;
   const statusFilter = (req.query.status as string) || '';
 

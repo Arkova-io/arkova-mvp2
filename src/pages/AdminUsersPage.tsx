@@ -32,7 +32,7 @@ interface AdminUser {
   id: string;
   email: string;
   full_name: string | null;
-  account_type: string;
+  role: string;
   org_id: string | null;
   org_name: string | null;
   created_at: string;
@@ -43,7 +43,7 @@ export function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const { items, total, page, loading, error, fetchList } = useAdminList<AdminUser>('/api/admin/users');
+  const { items, total, page, limit, loading, error, fetchList } = useAdminList<AdminUser>('/api/admin/users');
 
   const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') ?? '');
@@ -85,7 +85,7 @@ export function AdminUsersPage() {
     );
   }
 
-  const totalPages = Math.ceil(total / 25);
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>
@@ -168,7 +168,7 @@ export function AdminUsersPage() {
                       <td className="py-3 pr-4 font-mono text-xs">{u.email}</td>
                       <td className="py-3 pr-4 hidden sm:table-cell">{u.full_name ?? '—'}</td>
                       <td className="py-3 pr-4 hidden md:table-cell">
-                        <RoleBadge role={u.account_type} />
+                        <RoleBadge role={u.role} />
                       </td>
                       <td className="py-3 pr-4 hidden lg:table-cell text-muted-foreground">
                         {u.org_name ?? '—'}
