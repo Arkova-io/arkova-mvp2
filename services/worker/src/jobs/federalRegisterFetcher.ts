@@ -100,7 +100,12 @@ export async function fetchFederalRegisterDocuments(supabase: SupabaseClient): P
 
     let response: Response;
     try {
-      response = await fetch(`${FR_API_URL}?${params.toString()}`);
+      response = await fetch(`${FR_API_URL}?${params.toString()}`, {
+        headers: {
+          'User-Agent': 'Arkova contact@arkova.io',
+          Accept: 'application/json',
+        },
+      });
     } catch (err) {
       logger.error({ error: err, page }, 'Federal Register API request failed');
       break;
