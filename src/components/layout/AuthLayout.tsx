@@ -62,13 +62,14 @@ export function AuthLayout({ children, title, description }: Readonly<AuthLayout
 
           {/* Footer */}
           <p className="text-center text-xs text-[#859398]">
-            By continuing, you agree to our{' '}
+            <Link to="/about" className="underline underline-offset-4 hover:text-[#00d4ff] transition-colors">
+              About
+            </Link>{' · '}
             <Link to="/terms" className="underline underline-offset-4 hover:text-[#00d4ff] transition-colors">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
+              Terms
+            </Link>{' · '}
             <Link to="/privacy" className="underline underline-offset-4 hover:text-[#00d4ff] transition-colors">
-              Privacy Policy
+              Privacy
             </Link>
           </p>
         </div>
