@@ -67,6 +67,9 @@ export function OrgProfilePage() {
   const [revokeTarget, setRevokeTarget] = useState<Anchor | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Org records count
+  const [recordsCount, setRecordsCount] = useState<number | null>(null);
+
   // Settings state
   const [orgDisplayName, setOrgDisplayName] = useState('');
   const [orgDomain, setOrgDomain] = useState('');
@@ -94,6 +97,22 @@ export function OrgProfilePage() {
     }
     fetchRole();
   }, [user, orgId]);
+
+  // Fetch org records count (personal anchors only, exclude pipeline)
+  useEffect(() => {
+    async function fetchRecordsCount() {
+      if (!orgId) return;
+      const { count, error: countError } = await supabase
+        .from('anchors')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .is('deleted_at', null);
+      if (!countError && count !== null) {
+        setRecordsCount(count);
+      }
+    }
+    fetchRecordsCount();
+  }, [orgId, refreshKey]);
 
   // Initialize settings fields when org loads
   if (organization && !orgSettingsInit) {
@@ -237,7 +256,7 @@ export function OrgProfilePage() {
           <CardContent className="p-4 flex items-center gap-3">
             <FileText className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-semibold">{refreshKey >= 0 ? '—' : '0'}</p>
+              <p className="text-2xl font-semibold">{recordsCount !== null ? recordsCount.toLocaleString() : '—'}</p>
               <p className="text-xs text-muted-foreground">Records</p>
             </div>
           </CardContent>

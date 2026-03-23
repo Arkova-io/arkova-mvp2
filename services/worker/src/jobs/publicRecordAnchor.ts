@@ -27,8 +27,8 @@ import { getInitializedChainClient } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/** Max records per batch — Merkle tree performance limit */
-export const PUBLIC_RECORD_BATCH_SIZE = 500;
+/** Max records per batch — Merkle tree handles thousands efficiently */
+export const PUBLIC_RECORD_BATCH_SIZE = 2000;
 
 /** Minimum records to trigger a batch */
 export const MIN_BATCH_SIZE = 1;
@@ -73,14 +73,14 @@ function buildAnchorFilename(record: {
 
 /**
  * Map public record source to credential_type enum.
- * SEC filings → PROFESSIONAL, patents → LICENSE, academic → CERTIFICATE, regulations → OTHER
+ * Pipeline records use dedicated types added in migration 0091.
  */
 function mapCredentialType(source: string): string {
   switch (source) {
-    case 'edgar': return 'PROFESSIONAL';
-    case 'uspto': return 'LICENSE';
-    case 'openalex': return 'CERTIFICATE';
-    case 'federal_register': return 'OTHER';
+    case 'edgar': return 'SEC_FILING';
+    case 'uspto': return 'PATENT';
+    case 'openalex': return 'PUBLICATION';
+    case 'federal_register': return 'REGULATION';
     default: return 'OTHER';
   }
 }
