@@ -201,100 +201,82 @@ export function OrgProfilePage() {
 
   return (
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut} orgName={organization?.display_name}>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(ROUTES.ORGANIZATIONS)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight truncate">
-                {organization?.display_name ?? 'Loading...'}
-              </h1>
-              {/* org_prefix added in migration 0085, cast until types regenerated */}
-              {orgPrefix && (
-                <Badge variant="secondary" className="font-mono text-[10px] shrink-0">
-                  {orgPrefix}
-                </Badge>
-              )}
+      {/* LinkedIn-style profile header */}
+      <div className="mb-6">
+        {/* Cover banner */}
+        <div className="h-28 md:h-36 rounded-t-xl bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 relative">
+          <Button variant="ghost" size="icon" className="absolute top-3 left-3 bg-background/80 backdrop-blur-sm" onClick={() => navigate(ROUTES.ORGANIZATIONS)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Profile info overlapping banner */}
+        <div className="px-4 md:px-6 -mt-10 relative">
+          <div className="flex flex-col md:flex-row md:items-end gap-4">
+            {/* Org avatar */}
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-4 border-background bg-card shadow-lg">
+              <Building2 className="h-10 w-10 text-primary" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {organization?.domain && <span>{organization.domain}</span>}
+
+            {/* Name + meta */}
+            <div className="flex-1 min-w-0 pb-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-semibold tracking-tight truncate">
+                  {organization?.display_name ?? 'Organization'}
+                </h1>
+                {orgPrefix && (
+                  <Badge variant="secondary" className="font-mono text-[10px] shrink-0">
+                    {orgPrefix}
+                  </Badge>
+                )}
+                {organization?.verification_status === 'VERIFIED' && (
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
+                    <Check className="mr-1 h-3 w-3" />
+                    Verified
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {organization?.domain && <span>{organization.domain}</span>}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pb-1">
               {userRole && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-[10px] h-7">
                   {userRole === 'owner' && <Crown className="mr-1 h-3 w-3" />}
                   {userRole === 'admin' && <Shield className="mr-1 h-3 w-3" />}
                   {userRole === 'member' && <User className="mr-1 h-3 w-3" />}
                   {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                 </Badge>
               )}
+              <Button variant="outline" size="sm" onClick={() => navigate(issuerRegistryPath(orgId))}>
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Public Profile
+              </Button>
             </div>
           </div>
+
+          {/* Inline stats (LinkedIn-style) */}
+          <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground border-b border-border/50 pb-4">
+            <span><strong className="text-foreground">{recordsCount !== null ? recordsCount.toLocaleString() : '—'}</strong> records</span>
+            <span><strong className="text-foreground">{members.length}</strong> members</span>
+            <span>Founded {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}</span>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate(issuerRegistryPath(orgId))}>
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Public Profile
-        </Button>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Users className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold">{members.length}</p>
-              <p className="text-xs text-muted-foreground">Members</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <FileText className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold">{recordsCount !== null ? recordsCount.toLocaleString() : '—'}</p>
-              <p className="text-xs text-muted-foreground">Records</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <BarChart3 className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold">
-                {organization?.verification_status === 'VERIFIED' ? 'Verified' : 'Pending'}
-              </p>
-              <p className="text-xs text-muted-foreground">Status</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold">
-                {organization?.created_at ? new Date(organization.created_at).toLocaleDateString() : '—'}
-              </p>
-              <p className="text-xs text-muted-foreground">Created</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabbed content */}
-      <Tabs defaultValue="members" className="space-y-4">
+      {/* Tabbed content — Records first (primary content, like LinkedIn posts) */}
+      <Tabs defaultValue="records" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="members" className="gap-2">
-            <Users className="h-4 w-4" />
-            Members
-          </TabsTrigger>
           <TabsTrigger value="records" className="gap-2">
             <FileText className="h-4 w-4" />
             Records
+          </TabsTrigger>
+          <TabsTrigger value="members" className="gap-2">
+            <Users className="h-4 w-4" />
+            Members
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="settings" className="gap-2">
