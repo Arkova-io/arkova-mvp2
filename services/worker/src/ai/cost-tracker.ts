@@ -35,6 +35,8 @@ export interface UsageEvent {
   durationMs?: number;
   success: boolean;
   errorMessage?: string;
+  /** SHA-256 hash prefix (12 chars) of the extraction prompt used */
+  promptVersion?: string;
 }
 
 /** Default credit allocations per billing tier */
@@ -125,6 +127,7 @@ export async function logAIUsageEvent(event: UsageEvent): Promise<void> {
       duration_ms: event.durationMs ?? null,
       success: event.success,
       error_message: event.errorMessage ?? null,
+      prompt_version: event.promptVersion ?? null,
     });
 
     if (error) {

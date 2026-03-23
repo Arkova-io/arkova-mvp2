@@ -111,6 +111,22 @@ Input: "Doctorate of Medicine ... Issued by University of [UNKNOWN] ... Date: 20
 Output: {"credentialType":"DEGREE","issuerName":"University of [UNKNOWN]","issuedDate":"2030-06-15","degreeLevel":"Doctorate","fraudSignals":["SUSPICIOUS_DATES","MISSING_ACCREDITATION","FORMAT_ANOMALY"],"confidence":0.25}`;
 
 /**
+ * Get a stable hash of the current extraction system prompt.
+ * Used to track which prompt version produced which results.
+ */
+export function getExtractionPromptVersion(): string {
+  // Use a simple hash — crypto may not be available in all contexts
+  let hash = 0;
+  for (let i = 0; i < EXTRACTION_SYSTEM_PROMPT.length; i++) {
+    const chr = EXTRACTION_SYSTEM_PROMPT.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  // Return as 12-char hex string (zero-padded, absolute value)
+  return Math.abs(hash).toString(16).padStart(8, '0').substring(0, 12);
+}
+
+/**
  * Build the user prompt for a specific extraction request.
  */
 export function buildExtractionPrompt(
