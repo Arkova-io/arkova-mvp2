@@ -14,6 +14,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import { FULL_GOLDEN_DATASET } from './golden-dataset.js';
 import { runEval, formatEvalReport, getPromptVersionHash } from './runner.js';
+import { analyzeCalibration, formatCalibrationReport } from './calibration.js';
 import type { IAIProvider } from '../types.js';
 
 // Parse args
@@ -96,6 +97,29 @@ async function main() {
   for (const tm of result.byCredentialType) {
     console.log(`  ${tm.scope.padEnd(15)} | F1: ${(tm.macroF1 * 100).toFixed(1).padStart(5)}% | n=${tm.totalEntries}`);
   }
+
+  // AI-EVAL-02: Confidence calibration analysis
+  console.log('\n--- CONFIDENCE CALIBRATION (AI-EVAL-02) ---');
+  const calibration = analyzeCalibration(result.entryResults);
+  console.log(`Pearson r: ${calibration.pearsonR.toFixed(3)} (target >= 0.80)`);
+  console.log(`ECE: ${(calibration.expectedCalibrationError * 100).toFixed(1)}%`);
+  console.log(`MCE: ${(calibration.maxCalibrationError * 100).toFixed(1)}%`);
+  console.log(`Status: ${calibration.isCalibrated ? 'CALIBRATED' : 'NEEDS RECALIBRATION'}`);
+  if (calibration.overconfidentBuckets.length > 0) {
+    console.log(`Overconfident buckets: ${calibration.overconfidentBuckets.map(b => b.label).join(', ')}`);
+  }
+  if (calibration.recalibrationSuggestions.length > 0) {
+    console.log('\nRecalibration suggestions:');
+    for (const s of calibration.recalibrationSuggestions) {
+      console.log(`  - ${s}`);
+    }
+  }
+
+  // Write calibration report
+  const calReport = formatCalibrationReport(calibration);
+  const calPath = resolve(outputDir, `calibration-${providerArg}-${timestamp}.md`);
+  writeFileSync(calPath, calReport, 'utf-8');
+  console.log(`\nCalibration report: ${calPath}`);
 }
 
 main().catch((err) => {

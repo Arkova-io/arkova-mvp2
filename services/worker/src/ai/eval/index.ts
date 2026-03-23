@@ -40,3 +40,9 @@ export {
   getPromptVersionHash,
 } from './runner.js';
 export type { EvalRunOptions } from './runner.js';
+
+export {
+  analyzeCalibration,
+  formatCalibrationReport,
+} from './calibration.js';
+export type { CalibrationResult, CalibrationBucket } from './calibration.js';

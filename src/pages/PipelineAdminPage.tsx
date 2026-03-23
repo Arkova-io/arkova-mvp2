@@ -910,12 +910,17 @@ export function PipelineAdminPage() {
                         <div className="grid gap-1.5 mt-2">
                           {Object.entries(selectedRecord.metadata)
                             .filter(([key]) => !['abstract', 'description', 'summary'].includes(key))
+                            .filter(([, value]) => value !== null && value !== undefined && value !== '')
                             .slice(0, 10)
                             .map(([key, value]) => (
                               <div key={key} className="flex gap-2 text-xs">
                                 <span className="text-muted-foreground shrink-0 min-w-[100px]">{key.replace(/_/g, ' ')}:</span>
-                                <span className="font-mono text-muted-foreground truncate">
-                                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                <span className="font-mono text-muted-foreground break-words whitespace-normal">
+                                  {Array.isArray(value)
+                                    ? (value.length > 0 ? value.join(', ') : '—')
+                                    : typeof value === 'object' && value !== null
+                                      ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ')
+                                      : String(value)}
                                 </span>
                               </div>
                             ))}
