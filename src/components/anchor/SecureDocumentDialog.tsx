@@ -47,7 +47,7 @@ import { isAIExtractionEnabled } from '@/lib/switchboard';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
-import { TOAST, ANCHORING_STATUS_LABELS, SECURE_DIALOG_LABELS, DESCRIPTION_LABELS } from '@/lib/copy';
+import { TOAST, ANCHORING_STATUS_LABELS, SECURE_DIALOG_LABELS, DESCRIPTION_LABELS, AI_EXTRACTION_LABELS } from '@/lib/copy';
 import { verifyUrl, recordDetailPath } from '@/lib/routes';
 import { useNavigate } from 'react-router-dom';
 
@@ -238,7 +238,8 @@ export function SecureDocumentDialog({
       handleConfirm(autoAccepted);
       return;
     } else {
-      // Extraction failed — auto-select General Document and anchor immediately
+      // Extraction failed — notify user, then anchor without metadata
+      toast.warning(AI_EXTRACTION_LABELS.EXTRACTION_FAILED_TOAST);
       setExtractionProgress(null);
       await autoSelectTemplate('OTHER');
       handleConfirm([]);

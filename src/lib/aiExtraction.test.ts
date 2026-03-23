@@ -156,6 +156,72 @@ describe('aiExtraction orchestrator', () => {
     expect(result).toBeNull();
   });
 
+  it('reports error message via progress callback on API failure', async () => {
+    (extractText as ReturnType<typeof vi.fn>).mockResolvedValue({
+      text: 'Some text',
+      pageCount: 1,
+      method: 'pdfjs',
+      durationMs: 100,
+    });
+
+    (stripPII as ReturnType<typeof vi.fn>).mockReturnValue({
+      strippedText: 'Some text',
+      piiFound: [],
+      redactionCount: 0,
+      originalLength: 9,
+      strippedLength: 9,
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: () => Promise.resolve({ message: 'AI extraction disabled' }),
+    });
+
+    const progressCb = vi.fn();
+    const file = new File(['dummy'], 'doc.pdf', { type: 'application/pdf' });
+    const result = await runExtraction(file, 'a'.repeat(64), 'DEGREE', progressCb);
+
+    expect(result).toBeNull();
+    expect(progressCb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stage: 'error',
+        message: expect.stringContaining('AI extraction disabled'),
+      }),
+    );
+  });
+
+  it('reports network error via progress callback on fetch failure', async () => {
+    (extractText as ReturnType<typeof vi.fn>).mockResolvedValue({
+      text: 'Some text',
+      pageCount: 1,
+      method: 'pdfjs',
+      durationMs: 100,
+    });
+
+    (stripPII as ReturnType<typeof vi.fn>).mockReturnValue({
+      strippedText: 'Some text',
+      piiFound: [],
+      redactionCount: 0,
+      originalLength: 9,
+      strippedLength: 9,
+    });
+
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const progressCb = vi.fn();
+    const file = new File(['dummy'], 'doc.pdf', { type: 'application/pdf' });
+    const result = await runExtraction(file, 'a'.repeat(64), 'DEGREE', progressCb);
+
+    expect(result).toBeNull();
+    expect(progressCb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stage: 'error',
+        message: expect.stringContaining('Unable to connect'),
+      }),
+    );
+  });
+
   it('reports progress through all stages', async () => {
     (extractText as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: 'Some credential text',
