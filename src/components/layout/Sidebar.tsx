@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ChevronUp,
   Code2,
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
@@ -67,6 +68,7 @@ const adminNavItems: NavItem[] = [
   { label: 'System Health', icon: Activity, to: ROUTES.ADMIN_HEALTH },
   { label: NAV_LABELS.TREASURY, icon: Landmark, to: ROUTES.ADMIN_TREASURY },
   { label: 'Pipeline', icon: Database, to: ROUTES.ADMIN_PIPELINE },
+  { label: 'AI Metrics', icon: Brain, to: ROUTES.ADMIN_AI_METRICS },
   { label: 'Organizations', icon: Building2, to: ROUTES.ADMIN_ORGANIZATIONS },
   { label: 'Payments', icon: DollarSign, to: ROUTES.ADMIN_PAYMENTS },
 ];
