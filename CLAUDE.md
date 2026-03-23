@@ -1,7 +1,7 @@
 # ARKOVA — Claude Code Engineering Directive
 
 > **Version:** 2026-03-23 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
-> **Stats:** 89 migrations | 978 tests | 192 stories (170 complete, 89%) | 24/24 audit findings resolved
+> **Stats:** 91 migrations | 2,148 tests | 198 stories (176 complete, 89%) | 24/24 audit findings resolved
 
 Read this file before every task. Rules here override all other documents.
 
@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 88 files (0001-0089, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0089_credential_type_immutable.sql`. Migrations 0001-0089 applied to production.
+**Current:** 91 files (0001-0092, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0092_ai_usage_prompt_version.sql`. Migrations 0001-0089 applied to production.
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -375,5 +375,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-23 | 89 migrations | 978 tests | 192 stories (170 complete, 89%) | 24/24 audit findings resolved_
+_Directive version: 2026-03-23 | 91 migrations | 2,148 tests | 198 stories (176 complete, 89%) | 24/24 audit findings resolved_
 _Reference docs: `docs/reference/` (FILE_MAP, BRAND, TESTING, STORY_ARCHIVE)_
