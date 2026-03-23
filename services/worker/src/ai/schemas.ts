@@ -22,6 +22,15 @@ export const ExtractedFieldsSchema = z.object({
   licenseNumber: z.string().optional(),
   accreditingBody: z.string().optional(),
   jurisdiction: z.string().optional(),
+  // CLE-specific fields (Session 10)
+  creditHours: z.number().optional(),
+  creditType: z.string().optional(),
+  barNumber: z.string().optional(),
+  activityNumber: z.string().optional(),
+  providerName: z.string().optional(),
+  approvedBy: z.string().optional(),
+  // Fraud signals (Session 10)
+  fraudSignals: z.array(z.string()).optional(),
 }).strict();
 
 /**

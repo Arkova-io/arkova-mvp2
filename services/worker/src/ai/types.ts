@@ -29,7 +29,19 @@ export interface ExtractedFields {
   expiryDate?: string;
   fieldOfStudy?: string;
   degreeLevel?: string;
-  [key: string]: string | undefined;
+  licenseNumber?: string;
+  accreditingBody?: string;
+  jurisdiction?: string;
+  // CLE-specific fields
+  creditHours?: number;
+  creditType?: string;
+  barNumber?: string;
+  activityNumber?: string;
+  providerName?: string;
+  approvedBy?: string;
+  // Fraud signals
+  fraudSignals?: string[];
+  [key: string]: string | number | string[] | undefined;
 }
 
 /** Result of a metadata extraction call. */

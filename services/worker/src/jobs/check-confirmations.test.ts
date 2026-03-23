@@ -94,6 +94,7 @@ vi.mock('../utils/db.js', () => {
     chain.eq = vi.fn(() => chain);
     chain.not = vi.fn(() => chain);
     chain.is = vi.fn(() => chain);
+    chain.order = vi.fn(() => chain);
     chain.limit = vi.fn(() => mockAnchorsSelectResult);
     chain.single = vi.fn(() => ({
       data: { credential_type: 'DEGREE', metadata: { issuerName: 'Test Uni' } },

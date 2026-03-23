@@ -14,6 +14,7 @@ export const ROUTES = {
   VERIFY: '/verify/:publicId',
   VERIFY_FORM: '/verify',
   VERIFY_MY_RECORD: '/my-records/verify',
+  ABOUT: '/about',
   PRIVACY: '/privacy',
   TERMS: '/terms',
   CONTACT: '/contact',
@@ -69,6 +70,7 @@ export const ROUTES = {
   ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
   ADMIN_ORGANIZATIONS: '/admin/organizations',
   ADMIN_USER_DETAIL: '/admin/users/:id',
+  ADMIN_AI_METRICS: '/admin/ai-metrics',
 
   // Billing routes
   BILLING: '/billing',

@@ -14,6 +14,7 @@ import { Router, Request, Response } from 'express';
 import { ExtractionRequestSchema } from '../../ai/schemas.js';
 import { createAIProvider } from '../../ai/factory.js';
 import { checkAICredits, deductAICredits, logAIUsageEvent } from '../../ai/cost-tracker.js';
+import { getExtractionPromptVersion } from '../../ai/prompts/extraction.js';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
 
@@ -101,6 +102,7 @@ router.post('/', async (req: Request, res: Response) => {
       confidence: result.confidence,
       durationMs,
       success: true,
+      promptVersion: getExtractionPromptVersion(),
     }).catch(() => {
       // Swallow — logging should not fail the request
     });
