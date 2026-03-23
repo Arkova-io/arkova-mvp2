@@ -751,10 +751,24 @@ app.get('/api/admin/platform-stats', rateLimiters.checkout, async (req, res) => 
 // =========================================================================
 // Admin Detail Lists — Arkova platform admin only (SN1)
 // =========================================================================
+app.options('/api/admin/organizations', (req, res) => { setCorsHeaders(req, res); });
 app.options('/api/admin/users', (req, res) => { setCorsHeaders(req, res); });
 app.options('/api/admin/users/:id', (req, res) => { setCorsHeaders(req, res); });
 app.options('/api/admin/records', (req, res) => { setCorsHeaders(req, res); });
 app.options('/api/admin/subscriptions', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/organizations', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminOrganizations } = await import('./api/admin-lists.js');
+    await handleAdminOrganizations(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin organizations request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 app.get('/api/admin/users', rateLimiters.checkout, async (req, res) => {
   if (setCorsHeaders(req, res)) return;
