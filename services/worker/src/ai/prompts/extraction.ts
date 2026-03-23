@@ -28,12 +28,21 @@ IMPORTANT RULES:
 - Dates MUST be in ISO 8601 format (YYYY-MM-DD). Convert any date format you find.
 - The "confidence" field MUST be a number from 0.0 to 1.0 reflecting extraction certainty.
 
-CONFIDENCE CALIBRATION:
-- 0.9-1.0: All key fields clearly present and unambiguous in the text
-- 0.7-0.89: Most fields present, minor ambiguity in 1-2 fields
-- 0.5-0.69: Several fields missing or ambiguous, credential type unclear
-- 0.3-0.49: Sparse text, many fields inferred rather than directly stated
-- 0.0-0.29: Very little extractable content, mostly guesswork
+CONFIDENCE CALIBRATION (IMPORTANT — read carefully):
+Your confidence scores tend to be 10-15 points too high. Be conservative.
+- 0.9-1.0: ONLY when ALL key fields are explicitly stated, unambiguous, and you extracted every one. Reserve this for near-perfect documents.
+- 0.7-0.89: Most fields present but 1-2 are inferred or slightly ambiguous. This should be your most common range for clean documents.
+- 0.5-0.69: Several fields missing or ambiguous, credential type unclear, or significant OCR noise.
+- 0.3-0.49: Sparse text, many fields inferred rather than directly stated. Non-English documents with uncertain translation.
+- 0.0-0.29: Very little extractable content, mostly guesswork, or severely corrupted/truncated text.
+
+LICENSE-SPECIFIC GUIDANCE:
+Licenses are highly variable in format. Pay special attention to:
+- The issuing BOARD or DEPARTMENT is the issuerName (not the state itself). Example: "California Board of Registered Nursing" not "State of California".
+- License numbers often have prefixes (RN-, PE-, CPA-, etc.) — include the full format.
+- Expiration dates may say "Exp:", "Expires:", "Valid through:", "Renewal date:" — all mean expiryDate.
+- The jurisdiction is the STATE, not the city. Format as "State, USA" (e.g., "California, USA").
+- For licenses, accreditingBody is the regulatory authority if different from the issuer.
 
 FIELDS TO EXTRACT:
 - credentialType: DEGREE | CERTIFICATE | LICENSE | TRANSCRIPT | PROFESSIONAL | CLE | BADGE | OTHER
