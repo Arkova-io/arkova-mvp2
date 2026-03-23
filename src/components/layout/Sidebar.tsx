@@ -68,6 +68,7 @@ const adminNavItems: NavItem[] = [
   { label: 'System Health', icon: Activity, to: ROUTES.ADMIN_HEALTH },
   { label: NAV_LABELS.TREASURY, icon: Landmark, to: ROUTES.ADMIN_TREASURY },
   { label: 'Pipeline', icon: Database, to: ROUTES.ADMIN_PIPELINE },
+  { label: 'Organizations', icon: Building2, to: ROUTES.ADMIN_ORGANIZATIONS },
   { label: 'Payments', icon: DollarSign, to: ROUTES.ADMIN_PAYMENTS },
 ];
 

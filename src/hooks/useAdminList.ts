@@ -55,8 +55,8 @@ export function useAdminList<T>(endpoint: string, pageSize = 25) {
       }
 
       const data = await response.json();
-      // The response has a key matching the endpoint type (users, records, subscriptions)
-      const items = data.users ?? data.records ?? data.subscriptions ?? [];
+      // The response has a key matching the endpoint type (users, records, subscriptions, organizations)
+      const items = data.users ?? data.records ?? data.subscriptions ?? data.organizations ?? [];
       setState({
         items,
         total: data.total ?? 0,
