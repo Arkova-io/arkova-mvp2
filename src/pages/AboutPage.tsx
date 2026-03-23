@@ -101,7 +101,7 @@ export function AboutPage() {
             Building trust infrastructure for credentials
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
-            Arkova makes document authenticity provable. We anchor credential fingerprints to Bitcoin, creating an immutable record that anyone can verify — without exposing the document itself.
+            Arkova makes document authenticity provable. We anchor credential fingerprints to a public network, creating an immutable record that anyone can verify — without exposing the document itself.
           </p>
         </div>
 
