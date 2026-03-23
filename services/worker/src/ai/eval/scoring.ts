@@ -1,0 +1,339 @@
+/**
+ * AI Eval Scoring Engine (AI-EVAL-01)
+ *
+ * Compares AI extraction results against golden dataset ground truth.
+ * Computes precision, recall, F1 per field, per credential type.
+ */
+
+import type {
+  FieldResult,
+  FieldMetrics,
+  AggregateMetrics,
+  EntryEvalResult,
+  GroundTruthFields,
+} from './types.js';
+
+/** All fields that can be compared */
+const ALL_FIELDS = [
+  'credentialType',
+  'issuerName',
+  'recipientIdentifier',
+  'issuedDate',
+  'expiryDate',
+  'fieldOfStudy',
+  'degreeLevel',
+  'licenseNumber',
+  'accreditingBody',
+  'jurisdiction',
+  'creditHours',
+  'creditType',
+  'barNumber',
+  'activityNumber',
+  'providerName',
+  'approvedBy',
+  'fraudSignals',
+] as const;
+
+const DATE_FIELDS = new Set(['issuedDate', 'expiryDate']);
+const ARRAY_FIELDS = new Set(['fraudSignals']);
+const NUMERIC_FIELDS = new Set(['creditHours']);
+
+/**
+ * Normalize a string for comparison: lowercase, trim, collapse whitespace.
+ */
+export function normalizeString(value: string | undefined): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  return String(value).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Normalize a date string to YYYY-MM-DD with zero-padded month/day.
+ */
+export function normalizeDate(value: string | undefined): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const parts = String(value).split('-');
+  if (parts.length !== 3) return value;
+  const [year, month, day] = parts;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+/**
+ * Compare a single field between ground truth and extracted value.
+ */
+export function compareField(
+  field: string,
+  expected: string | number | string[] | undefined,
+  actual: string | number | string[] | undefined,
+): FieldResult {
+  // Both missing
+  if (expected === undefined && actual === undefined) {
+    return { field, expected, actual, correct: true, matchType: 'missing_both' };
+  }
+  if ((expected === undefined || (Array.isArray(expected) && expected.length === 0)) &&
+      (actual === undefined || (Array.isArray(actual) && actual.length === 0))) {
+    return { field, expected, actual, correct: true, matchType: 'missing_both' };
+  }
+
+  // Expected present, actual missing
+  if (actual === undefined || actual === null || actual === '') {
+    if (expected !== undefined && expected !== null && expected !== '' &&
+        !(Array.isArray(expected) && expected.length === 0)) {
+      return { field, expected, actual, correct: false, matchType: 'false_negative' };
+    }
+  }
+
+  // Expected missing, actual present
+  if (expected === undefined || expected === null || expected === '' ||
+      (Array.isArray(expected) && expected.length === 0)) {
+    if (actual !== undefined && actual !== null && actual !== '' &&
+        !(Array.isArray(actual) && actual.length === 0)) {
+      return { field, expected, actual, correct: false, matchType: 'false_positive' };
+    }
+  }
+
+  // Array comparison (fraudSignals)
+  if (ARRAY_FIELDS.has(field)) {
+    const expArr = Array.isArray(expected) ? [...expected].sort() : [];
+    const actArr = Array.isArray(actual) ? [...actual].sort() : [];
+    const match = expArr.length === actArr.length && expArr.every((v, i) => v === actArr[i]);
+    return { field, expected, actual, correct: match, matchType: match ? 'exact' : 'mismatch' };
+  }
+
+  // Numeric comparison
+  if (NUMERIC_FIELDS.has(field)) {
+    const match = Number(expected) === Number(actual);
+    return { field, expected, actual, correct: match, matchType: match ? 'exact' : 'mismatch' };
+  }
+
+  // Date comparison
+  if (DATE_FIELDS.has(field)) {
+    const normExp = normalizeDate(String(expected));
+    const normAct = normalizeDate(String(actual));
+    if (normExp === normAct) {
+      return { field, expected, actual, correct: true, matchType: 'exact' };
+    }
+    return { field, expected, actual, correct: false, matchType: 'mismatch' };
+  }
+
+  // String comparison
+  const expStr = String(expected);
+  const actStr = String(actual);
+
+  if (expStr === actStr) {
+    return { field, expected, actual, correct: true, matchType: 'exact' };
+  }
+
+  if (normalizeString(expStr) === normalizeString(actStr)) {
+    return { field, expected, actual, correct: true, matchType: 'normalized' };
+  }
+
+  return { field, expected, actual, correct: false, matchType: 'mismatch' };
+}
+
+/**
+ * Compare all fields between ground truth and extracted result.
+ * Returns a FieldResult for every field that appears in either ground truth or extracted.
+ */
+export function compareFields(
+  groundTruth: GroundTruthFields,
+  extracted: Record<string, unknown>,
+): FieldResult[] {
+  const results: FieldResult[] = [];
+
+  for (const field of ALL_FIELDS) {
+    const expected = (groundTruth as Record<string, unknown>)[field] as
+      | string
+      | number
+      | string[]
+      | undefined;
+    const actual = (extracted as Record<string, unknown>)[field] as
+      | string
+      | number
+      | string[]
+      | undefined;
+
+    // Skip fields that are absent from both
+    if (expected === undefined && actual === undefined) continue;
+
+    results.push(compareField(field, expected, actual));
+  }
+
+  return results;
+}
+
+/**
+ * Compute precision, recall, F1 for a single field across multiple entry results.
+ */
+export function computeFieldMetrics(
+  field: string,
+  fieldResults: FieldResult[],
+): FieldMetrics {
+  if (fieldResults.length === 0) {
+    return {
+      field,
+      totalExpected: 0,
+      totalExtracted: 0,
+      truePositives: 0,
+      falsePositives: 0,
+      falseNegatives: 0,
+      precision: 0,
+      recall: 0,
+      f1: 0,
+    };
+  }
+
+  let tp = 0;
+  let fp = 0;
+  let fn = 0;
+  let totalExpected = 0;
+  let totalExtracted = 0;
+
+  for (const r of fieldResults) {
+    const hasExpected = r.expected !== undefined && r.expected !== null && r.expected !== '' &&
+      !(Array.isArray(r.expected) && r.expected.length === 0);
+    const hasActual = r.actual !== undefined && r.actual !== null && r.actual !== '' &&
+      !(Array.isArray(r.actual) && r.actual.length === 0);
+
+    if (hasExpected) totalExpected++;
+    if (hasActual) totalExtracted++;
+
+    switch (r.matchType) {
+      case 'exact':
+      case 'normalized':
+        tp++;
+        break;
+      case 'false_positive':
+        fp++;
+        break;
+      case 'false_negative':
+        fn++;
+        break;
+      case 'mismatch':
+        // Mismatch: extracted something wrong. Counts as both FP and FN.
+        fp++;
+        fn++;
+        break;
+      case 'missing_both':
+        // Neither expected nor present — not counted
+        break;
+    }
+  }
+
+  const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+  const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
+  const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+
+  return {
+    field,
+    totalExpected,
+    totalExtracted,
+    truePositives: tp,
+    falsePositives: fp,
+    falseNegatives: fn,
+    precision,
+    recall,
+    f1,
+  };
+}
+
+/**
+ * Pearson correlation coefficient between two arrays.
+ */
+export function pearsonCorrelation(x: number[], y: number[]): number {
+  const n = x.length;
+  if (n < 2 || n !== y.length) return 0;
+
+  const meanX = x.reduce((a, b) => a + b, 0) / n;
+  const meanY = y.reduce((a, b) => a + b, 0) / n;
+
+  let numSum = 0;
+  let denomX = 0;
+  let denomY = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dx = x[i] - meanX;
+    const dy = y[i] - meanY;
+    numSum += dx * dy;
+    denomX += dx * dx;
+    denomY += dy * dy;
+  }
+
+  const denom = Math.sqrt(denomX * denomY);
+  if (denom === 0) return 0;
+  return numSum / denom;
+}
+
+/**
+ * Compute aggregate metrics for a set of entry results.
+ */
+export function computeAggregateMetrics(
+  scope: string,
+  entries: EntryEvalResult[],
+): AggregateMetrics {
+  if (entries.length === 0) {
+    return {
+      scope,
+      totalEntries: 0,
+      fieldMetrics: [],
+      macroF1: 0,
+      weightedF1: 0,
+      meanReportedConfidence: 0,
+      meanActualAccuracy: 0,
+      confidenceCorrelation: 0,
+      meanLatencyMs: 0,
+    };
+  }
+
+  // Collect all field results grouped by field
+  const fieldResultsByField = new Map<string, FieldResult[]>();
+  for (const entry of entries) {
+    for (const fr of entry.fieldResults) {
+      const existing = fieldResultsByField.get(fr.field) || [];
+      existing.push(fr);
+      fieldResultsByField.set(fr.field, existing);
+    }
+  }
+
+  // Compute per-field metrics
+  const fieldMetrics: FieldMetrics[] = [];
+  for (const [field, results] of fieldResultsByField) {
+    fieldMetrics.push(computeFieldMetrics(field, results));
+  }
+
+  // Macro F1: average F1 across all fields that have at least 1 expected value
+  const fieldsWithData = fieldMetrics.filter(fm => fm.totalExpected > 0);
+  const macroF1 =
+    fieldsWithData.length > 0
+      ? fieldsWithData.reduce((sum, fm) => sum + fm.f1, 0) / fieldsWithData.length
+      : 0;
+
+  // Weighted F1: weighted by totalExpected per field
+  const totalExpectedSum = fieldsWithData.reduce((sum, fm) => sum + fm.totalExpected, 0);
+  const weightedF1 =
+    totalExpectedSum > 0
+      ? fieldsWithData.reduce((sum, fm) => sum + fm.f1 * fm.totalExpected, 0) / totalExpectedSum
+      : 0;
+
+  // Confidence metrics
+  const confidences = entries.map(e => e.reportedConfidence);
+  const accuracies = entries.map(e => e.actualAccuracy);
+  const meanReportedConfidence = confidences.reduce((a, b) => a + b, 0) / entries.length;
+  const meanActualAccuracy = accuracies.reduce((a, b) => a + b, 0) / entries.length;
+  const confidenceCorrelation = pearsonCorrelation(confidences, accuracies);
+
+  // Latency
+  const meanLatencyMs =
+    entries.reduce((sum, e) => sum + e.latencyMs, 0) / entries.length;
+
+  return {
+    scope,
+    totalEntries: entries.length,
+    fieldMetrics,
+    macroF1,
+    weightedF1,
+    meanReportedConfidence,
+    meanActualAccuracy,
+    confidenceCorrelation,
+    meanLatencyMs,
+  };
+}
