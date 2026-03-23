@@ -56,6 +56,7 @@ export const CREDENTIAL_TYPE_LABELS = {
   CERTIFICATE: 'Certificate',
   TRANSCRIPT: 'Transcript',
   PROFESSIONAL: 'Professional Credential',
+  CLE: 'CLE Credit',
   OTHER: 'Other',
 } as const;
 
@@ -65,6 +66,7 @@ export const CREDENTIAL_TYPE_DESCRIPTIONS = {
   CERTIFICATE: 'Certificate of completion or achievement',
   TRANSCRIPT: 'Academic transcript or record of courses',
   PROFESSIONAL: 'Professional certification or accreditation',
+  CLE: 'Continuing Legal Education credit',
   OTHER: 'Other credential type',
 } as const;
 
@@ -111,12 +113,25 @@ export const ACTION_LABELS = {
 
 export const NAV_LABELS = {
   DASHBOARD: 'Dashboard',
+  DOCUMENTS: 'Documents',
   MY_RECORDS: 'My Records',
   ORGANIZATION: 'Organization',
   SETTINGS: 'Settings',
   HELP: 'Help',
   SEARCH: 'Search',
   TREASURY: 'Treasury',
+} as const;
+
+export const DOCUMENTS_PAGE_LABELS = {
+  PAGE_TITLE: 'Documents',
+  PAGE_SUBTITLE: 'All your records, credentials, and attestations in one place.',
+  TAB_ALL: 'All',
+  TAB_RECORDS: 'My Records',
+  TAB_CREDENTIALS: 'Issued to Me',
+  TAB_ATTESTATIONS: 'Attestations',
+  EMPTY_TITLE: 'No documents yet',
+  EMPTY_DESC: 'Secure your first document, receive a credential, or create an attestation to get started.',
+  SECURE_DOCUMENT: 'Secure Document',
 } as const;
 
 // =============================================================================
@@ -991,6 +1006,80 @@ export const WALKTHROUGH_LABELS = {
 } as const;
 
 // =============================================================================
+// DEVELOPER PAGE
+// =============================================================================
+
+export const DEVELOPER_PAGE_LABELS = {
+  // Hero
+  HERO_TITLE: 'Developer Platform',
+  HERO_SUBTITLE: 'Programmatic credential verification, AI-powered metadata extraction, and seamless integration for your applications.',
+
+  // API Overview cards
+  CARD_VERIFY_TITLE: 'Verify Credentials',
+  CARD_VERIFY_ENDPOINT: 'GET /verify/{id}',
+  CARD_VERIFY_DESC: 'Verify any credential\'s status, proof details, and issuer information with a single API call.',
+  CARD_BATCH_TITLE: 'Batch Verification',
+  CARD_BATCH_ENDPOINT: 'POST /verify/batch',
+  CARD_BATCH_DESC: 'Verify up to 100 credentials per request for high-throughput integrations.',
+  CARD_AI_TITLE: 'AI Intelligence',
+  CARD_AI_ENDPOINT: 'POST /ai/extract',
+  CARD_AI_DESC: 'AI-powered metadata extraction, semantic search, and integrity scoring for credential data.',
+
+  // Getting Started
+  GETTING_STARTED_TITLE: 'Getting Started',
+  STEP_1: 'Create an account and navigate to Settings',
+  STEP_2: 'Go to API Keys and generate a new key',
+  STEP_3: 'Make your first API call using the example below',
+  CURL_COMMENT: '# Verify a credential by its public ID',
+
+  // Links
+  LINKS_TITLE: 'Resources',
+  LINK_API_DOCS: 'API Documentation',
+  LINK_API_DOCS_DESC: 'Interactive Swagger UI with full endpoint reference',
+  LINK_OPENAPI_SPEC: 'OpenAPI Spec',
+  LINK_OPENAPI_SPEC_DESC: 'Machine-readable API specification (JSON)',
+  LINK_AGENT_GUIDE: 'Agent Integration Guide',
+  LINK_AGENT_GUIDE_DESC: 'Instructions for AI agent and LLM integration',
+  LINK_LLM_DISCOVERY: 'LLM Discovery',
+  LINK_LLM_DISCOVERY_DESC: 'Structured capability manifest for AI assistants',
+
+  // MCP Server
+  MCP_TITLE: 'MCP Server for AI Agents',
+  MCP_DESC: 'Arkova provides a Model Context Protocol (MCP) server for AI agents. Connect your agent to verify credentials and search the registry programmatically.',
+  MCP_TOOL_VERIFY: 'verify_credential',
+  MCP_TOOL_VERIFY_DESC: 'Verify a credential by its public ID',
+  MCP_TOOL_SEARCH: 'search_credentials',
+  MCP_TOOL_SEARCH_DESC: 'Search the public credential registry',
+
+  // API docs card on ApiKeySettingsPage
+  API_DOCS_CARD_TITLE: 'API Documentation',
+  API_DOCS_CARD_DESC: 'Explore the full API reference with interactive examples.',
+  API_DOCS_CARD_BUTTON: 'Open API Docs',
+  API_DOCS_CARD_LINK: 'View full developer overview',
+} as const;
+
+// =============================================================================
+// BETA GATE
+// =============================================================================
+
+export const AUTH_FORM_LABELS = {
+  SIGNUP_TITLE: 'Create your account',
+  SIGNUP_DESCRIPTION: 'Join the closed beta and start securing your documents',
+  ALREADY_HAVE_ACCOUNT: 'Already have an account?',
+  SIGN_IN: 'Sign in',
+  CREATE_ACCOUNT: 'Create account',
+  CREATING_ACCOUNT: 'Creating account...',
+} as const;
+
+export const BETA_GATE_LABELS = {
+  DESCRIPTION: 'Arkova is in closed beta. Enter your invite code to create an account.',
+  CODE_LABEL: 'Invite code',
+  CODE_PLACEHOLDER: 'Enter your invite code',
+  CONTINUE: 'Continue',
+  INVALID_CODE: 'Invalid invite code. Please check your invitation email and try again.',
+} as const;
+
+// =============================================================================
 // FORBIDDEN TERMS (for lint script)
 // =============================================================================
 
@@ -1015,6 +1104,55 @@ export const FORBIDDEN_TERMS = [
 /**
  * Approved replacement terms.
  */
+// =============================================================================
+// PIPELINE MONITORING (PH1-DATA-05)
+// =============================================================================
+
+export const PIPELINE_LABELS = {
+  PAGE_TITLE: 'Pipeline Monitoring',
+  PAGE_DESCRIPTION: 'Data ingestion and anchoring pipeline status',
+  RECORDS_INGESTED: 'Records Ingested',
+  RECORDS_ANCHORED: 'Records Anchored',
+  RECORDS_PENDING: 'Pending Anchoring',
+  RECORDS_EMBEDDED: 'Records Embedded',
+  ANCHORING_COST: 'Anchoring Cost',
+  LAST_RUN: 'Last Successful Run',
+  ERROR_COUNT: 'Errors',
+  SOURCE_EDGAR: 'SEC EDGAR',
+  SOURCE_USPTO: 'USPTO Patents',
+  SOURCE_FEDERAL_REGISTER: 'Federal Register',
+  SOURCE_MCP: 'MCP Submissions',
+  SOURCE_OPENALEX: 'OpenAlex Academic',
+  RECORDS_BROWSER_TITLE: 'Records Browser',
+  RECORDS_BROWSER_DESCRIPTION: 'Browse and filter all ingested public records',
+  FILTER_ALL_SOURCES: 'All Sources',
+  FILTER_ALL_TYPES: 'All Types',
+  FILTER_ALL_STATUSES: 'All Statuses',
+  FILTER_ANCHORED: 'Anchored',
+  FILTER_UNANCHORED: 'Not Anchored',
+  FILTER_SEARCH_PLACEHOLDER: 'Search by title or source ID...',
+  RECORDS_NO_RESULTS: 'No records match the current filters.',
+  RECORDS_SHOWING: 'Showing',
+  RECORDS_OF: 'of',
+  RECORDS_LOAD_MORE: 'Load More',
+} as const;
+
+// =============================================================================
+// PAYMENT ANALYTICS (PH1-PAY-03)
+// =============================================================================
+
+export const PAYMENT_LABELS = {
+  PAGE_TITLE: 'Payment Analytics',
+  PAGE_DESCRIPTION: 'x402 payment revenue and settlement tracking',
+  TOTAL_REVENUE: 'Total Revenue',
+  PAYMENTS_TODAY: 'Payments Today',
+  PAYMENTS_WEEK: 'This Week',
+  PAYMENTS_MONTH: 'This Month',
+  TOP_ENDPOINTS: 'Revenue by Endpoint',
+  SETTLEMENT_STATUS: 'Settlement Status',
+  AVERAGE_PAYMENT: 'Avg Payment',
+} as const;
+
 export const TERM_REPLACEMENTS: Record<string, string> = {
   wallet: 'vault',
   gas: '(remove or rephrase)',

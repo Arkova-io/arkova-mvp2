@@ -1,5 +1,5 @@
 # Arkova Story Documentation Index
-_Last updated: 2026-03-17 (BETA readiness stories added — 13 new stories from workflow audit)_
+_Last updated: 2026-03-20 (BETA-01 through BETA-13 marked COMPLETE after Sprint 1-3 merges)_
 
 ## Overview
 
@@ -31,14 +31,15 @@ For a new developer joining the project, read in this order:
 | P7 | Go-Live | 13 | 11 | 0 | 2 | [08_p7_go_live.md](./08_p7_go_live.md) |
 | P4.5 | Verification API | 13 | 13 | 0 | 0 | [09_p45_verification_api.md](./09_p45_verification_api.md) |
 | DH | Deferred Hardening | 12 | 12 | 0 | 0 | [10_deferred_hardening.md](./10_deferred_hardening.md) |
-| MVP | Launch Gaps | 27 | 25 | 0 | 2 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
+| MVP | Launch Gaps | 27 | 24 | 0 | 3 | [11_mvp_launch_gaps.md](./11_mvp_launch_gaps.md) |
 | P8 | AI Intelligence | 19 | 19 | 0 | 0 | [12_p8_ai_intelligence.md](./12_p8_ai_intelligence.md) |
 | INFRA | Infrastructure & Edge | 8 | 7 | 1 | 0 | [13_infrastructure_edge.md](./13_infrastructure_edge.md) |
 | UAT | Bug Fix Sprints (5+6) | 17 | 17 | 0 | 0 | [14_uat_sprints.md](./14_uat_sprints.md) |
 | UF | User Flow Gaps | 10 | 10 | 0 | 0 | [14_user_flow_gaps.md](./14_user_flow_gaps.md) |
-| GEO | GEO & SEO Optimization | 12 | 5 | 2 | 5 | [15_geo_seo.md](./15_geo_seo.md) |
-| BETA | Beta Readiness | 13 | 0 | 0 | 13 | [16_beta_readiness.md](./16_beta_readiness.md) |
-| **Total** | | **176** | **151** | **3** | **22** | |
+| GEO | GEO & SEO Optimization | 12 | 6 | 2 | 4 | [15_geo_seo.md](./15_geo_seo.md) |
+| BETA | Beta Readiness | 13 | 13 | 0 | 0 | [16_beta_readiness.md](./16_beta_readiness.md) |
+| PH1.5 | Phase 1.5 Foundation | 16 | 0 | 0 | 16 | [17_phase1_5_foundation.md](./17_phase1_5_foundation.md) |
+| **Total** | | **192** | **164** | **3** | **25** | |
 
 ### All Stories by ID
 
@@ -130,7 +131,7 @@ For a new developer joining the project, read in this order:
 | MVP-17 | Credential Template Metadata Enhancement | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | — |
 | MVP-18 | Enhanced Metadata Display | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | — |
 | ~~MVP-19~~ | ~~AI Auto-Descriptions~~ | REMOVED | [MVP](./11_mvp_launch_gaps.md) | Superseded by P8-S4/S5 |
-| MVP-20 | LinkedIn Badge Integration (Phase 2) | NOT STARTED | [MVP](./11_mvp_launch_gaps.md) | — |
+| ~~MVP-20~~ | ~~LinkedIn Badge Integration (Phase 2)~~ | SUPERSEDED | [MVP](./11_mvp_launch_gaps.md) | Superseded by BETA-09 |
 | MVP-21 | Individual Self-Verification Flow | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | — |
 | ~~MVP-22~~ | ~~AI Fraud Detection~~ | REMOVED | [MVP](./11_mvp_launch_gaps.md) | Superseded by P8-S7/S8/S9 |
 | MVP-23 | Batch Anchor Processing | COMPLETE | [MVP](./11_mvp_launch_gaps.md) | — |
@@ -180,7 +181,7 @@ For a new developer joining the project, read in this order:
 | UF-10 | Onboarding Completion + Empty State Guidance | COMPLETE | [UF](./14_user_flow_gaps.md) | — |
 | GEO-01 | SSR for Marketing Site | COMPLETE | [GEO](./15_geo_seo.md) | — |
 | GEO-02 | Fix LinkedIn Entity Collision + Expand sameAs | PARTIAL | [GEO](./15_geo_seo.md) | — |
-| GEO-03 | Publish Privacy + Terms on Marketing Site | NOT STARTED | [GEO](./15_geo_seo.md) | — |
+| GEO-03 | Publish Privacy + Terms on Marketing Site | COMPLETE | [GEO](./15_geo_seo.md) | — |
 | GEO-04 | About Page + Team Bios + Person Schema | NOT STARTED | [GEO](./15_geo_seo.md) | — |
 | GEO-05 | Enhanced Schema (WebSite, speakable, AggregateOffer) | COMPLETE | [GEO](./15_geo_seo.md) | — |
 | GEO-06 | Deploy Upgraded llms.txt | COMPLETE | [GEO](./15_geo_seo.md) | — |
@@ -190,19 +191,19 @@ For a new developer joining the project, read in this order:
 | GEO-10 | IndexNow for Bing/Copilot | NOT STARTED | [GEO](./15_geo_seo.md) | — |
 | GEO-11 | YouTube Explainers + VideoObject Schema | NOT STARTED | [GEO](./15_geo_seo.md) | — |
 | GEO-12 | Security Headers + Technical SEO Hardening | COMPLETE | [GEO](./15_geo_seo.md) | — |
-| BETA-01 | Mempool Live Transaction Tracking | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-02 | Revocation Bitcoin Transaction | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-03 | Email Infrastructure (Resend) | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-04 | Auto-Create User on Admin Upload | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-05 | XLSX Batch Upload Support | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-06 | Per-Row AI Extraction for Batch Uploads | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-07 | Two-Factor Authentication (2FA/MFA) | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-08 | Template Selection Before Anchoring | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-09 | LinkedIn Verification Badge | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-10 | Public Search by Person | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-11 | Mempool Explorer Link | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-12 | Immutable Description Field | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
-| BETA-13 | Realtime Anchor Status Subscriptions | NOT STARTED | [BETA](./16_beta_readiness.md) | — |
+| BETA-01 | Mempool Live Transaction Tracking | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-02 | Revocation Bitcoin Transaction | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-03 | Email Infrastructure (Resend) | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-04 | Auto-Create User on Admin Upload | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-05 | XLSX Batch Upload Support | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-06 | Per-Row AI Extraction for Batch Uploads | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-07 | Two-Factor Authentication (2FA/MFA) | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-08 | Template Selection Before Anchoring | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-09 | LinkedIn Verification Badge | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-10 | Public Search by Person | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-11 | Mempool Explorer Link | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-12 | Immutable Description Field | COMPLETE | [BETA](./16_beta_readiness.md) | — |
+| BETA-13 | Realtime Anchor Status Subscriptions | COMPLETE | [BETA](./16_beta_readiness.md) | — |
 
 ## Bug Cross-Reference
 
@@ -238,8 +239,8 @@ See [docs/bugs/bug_log.md](../bugs/bug_log.md) for full details on all bugs (inc
 
 ## Related Documentation
 
-- [CLAUDE.md](../../CLAUDE.md) — Engineering rules, Constitution, story status (Section 8)
-- [MEMORY.md](../../MEMORY.md) — Living state, blockers, sprint context
+- [CLAUDE.md](../../CLAUDE.md) — Engineering rules, Constitution, story status (Section 5)
+- [HANDOFF.md](../../HANDOFF.md) — Living state, blockers, sprint context
 - [docs/confluence/](../confluence/) — Architecture, data model, security, audit trail
 - [docs/bugs/bug_log.md](../bugs/bug_log.md) — Full bug details with reproduction steps
 

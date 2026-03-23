@@ -1,6 +1,6 @@
 # Architecture Overview
 
-_Last updated: 2026-03-17_
+_Last updated: 2026-03-21_
 
 ## Purpose
 
@@ -132,8 +132,8 @@ arkova/
 │           └── mcp-tools.ts       # verify_credential + search_credentials tools
 ├── supabase/
 │   ├── config.toml                # Supabase local config
-│   ├── migrations/                # 67 SQL migrations (0001–0067, 0033 skipped)
-│   └── seed.sql                   # Demo data (admin_demo, user_demo, beta_admin)
+│   ├── migrations/                # 83 SQL migrations (0001–0084, 0033+0078 skipped, 0068 split into 0068a/0068b)
+│   └── seed.sql                   # Demo data (UMich Registrar, Midwest Medical, individual)
 ├── tests/
 │   └── rls/                       # RLS integration test helpers
 ├── e2e/                           # Playwright E2E specs
@@ -142,7 +142,7 @@ arkova/
 ├── docs/
 │   └── confluence/                # This documentation folder
 ├── CLAUDE.md                      # Engineering directive (rules + story status)
-└── MEMORY.md                      # Living state (decisions, blockers, handoffs)
+└── HANDOFF.md                     # Living state (decisions, blockers, handoffs)
 ```
 
 ## Security Model
@@ -160,7 +160,7 @@ Key principles:
 
 See [02_data_model.md](./02_data_model.md) for the complete data model.
 
-### Table Inventory (32+ tables across 67 migrations)
+### Table Inventory (32+ tables across 83 migrations)
 
 | Table | Migration | Purpose |
 |-------|-----------|---------|

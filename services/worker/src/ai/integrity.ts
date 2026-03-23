@@ -73,6 +73,7 @@ const EXPECTED_FIELDS: Record<string, string[]> = {
   LICENSE: ['issuerName', 'issuedDate', 'expiryDate', 'licenseNumber', 'jurisdiction'],
   TRANSCRIPT: ['issuerName', 'issuedDate'],
   PROFESSIONAL: ['issuerName', 'issuedDate', 'accreditingBody'],
+  CLE: ['issuerName', 'issuedDate', 'creditHours', 'creditType', 'accreditingBody', 'jurisdiction'],
   OTHER: ['issuerName'],
 };
 
@@ -193,25 +194,60 @@ export async function computeIntegrityScore(
     // Non-fatal — use default
   }
 
-  // 3. Issuer verification — check if issuer name matches ground truth
+  // 3. Issuer verification — multi-strategy ground truth matching
+  //    Strategy A: exact ilike match (score 100)
+  //    Strategy B: fuzzy contains match (score 80)
+  //    Strategy C: domain match from metadata (score 70)
+  //    No match: score 30
   let issuerVerification = 50; // default
   const issuerName = metadata.issuerName as string | undefined;
   if (issuerName) {
     try {
+      // Strategy A: exact match (case-insensitive)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: groundTruth } = await (db as any)
+      const { data: exactMatch } = await (db as any)
         .from('institution_ground_truth')
-        .select('id')
+        .select('id, name')
         .ilike('name', issuerName)
         .limit(1);
 
-      if (groundTruth && groundTruth.length > 0) {
+      if (exactMatch && exactMatch.length > 0) {
         issuerVerification = 100;
         details.issuerMatch = true;
+        details.issuerMatchStrategy = 'exact';
+        details.matchedInstitution = exactMatch[0].name;
       } else {
-        issuerVerification = 30;
-        flags.push('issuer_not_in_registry');
-        details.issuerMatch = false;
+        // Strategy B: fuzzy contains — strip common prefixes ("The ", "University of ")
+        // and check if issuer name contains or is contained in ground truth names
+        const normalizedIssuer = issuerName
+          .replace(/^(The|A)\s+/i, '')
+          .trim()
+          // Sanitize for PostgREST filter interpolation — strip characters that could
+          // manipulate the .or() filter string (commas, dots, parentheses, LIKE wildcards)
+          .replace(/[,.()"'\\%_]/g, '');
+        if (!normalizedIssuer || normalizedIssuer.length < 2) {
+          issuerVerification = 30;
+          flags.push('issuer_not_in_registry');
+          details.issuerMatch = false;
+        } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: fuzzyMatch } = await (db as any)
+          .from('institution_ground_truth')
+          .select('id, name')
+          .or(`name.ilike.%${normalizedIssuer}%,name.ilike.${normalizedIssuer}%`)
+          .limit(1);
+
+        if (fuzzyMatch && fuzzyMatch.length > 0) {
+          issuerVerification = 80;
+          details.issuerMatch = true;
+          details.issuerMatchStrategy = 'fuzzy';
+          details.matchedInstitution = fuzzyMatch[0].name;
+        } else {
+          issuerVerification = 30;
+          flags.push('issuer_not_in_registry');
+          details.issuerMatch = false;
+        }
+        }
       }
     } catch {
       // Non-fatal — use default
@@ -248,6 +284,13 @@ export async function computeIntegrityScore(
     anchor.expires_at as string | null,
   );
   flags.push(...temporal.flags);
+
+  // 6. AI fraud signals — if extraction returned fraudSignals array, include them
+  const fraudSignals = metadata.fraudSignals as string[] | undefined;
+  if (Array.isArray(fraudSignals) && fraudSignals.length > 0) {
+    flags.push(...fraudSignals.map((s) => `ai_fraud:${s}`));
+    details.aiFraudSignals = fraudSignals;
+  }
 
   // Calculate overall (weighted average)
   const weights = {

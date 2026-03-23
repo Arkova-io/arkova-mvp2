@@ -163,7 +163,7 @@ export function GettingStartedChecklist({ role, context }: Readonly<GettingStart
               key={item.key}
               onClick={() => !isComplete && navigate(item.route)}
               disabled={isComplete}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/50 disabled:opacity-70 disabled:cursor-default"
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left transition-colors cursor-pointer hover:bg-muted/50 active:bg-muted disabled:opacity-70 disabled:cursor-default disabled:hover:bg-transparent"
             >
               {isComplete ? (
                 <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" data-testid="step-complete" />

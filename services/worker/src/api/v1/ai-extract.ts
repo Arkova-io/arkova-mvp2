@@ -51,33 +51,10 @@ router.post('/', async (req: Request, res: Response) => {
 
     const orgId = profile?.org_id ?? undefined;
 
-    // Check AI credits — distinguish RPC errors from exhausted balance
-    const credits = await checkAICredits(orgId, userId);
-    if (!credits) {
-      res.status(503).json({
-        error: 'credits_unavailable',
-        message: 'Unable to verify credit balance. Please try again.',
-      });
-      return;
-    }
-    if (!credits.hasCredits) {
-      res.status(402).json({
-        error: 'insufficient_credits',
-        message: 'No AI credits remaining. Upgrade your plan for more credits.',
-        credits: { monthlyAllocation: credits.monthlyAllocation, usedThisMonth: credits.usedThisMonth, remaining: 0 },
-      });
-      return;
-    }
-
-    // SEC-NEW-10: Deduct credit BEFORE extraction to prevent TOCTOU gap
-    const deducted = await deductAICredits(orgId, userId, 1);
-    if (!deducted) {
-      res.status(402).json({
-        error: 'insufficient_credits',
-        message: 'Credit deduction failed. Please try again.',
-      });
-      return;
-    }
+    // Beta: credit checks disabled — all users get unlimited AI extraction
+    // TODO: Re-enable credit checks post-beta launch
+    void checkAICredits(orgId, userId); // Track usage for analytics only
+    void deductAICredits(orgId, userId, 1).catch(() => { /* non-blocking in beta */ });
 
     // Call AI provider
     const startMs = Date.now();
@@ -99,6 +76,19 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const durationMs = Date.now() - startMs;
 
+    // Structured observability log — AI extraction latency + quality metrics
+    logger.info({
+      event: 'ai.extraction.complete',
+      provider: result.provider,
+      credentialType,
+      confidence: result.confidence,
+      fieldsExtracted: Object.keys(result.fields).length,
+      tokensUsed: result.tokensUsed ?? 0,
+      durationMs,
+      userId,
+      orgId,
+    }, `AI extraction: ${result.provider} ${durationMs}ms conf=${result.confidence} fields=${Object.keys(result.fields).length}`);
+
     // Log usage event (non-blocking)
     logAIUsageEvent({
       orgId,
@@ -119,7 +109,7 @@ router.post('/', async (req: Request, res: Response) => {
       fields: result.fields,
       confidence: result.confidence,
       provider: result.provider,
-      creditsRemaining: deducted ? Math.max(0, credits.remaining - 1) : credits.remaining,
+      creditsRemaining: null, // Beta: unlimited
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';

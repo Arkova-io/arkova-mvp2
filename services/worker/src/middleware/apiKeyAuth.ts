@@ -20,6 +20,7 @@ import { logger } from '../utils/logger.js';
 export interface ApiKeyMeta {
   keyId: string;
   orgId: string;
+  userId: string;
   scopes: string[];
   rateLimitTier: 'free' | 'paid' | 'custom';
   keyPrefix: string;
@@ -37,9 +38,15 @@ declare global {
 
 /**
  * Hash a raw API key with HMAC-SHA256.
+ *
+ * NOTE: CodeQL flags this as "insufficient computational effort" (js/insufficient-password-hash)
+ * but this is API key hashing, NOT password hashing. API keys are high-entropy random tokens
+ * (32+ bytes), not human-chosen passwords. HMAC-SHA256 is the industry standard for API key
+ * verification (used by Stripe, AWS, GitHub). bcrypt/argon2 would add unnecessary latency
+ * to every API call without security benefit for high-entropy keys.
  */
 export function hashApiKey(rawKey: string, hmacSecret: string): string {
-  return createHmac('sha256', hmacSecret).update(rawKey).digest('hex');
+  return createHmac('sha256', hmacSecret).update(rawKey).digest('hex'); // codeql[js/insufficient-password-hash] — intentional: API keys, not passwords
 }
 
 /**
@@ -126,7 +133,7 @@ export function apiKeyAuth(hmacSecret: string, options: { required?: boolean } =
     // Look up in database
     try {
       const { data: apiKey, error } = await db.from('api_keys')
-        .select('id, org_id, scopes, rate_limit_tier, key_prefix, is_active, expires_at')
+        .select('id, org_id, created_by, scopes, rate_limit_tier, key_prefix, is_active, expires_at')
         .eq('key_hash', keyHash)
         .single();
 
@@ -160,6 +167,7 @@ export function apiKeyAuth(hmacSecret: string, options: { required?: boolean } =
       req.apiKey = {
         keyId: apiKey.id,
         orgId: apiKey.org_id,
+        userId: apiKey.created_by,
         scopes: apiKey.scopes,
         rateLimitTier: apiKey.rate_limit_tier,
         keyPrefix: apiKey.key_prefix,

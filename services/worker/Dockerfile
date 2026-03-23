@@ -24,10 +24,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install build dependencies for native modules (bufferutil, utf-8-validate)
+RUN apk add --no-cache python3 make g++
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY src/ ./src/
 
 RUN npm run build
@@ -50,9 +53,11 @@ RUN apk add --no-cache curl && \
 RUN addgroup --system --gid 1001 arkova && \
     adduser --system --uid 1001 arkova
 
-# Production dependencies only
+# Production dependencies only (need build tools for native modules, then remove)
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
+RUN apk del python3 make g++
 
 # Compiled output from builder
 COPY --from=builder /app/dist ./dist

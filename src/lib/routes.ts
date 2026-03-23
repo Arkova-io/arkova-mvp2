@@ -20,6 +20,8 @@ export const ROUTES = {
   EMBED_VERIFY: '/embed/verify/:publicId',
   SEARCH: '/search',
   ISSUER_REGISTRY: '/issuer/:orgId',
+  DEVELOPERS: '/developers',
+  CLE_API: '/cle',
 
   // OAuth callback (Supabase redirects here after Google OAuth)
   AUTH_CALLBACK: '/auth/callback',
@@ -29,10 +31,16 @@ export const ROUTES = {
   ONBOARDING_ORG: '/onboarding/org',
 
   // Authenticated routes
+  DOCUMENTS: '/documents',
   MY_CREDENTIALS: '/my-credentials',
   DASHBOARD: '/dashboard',
   RECORDS: '/records',
   RECORD_DETAIL: '/records/:id',
+  ORGANIZATIONS: '/organizations',
+  ORG_PROFILE: '/organizations/:orgId',
+  ORG_MEMBERS: '/organizations/:orgId/members',
+  ORG_RECORDS: '/organizations/:orgId/records',
+  ORG_SETTINGS: '/organizations/:orgId/settings',
   ORGANIZATION: '/organization',
   MEMBER_DETAIL: '/organization/member/:memberId',
   SETTINGS: '/settings',
@@ -42,12 +50,25 @@ export const ROUTES = {
   HELP: '/help',
   REVIEW_PENDING: '/review-pending',
 
+  // Attestations (Phase II)
+  ATTESTATIONS: '/attestations',
+  VERIFY_ATTESTATION: '/verify/attestation/:publicId',
+
   // AI Intelligence routes (P8 Phase II)
   REVIEW_QUEUE: '/organization/review-queue',
   AI_REPORTS: '/organization/ai-reports',
 
   // Admin routes (internal ops)
+  ADMIN_OVERVIEW: '/admin/overview',
+  ADMIN_HEALTH: '/admin/health',
   ADMIN_TREASURY: '/admin/treasury',
+  ADMIN_PIPELINE: '/admin/pipeline',
+  ADMIN_PAYMENTS: '/admin/payments',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_RECORDS: '/admin/records',
+  ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
+  ADMIN_ORGANIZATIONS: '/admin/organizations',
+  ADMIN_USER_DETAIL: '/admin/users/:id',
 
   // Billing routes
   BILLING: '/billing',
@@ -91,6 +112,11 @@ export function recordDetailPath(id: string): string {
 /** Build a member detail URL for a given member ID */
 export function memberDetailPath(memberId: string): string {
   return `/organization/member/${memberId}`;
+}
+
+/** Build an org profile URL for a given org ID */
+export function orgProfilePath(orgId: string): string {
+  return `/organizations/${orgId}`;
 }
 
 /** Build an issuer registry URL for a given org ID */

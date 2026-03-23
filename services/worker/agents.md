@@ -1,5 +1,5 @@
 # agents.md — services/worker
-_Last updated: 2026-03-14_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 
@@ -23,7 +23,7 @@ Express-based worker service handling privileged server-side operations: anchor 
 
 ## Test Coverage Status (Final — HARDENING-5)
 
-**363 worker tests across 17 test files. All pass 80%+ per-file thresholds.**
+**1,043 worker tests across 67 test files. All pass 80%+ per-file thresholds.**
 
 | File | Test File | Tests | Coverage | Sprint |
 |------|-----------|-------|----------|--------|
@@ -77,7 +77,7 @@ The worker container runs **two processes** managed by `entrypoint.sh`:
 - `Dockerfile` — multi-stage build, installs `cloudflared` binary (pinned version), NO `EXPOSE` directive
 - `entrypoint.sh` — process supervisor: validates `CLOUDFLARE_TUNNEL_TOKEN`, starts Express, waits for health, starts tunnel, kills both on failure
 - `tunnel-config.yml` — reference ingress spec (token mode uses Dashboard config, this is for local dev)
-- `scripts/deploy-tunnel.sh` — one-time tunnel creation + DNS routing + Access policy checklist
+- ~~`scripts/deploy-tunnel.sh`~~ — planned but not yet created; tunnel creation done via Dashboard token mode
 
 **Security invariants:**
 - Container has NO public ports — direct IP:port access is impossible

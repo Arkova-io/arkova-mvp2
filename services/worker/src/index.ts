@@ -27,6 +27,15 @@ import { rateLimiters, rateLimit } from './utils/rateLimit.js';
 import { verifyAuthToken } from './auth.js';
 import { apiV1Router } from './api/v1/router.js';
 import { docsRouter } from './api/v1/docs.js';
+// Pipeline jobs (Phase 1.5)
+import { fetchEdgarFilings, fetchEdgarHistoricalBackfill } from './jobs/edgarFetcher.js';
+import { fetchUsptoPAtents } from './jobs/usptoFetcher.js';
+import { fetchFederalRegisterDocuments } from './jobs/federalRegisterFetcher.js';
+import { fetchOpenAlexWorks } from './jobs/openalexFetcher.js';
+import { processPublicRecordAnchoring } from './jobs/publicRecordAnchor.js';
+import { embedPublicRecords } from './jobs/publicRecordEmbedder.js';
+import { processAttestationAnchoring } from './jobs/attestationAnchor.js';
+import { fetchDapipInstitutions } from './jobs/dapipFetcher.js';
 
 // Initialize Sentry BEFORE Express app — PII scrubbing mandatory (Constitution 1.4 + 1.6)
 initSentry(config.sentryDsn, config.nodeEnv);
@@ -446,7 +455,7 @@ app.delete('/api/account', rateLimiters.checkout, async (req, res) => {
 // Dedicated rate limiter for cron endpoints — separate from user-facing limits
 const cronJobsLimiter = rateLimit({
   windowMs: 60000,
-  maxRequests: 5, // 5 req/min — cron fires at most every minute
+  maxRequests: 30, // 30 req/min — Cloud Scheduler hits 10+ endpoints on overlapping schedules
   keyGenerator: () => 'cron-jobs', // Global limit (not per-IP)
 });
 
@@ -579,6 +588,137 @@ app.post('/jobs/credit-expiry', cronJobsLimiter, async (req, res) => {
 });
 
 // =========================================================================
+// Phase 1.5 Pipeline Jobs — Data Ingestion, Embedding, Anchoring
+// =========================================================================
+
+app.post('/jobs/fetch-edgar', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await fetchEdgarFilings(db);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'EDGAR fetch failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/fetch-uspto', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    await fetchUsptoPAtents(db);
+    res.json({ status: 'complete' });
+  } catch (error) {
+    logger.error({ error }, 'USPTO fetch failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/fetch-federal-register', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    await fetchFederalRegisterDocuments(db);
+    res.json({ status: 'complete' });
+  } catch (error) {
+    logger.error({ error }, 'Federal Register fetch failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/fetch-openalex', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await fetchOpenAlexWorks(db);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'OpenAlex fetch failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/embed-public-records', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await embedPublicRecords();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Public record embedding failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/anchor-public-records', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await processPublicRecordAnchoring();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Public record anchoring failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/edgar-backfill', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const batchIndex = parseInt(String(req.query.batch ?? req.body?.batch ?? '0'), 10);
+    const result = await fetchEdgarHistoricalBackfill(db, batchIndex);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'EDGAR historical backfill failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/fetch-dapip', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await fetchDapipInstitutions(db);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'DAPIP fetch failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+app.post('/jobs/anchor-attestations', cronJobsLimiter, async (req, res) => {
+  if (!(await verifyCronAuth(req))) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  try {
+    const result = await processAttestationAnchoring();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Attestation anchoring failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+// =========================================================================
 // Treasury Status — Arkova platform admin only (feedback_treasury_access)
 // =========================================================================
 app.options('/api/treasury/status', (req, res) => { setCorsHeaders(req, res); });
@@ -597,6 +737,126 @@ app.get('/api/treasury/status', rateLimiters.checkout, async (req, res) => {
     await handleTreasuryStatus(userId, req, res);
   } catch (error) {
     logger.error({ error }, 'Treasury status request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
+// Admin Platform Stats — Arkova platform admin only
+// =========================================================================
+app.options('/api/admin/platform-stats', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/platform-stats', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const { handlePlatformStats } = await import('./api/admin-stats.js');
+    await handlePlatformStats(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Platform stats request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
+// Admin Detail Lists — Arkova platform admin only (SN1)
+// =========================================================================
+app.options('/api/admin/organizations', (req, res) => { setCorsHeaders(req, res); });
+app.options('/api/admin/users', (req, res) => { setCorsHeaders(req, res); });
+app.options('/api/admin/users/:id', (req, res) => { setCorsHeaders(req, res); });
+app.options('/api/admin/records', (req, res) => { setCorsHeaders(req, res); });
+app.options('/api/admin/subscriptions', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/organizations', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminOrganizations } = await import('./api/admin-lists.js');
+    await handleAdminOrganizations(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin organizations request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/admin/users', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminUsers } = await import('./api/admin-lists.js');
+    await handleAdminUsers(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin users request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/admin/users/:id', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminUserDetail } = await import('./api/admin-lists.js');
+    await handleAdminUserDetail(userId, req.params.id, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin user detail request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/admin/records', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminRecords } = await import('./api/admin-lists.js');
+    await handleAdminRecords(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin records request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/admin/subscriptions', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+  const userId = await extractAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+  try {
+    const { handleAdminSubscriptions } = await import('./api/admin-lists.js');
+    await handleAdminSubscriptions(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'Admin subscriptions request failed');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// =========================================================================
+// Admin System Health — Arkova platform admin only
+// =========================================================================
+app.options('/api/admin/system-health', (req, res) => { setCorsHeaders(req, res); });
+
+app.get('/api/admin/system-health', rateLimiters.checkout, async (req, res) => {
+  if (setCorsHeaders(req, res)) return;
+
+  const userId = await extractAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  try {
+    const { handleSystemHealth } = await import('./api/admin-health.js');
+    await handleSystemHealth(userId, req, res);
+  } catch (error) {
+    logger.error({ error }, 'System health request failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

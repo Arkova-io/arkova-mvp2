@@ -39,8 +39,6 @@ interface EntitlementActions {
   canCreateCount: (count: number) => boolean;
 }
 
-const UNLIMITED_THRESHOLD = 999999;
-
 export function useEntitlements(): EntitlementState & EntitlementActions {
   const { user } = useAuth();
   const [recordsUsed, setRecordsUsed] = useState(0);
@@ -71,7 +69,7 @@ export function useEntitlements(): EntitlementState & EntitlementActions {
 
       if (subError) throw subError;
 
-      let limit: number;
+      let _limit: number;
       let name: string;
       let periodStart: string | null = null;
 
@@ -85,7 +83,7 @@ export function useEntitlements(): EntitlementState & EntitlementActions {
 
         if (planError) throw planError;
 
-        limit = planData.records_per_month;
+        _limit =planData.records_per_month;
         name = planData.name;
         periodStart = subData.current_period_start;
       } else {
@@ -97,7 +95,7 @@ export function useEntitlements(): EntitlementState & EntitlementActions {
           .single();
 
         if (freePlanError) throw freePlanError;
-        limit = freePlan.records_per_month;
+        _limit =freePlan.records_per_month;
         name = freePlan.name;
       }
 
@@ -120,16 +118,17 @@ export function useEntitlements(): EntitlementState & EntitlementActions {
       const { count, error: countError } = await countQuery;
       if (countError) throw countError;
 
+      // Beta: set unlimited for all users — credit/quota enforcement disabled
       setRecordsUsed(count ?? 0);
-      setRecordsLimit(limit >= UNLIMITED_THRESHOLD ? null : limit);
+      setRecordsLimit(null); // null = unlimited in beta
       setPlanName(name);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to check plan quota';
       setError(message);
       // Fail closed: fall back to free tier defaults on error.
       // Never leave recordsLimit as null (unlimited) when we can't verify the plan.
-      setRecordsLimit(3);
-      setPlanName('Free');
+      setRecordsLimit(null); // Beta: unlimited on error too
+      setPlanName('Beta');
       setRecordsUsed(0);
     } finally {
       setLoading(false);

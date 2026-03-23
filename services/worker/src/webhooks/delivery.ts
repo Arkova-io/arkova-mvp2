@@ -338,7 +338,7 @@ export async function dispatchWebhookEvent(
 ): Promise<void> {
   // Check if webhooks are enabled
   const { data: flag, error: flagError } = await db.rpc('get_flag', {
-    p_flag_id: 'ENABLE_OUTBOUND_WEBHOOKS',
+    p_flag_key: 'ENABLE_OUTBOUND_WEBHOOKS',
   });
   if (flagError) {
     logger.error(

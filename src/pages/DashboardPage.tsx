@@ -9,9 +9,9 @@
  * @see MVP-09 — Search, filter, and pagination
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, CheckCircle, Clock, Plus, Shield, Eye, EyeOff, Copy, Check, Search, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Plus, Search, ChevronLeft, ChevronRight, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useAnchors } from '@/hooks/useAnchors';
@@ -22,12 +22,8 @@ import { SecureDocumentDialog } from '@/components/anchor';
 import { RecordsList, type Record } from '@/components/records';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -37,18 +33,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ROUTES, recordDetailPath } from '@/lib/routes';
-import { IDENTITY_LABELS, RECORDS_LIST_LABELS, ONBOARDING_GUIDANCE_LABELS, ORG_PAGE_LABELS, SECURE_DIALOG_LABELS } from '@/lib/copy';
+import { RECORDS_LIST_LABELS, ONBOARDING_GUIDANCE_LABELS, SECURE_DIALOG_LABELS } from '@/lib/copy';
+import { supabase } from '@/lib/supabase';
 import { CreditUsageWidget } from '@/components/dashboard/CreditUsageWidget';
 import { UsageWidget } from '@/components/billing/UsageWidget';
+import { CleCreditWidget } from '@/components/dashboard/CleCreditWidget';
 import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
 import { useOrganization } from '@/hooks/useOrganization';
-import { BulkUploadWizard } from '@/components/upload';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 const PAGE_SIZES = [10, 25, 50] as const;
 type StatusFilter = 'ALL' | 'PENDING' | 'SECURED' | 'REVOKED' | 'EXPIRED';
@@ -56,13 +47,11 @@ type StatusFilter = 'ALL' | 'PENDING' | 'SECURED' | 'REVOKED' | 'EXPIRED';
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, loading: profileLoading, updateProfile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const { records, loading: recordsLoading, refreshAnchors } = useAnchors();
   const { revokeAnchor, error: revokeError, clearError: clearRevokeError } = useRevokeAnchor();
   const { organization } = useOrganization(profile?.org_id);
   const [secureDialogOpen, setSecureDialogOpen] = useState(false);
-  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
-  const [copiedId, setCopiedId] = useState(false);
 
   // Search, filter, pagination state (MVP-09)
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,19 +59,42 @@ export function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  const handleCopyId = useCallback(async () => {
-    if (profile?.public_id) {
-      await navigator.clipboard.writeText(profile.public_id);
-      setCopiedId(true);
-      setTimeout(() => setCopiedId(false), 2000);
-    }
-  }, [profile?.public_id]);
+  // BUG-2.5 fix: Query actual checklist context for org admin steps
+  const [hasTemplates, setHasTemplates] = useState(false);
+  const [hasBillingPlan, setHasBillingPlan] = useState(false);
 
-  // Privacy toggle — reads from DB, persisted via updateProfile
-  const isPublicProfile = useMemo(() => profile?.is_public_profile ?? false, [profile]);
-  const handleTogglePublicProfile = useCallback(async (checked: boolean) => {
-    await updateProfile({ is_public_profile: checked });
-  }, [updateProfile]);
+  useEffect(() => {
+    if (!profile?.org_id || profile.role !== 'ORG_ADMIN') return;
+    // Check if org has any credential templates
+    supabase
+      .from('credential_templates')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', profile.org_id)
+      .then(({ count }) => setHasTemplates((count ?? 0) > 0));
+  }, [profile?.org_id, profile?.role]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    // Check if user has an active subscription (any non-free plan)
+    supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing'])
+      .maybeSingle()
+      .then(({ data }) => setHasBillingPlan(!!data));
+  }, [user?.id]);
+
+  // Attestation count
+  const [attestationCount, setAttestationCount] = useState(0);
+  useEffect(() => {
+    if (!user?.id) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('attestations')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }: { count: number | null }) => setAttestationCount(count ?? 0));
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,7 +132,7 @@ export function DashboardPage() {
       const query = searchQuery.trim().toLowerCase();
       result = result.filter(r =>
         r.filename.toLowerCase().includes(query) ||
-        r.fingerprint.toLowerCase().includes(query)
+        (r.fingerprint ?? '').toLowerCase().includes(query)
       );
     }
 
@@ -175,16 +187,16 @@ export function DashboardPage() {
     >
       {/* Welcome section */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-black tracking-tighter">
           Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-1 font-mono text-[10px] uppercase tracking-widest">
           Manage and verify your secured documents
         </p>
       </div>
 
       {/* Stats grid */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 mb-8">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
           label="Total Records"
           value={stats.total}
@@ -206,12 +218,25 @@ export function DashboardPage() {
           variant="warning"
           loading={loading}
         />
+        <StatCard
+          label="Attestations"
+          value={attestationCount}
+          icon={FileCheck}
+          variant="default"
+          loading={loading}
+          onClick={() => navigate(ROUTES.ATTESTATIONS)}
+        />
       </div>
 
       {/* Usage tracking (UF-06) + Credit usage (MVP-25) */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 mb-8">
         <UsageWidget />
         <CreditUsageWidget />
+      </div>
+
+      {/* CLE Credit Summary (visible only when user has CLE records) */}
+      <div className="mb-8">
+        <CleCreditWidget />
       </div>
 
       {/* Getting started checklist (UF-10) */}
@@ -221,55 +246,14 @@ export function DashboardPage() {
             role={profile.role as 'ORG_ADMIN' | 'INDIVIDUAL'}
             context={{
               hasRecords: records.length > 0,
-              hasTemplates: false, // Will be checked by checklist internally in future
-              hasBillingPlan: false, // Will be checked by checklist internally in future
+              hasTemplates,
+              hasBillingPlan,
             }}
           />
         </div>
       )}
 
-      {/* Privacy toggle */}
-      <Card className="mb-8">
-        <CardContent className="flex items-center justify-between py-4">
-          {profileLoading ? (
-            <div className="flex items-center gap-3 w-full">
-              <Skeleton className="h-10 w-10 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-3 w-64" />
-              </div>
-              <Skeleton className="h-5 w-9 rounded-full" />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  {isPublicProfile ? (
-                    <Eye className="h-5 w-5 text-primary" />
-                  ) : (
-                    <EyeOff className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="space-y-0.5">
-                  <Label htmlFor="public-profile" className="text-sm font-medium">
-                    Public Verification Profile
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {isPublicProfile
-                      ? 'Your records can be verified by anyone with the fingerprint'
-                      : 'Only you can access your verification records'}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="public-profile"
-                checked={isPublicProfile}
-                onCheckedChange={handleTogglePublicProfile}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* Privacy toggle moved to Settings page (UX-P1.1) */}
 
       {/* Revoke error */}
       {revokeError && (
@@ -285,18 +269,10 @@ export function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg font-semibold">My Records</CardTitle>
-          <div className="flex gap-2">
-            {profile?.role === 'ORG_ADMIN' && (
-              <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                {ORG_PAGE_LABELS.BULK_UPLOAD}
-              </Button>
-            )}
-            <Button onClick={() => setSecureDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {SECURE_DIALOG_LABELS.TITLE}
-            </Button>
-          </div>
+          <Button onClick={() => setSecureDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {SECURE_DIALOG_LABELS.TITLE}
+          </Button>
         </CardHeader>
 
         {/* Search + Filter controls (MVP-09) */}
@@ -434,58 +410,7 @@ export function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Account info */}
-      {profile && (
-        <Card className="mt-6">
-          <CardContent className="py-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Shield className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Account</p>
-                  <p className="text-sm text-muted-foreground">
-                    {profile.role === 'ORG_ADMIN' ? 'Organization Administrator' : 'Individual Account'}
-                  </p>
-                </div>
-              </div>
-              <Badge variant="secondary">
-                {profile.role === 'ORG_ADMIN' ? 'Org Admin' : 'Individual'}
-              </Badge>
-            </div>
-            {profile.public_id && (
-              <>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{IDENTITY_LABELS.USER_ID}</p>
-                    <p className="text-xs text-muted-foreground">{IDENTITY_LABELS.USER_ID_DESC}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <code className="text-sm font-mono bg-muted rounded px-2 py-1">
-                      {profile.public_id}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleCopyId}
-                    >
-                      {copiedId ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">Copy User ID</span>
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Account info removed — lives in Settings page (UX-P1.1) */}
 
       {/* Secure Document Dialog */}
       <SecureDocumentDialog
@@ -494,21 +419,6 @@ export function DashboardPage() {
         onSuccess={handleSecureSuccess}
       />
 
-      {/* Bulk Upload Dialog (ORG_ADMIN only) */}
-      <Dialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{ORG_PAGE_LABELS.BULK_UPLOAD_DIALOG_TITLE}</DialogTitle>
-          </DialogHeader>
-          <BulkUploadWizard
-            onComplete={() => {
-              setBulkUploadOpen(false);
-              refreshAnchors();
-            }}
-            onCancel={() => setBulkUploadOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </AppShell>
   );
 }

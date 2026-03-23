@@ -4,21 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Arkova — Secure document verification platform. Anchor credentials to an immutable record and verify them instantly." />
-    <meta name="theme-color" content="#82b8d0" />
+    <meta name="theme-color" content="#00d4ff" />
 
-    <!-- Google Fonts: DM Sans + JetBrains Mono (Nordic Vault design system) -->
+    <!-- Google Fonts: Inter + Space Grotesk (Synthetic Sentinel design system) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/arkova-icon.png" />
+    <link rel="apple-touch-icon" href="/arkova-icon.png" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Arkova — Secure Document Verification" />
     <meta property="og:description" content="Anchor credentials to an immutable record and verify them instantly." />
-    <meta property="og:image" content="/og-image.svg" />
+    <meta property="og:image" content="https://app.arkova.ai/og-image.png" />
     <meta property="og:url" content="https://app.arkova.ai" />
     <meta property="og:site_name" content="Arkova" />
 
@@ -26,7 +27,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Arkova — Secure Document Verification" />
     <meta name="twitter:description" content="Anchor credentials to an immutable record and verify them instantly." />
-    <meta name="twitter:image" content="/og-image.svg" />
+    <meta name="twitter:image" content="https://app.arkova.ai/og-image.png" />
 
     <title>Arkova</title>
 
@@ -50,23 +51,47 @@
         {
           "@type": "Person",
           "name": "Carson Seeger",
-          "url": "https://www.linkedin.com/in/carson-s-8b41061a/"
+          "jobTitle": "CEO & Co-Founder",
+          "url": "https://www.linkedin.com/in/carson-s-8b41061a/",
+          "sameAs": [
+            "https://www.linkedin.com/in/carson-s-8b41061a/",
+            "https://github.com/carson-see"
+          ]
         },
         {
           "@type": "Person",
           "name": "Sarah Rushton",
-          "url": "https://www.linkedin.com/in/sljrushton/"
+          "jobTitle": "COO & Co-Founder",
+          "url": "https://www.linkedin.com/in/sljrushton/",
+          "sameAs": [
+            "https://www.linkedin.com/in/sljrushton/"
+          ]
         },
         {
           "@type": "Person",
           "name": "Dr. Yaacov Petscher",
-          "url": "https://scholar.google.com/citations?user=MUGWLDoAAAAJ&hl=en"
+          "jobTitle": "Chief Data Scientist & Co-Founder",
+          "url": "https://scholar.google.com/citations?user=MUGWLDoAAAAJ&hl=en",
+          "sameAs": [
+            "https://scholar.google.com/citations?user=MUGWLDoAAAAJ&hl=en",
+            "https://orcid.org/0000-0002-2573-1881"
+          ]
         }
       ],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Tallahassee",
+        "addressRegion": "FL",
+        "addressCountry": "US"
+      },
       "contactPoint": {
         "@type": "ContactPoint",
         "email": "hello@arkova.ai",
         "contactType": "customer support"
+      },
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "value": 3
       }
     }
     </script>
@@ -109,7 +134,7 @@
         "Bulk CSV credential anchoring",
         "Webhook notifications",
         "MCP server for AI agent access"
-      ],
+      ]
     }
     </script>
   </head>

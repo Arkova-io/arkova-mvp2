@@ -1,5 +1,5 @@
 # agents.md — hooks
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 React hooks for data fetching and mutations against Supabase. Each hook encapsulates a single concern (auth, profile, anchors, revocation, export, etc.).

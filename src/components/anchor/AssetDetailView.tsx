@@ -21,6 +21,7 @@ import {
   Hash,
   Lock,
   Share2,
+  ExternalLink,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import { useCredentialTemplate } from '@/hooks/useCredentialTemplate';
 import { formatFingerprint } from '@/lib/fileHasher';
 import { LIFECYCLE_LABELS, CREDENTIAL_TYPE_LABELS, SHARE_LABELS, EXPLORER_LABELS } from '@/lib/copy';
 import { ExplorerLink } from '@/components/ui/ExplorerLink';
+import { mempoolAddressUrl } from '@/lib/platform';
 import { verifyUrl } from '@/lib/routes';
 
 interface AnchorRecord {
@@ -305,8 +307,44 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             </>
           )}
 
+          {/* Source Document Link (pipeline records) */}
+          {(() => {
+            const sourceUrl = anchor.metadata?.source_url;
+            const pipelineSource = String(anchor.metadata?.pipeline_source ?? '');
+            const recordType = String(anchor.metadata?.record_type ?? '');
+            if (typeof sourceUrl !== 'string' || !sourceUrl) return null;
+            const linkLabel = pipelineSource === 'edgar' ? 'View on SEC EDGAR' :
+              pipelineSource === 'openalex' ? 'View on OpenAlex' :
+              pipelineSource === 'uspto' ? 'View on USPTO' :
+              pipelineSource === 'federal_register' ? 'View on Federal Register' :
+              'View Original Document';
+            return (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Source Document</p>
+                  <a
+                    href={sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {linkLabel}
+                  </a>
+                  {recordType && (
+                    <p className="text-xs text-muted-foreground">
+                      {recordType.replace(/_/g, ' ')}
+                      {pipelineSource && ` via ${pipelineSource.toUpperCase()}`}
+                    </p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+
           {/* Network Receipt (BETA-11) */}
-          {anchor.chainTxId && (
+          {anchor.chainTxId ? (
             <>
               <Separator />
               <div className="space-y-2">
@@ -319,7 +357,33 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
                 )}
               </div>
             </>
-          )}
+          ) : anchor.status === 'SUBMITTED' && anchor.chainTxId ? (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
+                <a
+                  href={`https://mempool.space/signet/tx/${anchor.chainTxId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Awaiting confirmation — view transaction
+                </a>
+              </div>
+            </>
+          ) : (anchor.status === 'PENDING' || anchor.status === 'SUBMITTED') ? (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Processing — awaiting network submission
+                </p>
+              </div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -376,7 +440,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-            <div className="rounded-lg border bg-white p-4">
+            <div id="qr-code-container" className="rounded-lg border bg-white p-4">
               <QRCodeSVG
                 value={verifyUrl(anchor.publicId)}
                 size={180}
@@ -386,6 +450,34 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             <p className="text-xs text-muted-foreground text-center">
               {verifyUrl(anchor.publicId)}
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const svg = document.querySelector('#qr-code-container svg');
+                if (!svg) return;
+                const canvas = document.createElement('canvas');
+                canvas.width = 220;
+                canvas.height = 220;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 220, 220);
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const img = new Image();
+                img.onload = () => {
+                  ctx.drawImage(img, 20, 20, 180, 180);
+                  const link = document.createElement('a');
+                  link.download = `arkova-qr-${(anchor.publicId ?? 'unknown').slice(0, 8)}.png`;
+                  link.href = canvas.toDataURL('image/png');
+                  link.click();
+                };
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+              }}
+            >
+              <Download className="mr-2 h-3.5 w-3.5" />
+              Download QR as PNG
+            </Button>
           </CardContent>
         </Card>
       )}

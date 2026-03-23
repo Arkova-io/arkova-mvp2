@@ -8,6 +8,7 @@
  */
 
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Loader2, AlertCircle, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -127,15 +128,16 @@ export function RecordDetailPage() {
             });
           });
         }}
-        onDownloadProofJson={() => {
-          import('@/lib/proofPackage').then(({ generateProofPackage, downloadProofPackage, getProofPackageFilename }) => {
+        onDownloadProofJson={async () => {
+          try {
+            const { generateProofPackage, downloadProofPackage, getProofPackageFilename } = await import('@/lib/proofPackage');
             const proofPackage = generateProofPackage({
               id: anchor.id,
-              fingerprint: anchor.fingerprint,
+              fingerprint: anchor.fingerprint ?? '',
               filename: anchor.filename,
               file_size: anchor.file_size,
               file_mime: anchor.file_mime,
-              status: anchor.status as 'PENDING' | 'SECURED' | 'REVOKED',
+              status: anchor.status as 'PENDING' | 'SUBMITTED' | 'SECURED' | 'REVOKED' | 'EXPIRED',
               public_id: anchor.public_id,
               chain_tx_id: anchor.chain_tx_id,
               chain_block_height: anchor.chain_block_height,
@@ -149,7 +151,9 @@ export function RecordDetailPage() {
               public_id: anchor.public_id,
             });
             downloadProofPackage(proofPackage, filename);
-          });
+          } catch {
+            toast.error('Failed to generate proof package. Please try again.');
+          }
         }}
       />
     </AppShell>

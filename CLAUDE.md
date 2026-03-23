@@ -1,13 +1,13 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-20 | **Repo:** ArkovaCarson | **Deploy:** arkova-carson.vercel.app
-> **Stats:** 71 migrations | 1,939 tests | 176 stories (165 complete, 94%) | 24/24 audit findings resolved
+> **Version:** 2026-03-23 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
+> **Stats:** 89 migrations | 978 tests | 192 stories (170 complete, 89%) | 24/24 audit findings resolved
 
 Read this file before every task. Rules here override all other documents.
 
 **Reference docs** (read on demand, not every session):
 - `docs/reference/FILE_MAP.md` — Full file placement map
-- `docs/reference/BRAND.md` — Nordic Vault design system (colors, typography, CSS classes, component rules)
+- `docs/reference/BRAND.md` — "Precision Engine" design system (colors, typography, CSS classes, component rules, migration guide)
 - `docs/reference/TESTING.md` — Test patterns, demo users, frozen API schema
 - `docs/reference/STORY_ARCHIVE.md` — Completed story details (P1-P8, DH, UF, P4.5, UAT)
 
@@ -206,7 +206,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 | Bitcoin/chain | `docs/confluence/06_on_chain_policy.md` |
 | Billing | `docs/confluence/08_payments_entitlements.md` |
 | Webhooks | `docs/confluence/09_webhooks.md` |
-| Verification API | `docs/confluence/12_verification_api.md` |
+| Verification API | `docs/confluence/12_identity_access.md` |
 | Feature flags | `docs/confluence/13_switchboard.md` |
 | Anchor lifecycle | `machines/bitcoinAnchor.machine.ts` (re-verify with `check`) |
 | Story status | `docs/stories/` (group doc) + `00_stories_index.md` |
@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 71 files (0001-0071, 0033 skipped, 0068 split into 0068a/0068b). Last: `0071_anchor_description.sql`. 0001-0058 applied to production. 0059-0071 pending.
+**Current:** 88 files (0001-0089, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0089_credential_type_immutable.sql`. Migrations 0001-0089 applied to production.
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -244,13 +244,13 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 | P7 Go-Live | 11/13 | 0 | 2 | 85% |
 | P4.5 Verification API | 13/13 | 0 | 0 | 100% |
 | DH Deferred Hardening | 12/12 | 0 | 0 | 100% |
-| MVP Launch Gaps | 26/27 | 0 | 1 | 96% |
+| MVP Launch Gaps | 24/27 | 0 | 3 | 89% |
 | P8 AI Intelligence | 19/19 | 0 | 0 | 100% |
 | INFRA Edge & Ingress | 7/8 | 1 | 0 | 88% |
 | UAT + UF | 27/27 | 0 | 0 | 100% |
-| GEO & SEO | 5/12 | 2 | 5 | 42% |
+| GEO & SEO | 6/12 | 2 | 4 | 50% |
 | Beta (BETA-01–13) | 13/13 | 0 | 0 | 100% |
-| **Total** | **165/176** | **2/176** | **9/176** | **~94%** |
+| **Total** | **164/176** | **3/176** | **9/176** | **~93%** |
 
 ### Incomplete Stories
 
@@ -265,14 +265,14 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 > ~~MVP-20 (LinkedIn badge integration)~~ — Superseded by BETA-09
 
 **INFRA (1 partial):**
-- INFRA-07: Sentry integration -- code done (30 tests), missing source map upload plugin + DSN env vars in production
+- INFRA-07: Sentry integration — code complete (30 tests + vite plugin + init), needs SENTRY_AUTH_TOKEN + DSN env vars in Vercel/Cloud Run
 
 **GEO & SEO (5 not started, 2 partial):**
 - See `docs/stories/15_geo_seo.md` and `docs/BACKLOG.md` for details
 
-**TLA+ Verification Findings (2 open):**
-- TLA-01: `credential_type` not immutable after SECURED (needs migration to add trigger guard)
-- TLA-02: TLA+ check not in CI pipeline (add step for `machines/` changes)
+**TLA+ Verification Findings (all resolved):**
+- ~~TLA-01: `credential_type` not immutable after SECURED~~ — **RESOLVED** (migration 0089: `trg_credential_type_immutable` trigger)
+- ~~TLA-02: TLA+ check not in CI pipeline~~ — **RESOLVED** (`tla-verify` job in `.github/workflows/ci.yml`)
 
 ### Remaining Production Blockers
 
@@ -375,5 +375,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-20 | 71 migrations | 1,939 tests | 176 stories (165 complete, 94%) | 24/24 audit findings resolved_
+_Directive version: 2026-03-23 | 89 migrations | 978 tests | 192 stories (170 complete, 89%) | 24/24 audit findings resolved_
 _Reference docs: `docs/reference/` (FILE_MAP, BRAND, TESTING, STORY_ARCHIVE)_

@@ -39,21 +39,21 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 function getConfidenceColor(confidence: number): string {
-  if (confidence >= 0.8) return 'text-green-600 bg-green-50 border-green-200';
-  if (confidence >= 0.5) return 'text-amber-600 bg-amber-50 border-amber-200';
-  return 'text-red-600 bg-red-50 border-red-200';
+  if (confidence >= 0.8) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+  if (confidence >= 0.5) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+  return 'text-[#00d4ff] bg-[#00d4ff]/10 border-[#00d4ff]/20';
 }
 
 function getConfidenceLabel(confidence: number): string {
-  if (confidence >= 0.8) return 'High';
-  if (confidence >= 0.5) return 'Medium';
-  return 'Low';
+  if (confidence >= 0.8) return 'Auto-detected';
+  if (confidence >= 0.5) return 'Best guess';
+  return 'Needs review';
 }
 
 export function AIFieldSuggestions({
   fields,
   overallConfidence,
-  creditsRemaining,
+  creditsRemaining: _creditsRemaining,
   progress,
   onFieldAccept,
   onFieldReject,
@@ -128,9 +128,8 @@ export function AIFieldSuggestions({
               <span
                 className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-medium border ${getConfidenceColor(overallConfidence)}`}
               >
-                {getConfidenceLabel(overallConfidence)} confidence ({Math.round(overallConfidence * 100)}%)
+                {getConfidenceLabel(overallConfidence)} ({Math.round(overallConfidence * 100)}%)
               </span>
-              <span>{creditsRemaining} credits remaining</span>
             </div>
           </div>
         </div>

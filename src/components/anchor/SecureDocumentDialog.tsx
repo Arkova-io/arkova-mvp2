@@ -33,7 +33,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileUpload } from './FileUpload';
+import { FileUpload, type AttestationUpload } from './FileUpload';
+import { BulkUploadWizard } from '@/components/upload';
+import { WORKER_URL } from '@/lib/workerClient';
 import { TemplateSelector } from './TemplateSelector';
 import type { TemplateOption } from './TemplateSelector';
 import { AIFieldSuggestions } from './AIFieldSuggestions';
@@ -55,7 +57,7 @@ interface SecureDocumentDialogProps {
   onSuccess?: () => void;
 }
 
-type Step = 'upload' | 'extracting' | 'template' | 'confirm' | 'processing' | 'success' | 'error';
+type Step = 'upload' | 'extracting' | 'template' | 'confirm' | 'processing' | 'success' | 'error' | 'bulk' | 'attestation-review' | 'attestation-submitting';
 
 interface FileData {
   file: File;
@@ -102,6 +104,103 @@ export function SecureDocumentDialog({
     setFileData({ file, fingerprint });
   }, []);
 
+  const handleBulkDetected = useCallback((_files: File[]) => {
+    setStep('bulk');
+  }, []);
+
+  // Attestation upload state
+  const [attestationData, setAttestationData] = useState<AttestationUpload | null>(null);
+
+  const handleAttestationDetected = useCallback((data: AttestationUpload) => {
+    setAttestationData(data);
+    setStep('attestation-review');
+  }, []);
+
+  const handleAttestationSubmit = useCallback(async () => {
+    if (!attestationData || !user) return;
+    setStep('attestation-submitting');
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError('Authentication required'); setStep('error'); return; }
+
+      const workerUrl = import.meta.env.VITE_WORKER_URL ?? WORKER_URL;
+      const response = await fetch(`${workerUrl}/api/v1/attestations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          attestation_type: attestationData.attestation_type,
+          attester_name: attestationData.attester_name,
+          attester_type: attestationData.attester_type,
+          attester_title: attestationData.attester_title || undefined,
+          subject_type: attestationData.subject_type,
+          subject_identifier: attestationData.subject_identifier,
+          claims: attestationData.claims.filter(c => c.claim.trim()),
+          summary: attestationData.summary || undefined,
+          jurisdiction: attestationData.jurisdiction || undefined,
+          expires_at: attestationData.expires_at || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Failed to create attestation' }));
+        setError(err.error || 'Failed to create attestation');
+        setStep('error');
+        return;
+      }
+
+      const result = await response.json();
+      setCreatedAnchor({ id: result.attestation_id, publicId: result.public_id });
+      toast.success('Attestation created successfully');
+      setStep('success');
+      onSuccess?.();
+    } catch {
+      setError('Network error — please try again');
+      setStep('error');
+    }
+  }, [attestationData, user, onSuccess]);
+
+  // Auto-select template based on AI-detected credential type
+  const autoSelectTemplate = useCallback(async (detectedType: string) => {
+    const normalized = detectedType.toUpperCase().trim();
+
+    // Fuzzy mapping: AI output → credential_type enum
+    const typeMap: Record<string, string> = {
+      'DEGREE': 'DEGREE', 'DIPLOMA': 'DEGREE', 'BACHELOR': 'DEGREE', 'MASTER': 'DEGREE', 'PHD': 'DEGREE', 'DOCTORATE': 'DEGREE',
+      'LICENSE': 'LICENSE', 'MEDICAL_LICENSE': 'LICENSE', 'NURSING_LICENSE': 'LICENSE', 'PE_LICENSE': 'LICENSE',
+      'CERTIFICATE': 'CERTIFICATE', 'CERTIFICATION': 'CERTIFICATE', 'PMP': 'CERTIFICATE', 'INSURANCE': 'CERTIFICATE',
+      'TRANSCRIPT': 'TRANSCRIPT', 'GRADE_REPORT': 'TRANSCRIPT',
+      'PROFESSIONAL': 'PROFESSIONAL', 'PROFESSIONAL_CREDENTIAL': 'PROFESSIONAL',
+      'CLE': 'CLE', 'CLE_CREDIT': 'CLE', 'CLE_ETHICS': 'CLE', 'CONTINUING_EDUCATION': 'CLE',
+      'ATTESTATION': 'ATTESTATION', 'EMPLOYMENT_VERIFICATION': 'ATTESTATION', 'VERIFICATION_LETTER': 'ATTESTATION', 'LETTER_OF_RECOMMENDATION': 'ATTESTATION',
+      'CONTRACT': 'OTHER', 'NDA': 'OTHER', 'AGREEMENT': 'OTHER',
+      'OTHER': 'OTHER', 'GENERAL': 'OTHER', 'GENERAL_DOCUMENT': 'OTHER',
+    };
+    const matchedType = typeMap[normalized] ?? (
+      // Partial match fallback
+      Object.entries(typeMap).find(([k]) => normalized.includes(k))?.[1] ?? 'OTHER'
+    );
+
+    // Fetch system templates to find a match
+    const { data: templates } = await supabase
+      .from('credential_templates')
+      .select('id, name, description, credential_type, is_system, org_id')
+      .eq('is_system', true)
+      // CLE added in migration 0088 — cast until types regenerated
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('credential_type', matchedType as any)
+      .limit(1);
+
+    if (templates && templates.length > 0) {
+      const match = templates[0] as unknown as TemplateOption;
+      setSelectedTemplate(match);
+      return match;
+    }
+    return null;
+  }, []);
   // Run AI extraction after file upload
   const handleStartExtraction = useCallback(async () => {
     if (!fileData) return;
@@ -118,25 +217,45 @@ export function SecureDocumentDialog({
     );
 
     if (result) {
-      setExtractedFields(result.fields);
+      // Auto-accept all high-confidence fields
+      const autoAccepted = result.fields.map(f =>
+        f.confidence >= 0.5 ? { ...f, status: 'accepted' as const } : f
+      );
+      setExtractedFields(autoAccepted);
       setOverallConfidence(result.overallConfidence);
       setCreditsRemaining(result.creditsRemaining);
       setExtractionProgress({ stage: 'complete', progress: 100, message: 'Extraction complete' });
-    } else {
-      // Extraction failed — still allow user to proceed without AI
-      setExtractionProgress(null);
-      setStep('template');
-    }
-  }, [fileData, selectedTemplate]);
 
-  // Handle proceeding from upload step
+      // Auto-detect document type, auto-select template, and auto-submit
+      const typeField = result.fields.find(f => f.key === 'credentialType');
+      if (typeField && typeField.confidence >= 0.5) {
+        await autoSelectTemplate(typeField.value);
+      } else {
+        await autoSelectTemplate('OTHER');
+      }
+      // One-click flow: skip confirm, go straight to anchoring
+      // Description auto-generated from AI fields
+      handleConfirm();
+      return;
+    } else {
+      // Extraction failed — auto-select General Document and anchor immediately
+      setExtractionProgress(null);
+      await autoSelectTemplate('OTHER');
+      handleConfirm();
+      return;
+    }
+  }, [fileData, selectedTemplate, autoSelectTemplate]);
+
+  // Handle proceeding from upload step — always run AI extraction
   const handleUploadContinue = useCallback(async () => {
     if (!fileData) return;
 
-    if (aiEnabled && fileData.file.type === 'application/pdf') {
+    if (aiEnabled) {
       await handleStartExtraction();
     } else {
-      setStep('template');
+      // No AI — auto-select General Document and anchor immediately
+      await autoSelectTemplate('OTHER');
+      handleConfirm();
     }
   }, [fileData, aiEnabled, handleStartExtraction]);
 
@@ -175,9 +294,9 @@ export function SecureDocumentDialog({
     setError(null);
 
     try {
-      // Build metadata from AI-extracted fields (accepted + edited only)
+      // Build metadata from AI-extracted fields (all non-rejected fields)
       const acceptedFields = extractedFields
-        .filter(f => f.status === 'accepted' || f.status === 'edited')
+        .filter(f => f.status !== 'rejected')
         .reduce<Record<string, string>>((acc, f) => {
           acc[f.key] = f.value;
           return acc;
@@ -247,6 +366,7 @@ export function SecureDocumentDialog({
     setLinkCopied(false);
     setExtractedFields([]);
     setExtractionProgress(null);
+    setAttestationData(null);
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -278,14 +398,16 @@ export function SecureDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={step === 'bulk' ? 'max-w-3xl max-h-[90vh] overflow-y-auto' : 'sm:max-w-lg max-h-[90vh] overflow-y-auto'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            {SECURE_DIALOG_LABELS.TITLE}
+            {step === 'bulk' ? 'Bulk Upload' : SECURE_DIALOG_LABELS.TITLE}
           </DialogTitle>
           <DialogDescription>
-            {SECURE_DIALOG_LABELS.DESCRIPTION}
+            {step === 'bulk'
+              ? 'Upload a CSV or XLSX file to secure multiple documents at once'
+              : SECURE_DIALOG_LABELS.DESCRIPTION}
           </DialogDescription>
         </DialogHeader>
 
@@ -293,7 +415,71 @@ export function SecureDocumentDialog({
           {step === 'upload' && (
             <FileUpload
               onFileSelect={handleFileSelect}
+              onBulkDetected={handleBulkDetected}
+              onAttestationDetected={handleAttestationDetected}
               disabled={false}
+            />
+          )}
+
+          {step === 'attestation-review' && attestationData && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-[#00d4ff]/20 bg-[#00d4ff]/5 px-4 py-3">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-[#00d4ff]" />
+                  Attestation detected
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This file contains an attestation that will be anchored to the network.
+                </p>
+              </div>
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium">{attestationData.attestation_type.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subject</span>
+                  <span className="font-medium truncate max-w-[250px]">{attestationData.subject_identifier}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Attester</span>
+                  <span className="font-medium">{attestationData.attester_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Claims</span>
+                  <span className="font-medium">{attestationData.claims.length}</span>
+                </div>
+                {attestationData.jurisdiction && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Jurisdiction</span>
+                    <span className="font-medium">{attestationData.jurisdiction}</span>
+                  </div>
+                )}
+                {attestationData.summary && (
+                  <div className="border-t pt-2 mt-2">
+                    <p className="text-xs text-muted-foreground">{attestationData.summary}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 'attestation-submitting' && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-sm text-muted-foreground">Creating attestation and anchoring to network...</p>
+            </div>
+          )}
+
+          {step === 'bulk' && (
+            <BulkUploadWizard
+              onComplete={() => {
+                handleClose();
+                onSuccess?.();
+              }}
+              onCancel={() => {
+                setStep('upload');
+              }}
             />
           )}
 
@@ -313,15 +499,26 @@ export function SecureDocumentDialog({
               )}
 
               {extractionProgress?.stage === 'complete' && extractedFields.length > 0 && (
-                <AIFieldSuggestions
-                  fields={extractedFields}
-                  overallConfidence={overallConfidence}
-                  creditsRemaining={creditsRemaining}
-                  onFieldAccept={handleFieldAccept}
-                  onFieldReject={handleFieldReject}
-                  onFieldEdit={handleFieldEdit}
-                  onAcceptAll={handleAcceptAll}
-                />
+                <>
+                  {/* Show auto-detected document type */}
+                  {selectedTemplate && (
+                    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                      <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                      <span>
+                        Auto-detected as <strong>{selectedTemplate.name}</strong>
+                      </span>
+                    </div>
+                  )}
+                  <AIFieldSuggestions
+                    fields={extractedFields}
+                    overallConfidence={overallConfidence}
+                    creditsRemaining={creditsRemaining}
+                    onFieldAccept={handleFieldAccept}
+                    onFieldReject={handleFieldReject}
+                    onFieldEdit={handleFieldEdit}
+                    onAcceptAll={handleAcceptAll}
+                  />
+                </>
               )}
             </div>
           )}
@@ -331,11 +528,13 @@ export function SecureDocumentDialog({
               <p className="text-sm text-muted-foreground">
                 Choose a template for this credential
               </p>
-              <TemplateSelector
-                orgId={profile?.org_id}
-                onSelect={setSelectedTemplate}
-                selectedId={selectedTemplate?.id}
-              />
+              <div className="max-h-[50vh] overflow-y-auto -mx-1 px-1">
+                <TemplateSelector
+                  orgId={profile?.org_id}
+                  onSelect={setSelectedTemplate}
+                  selectedId={selectedTemplate?.id}
+                />
+              </div>
             </div>
           )}
 
@@ -499,7 +698,8 @@ export function SecureDocumentDialog({
                   <Button variant="outline" onClick={() => setStep('upload')}>
                     {SECURE_DIALOG_LABELS.BACK}
                   </Button>
-                  <Button onClick={() => setStep('template')}>
+                  {/* Skip template selection if AI auto-detected a type */}
+                  <Button onClick={() => setStep(selectedTemplate ? 'confirm' : 'template')}>
                     {SECURE_DIALOG_LABELS.CONTINUE}
                   </Button>
                 </>
@@ -592,6 +792,17 @@ export function SecureDocumentDialog({
               </Button>
               <Button onClick={handleRetry}>
                 {SECURE_DIALOG_LABELS.TRY_AGAIN}
+              </Button>
+            </>
+          )}
+          {step === 'attestation-review' && (
+            <>
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleAttestationSubmit}>
+                <Shield className="mr-2 h-4 w-4" />
+                Create Attestation
               </Button>
             </>
           )}

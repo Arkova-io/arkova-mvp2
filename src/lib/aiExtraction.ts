@@ -13,6 +13,7 @@
 import { extractText, type OCRResult, type OCRProgress } from './ocrWorker';
 import { stripPII, type StrippingReport } from './piiStripper';
 import { supabase } from './supabase';
+import { WORKER_URL } from './workerClient';
 
 export interface ExtractionField {
   key: string;
@@ -97,7 +98,7 @@ export async function runExtraction(
       ? strippingReport.strippedText.slice(0, 10_000) + '\n[TRUNCATED]'
       : strippingReport.strippedText;
 
-    const workerUrl = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+    const workerUrl = WORKER_URL;
     const response = await fetch(`${workerUrl}/api/v1/ai/extract`, {
       method: 'POST',
       headers: {

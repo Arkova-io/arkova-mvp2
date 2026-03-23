@@ -1,10 +1,12 @@
 /**
  * Sidebar Navigation Component
  *
- * Professional sidebar with navigation links.
- * Responsive: hidden on mobile (<md), shown as overlay when mobileOpen=true.
+ * Radically simplified sidebar (Session 10):
+ * - Max 5 items: Dashboard, Documents, Organization, Search, Settings
+ * - Billing/Help/Developers moved to Header user dropdown
+ * - Admin section behind collapsible toggle, only for platform admins
  *
- * @see MVP-07
+ * @see MVP-07, Session 10 Sprint A
  */
 
 import { useState, useEffect } from 'react';
@@ -14,24 +16,27 @@ import {
   FileText,
   Building2,
   Settings,
-  HelpCircle,
-  CreditCard,
   ChevronLeft,
   ChevronRight,
   X,
-  Inbox,
   Search,
   Landmark,
   Moon,
   Sun,
   Monitor,
+  BarChart3,
+  Activity,
+  Database,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Code2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, BILLING_LABELS, MY_CREDENTIALS_LABELS, NAV_POLISH_LABELS } from '@/lib/copy';
+import { NAV_LABELS, NAV_POLISH_LABELS } from '@/lib/copy';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useTheme, type Theme } from '@/hooks/useTheme';
 import {
   Tooltip,
@@ -48,24 +53,22 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { label: NAV_LABELS.DASHBOARD, icon: LayoutDashboard, to: ROUTES.DASHBOARD },
-  { label: NAV_LABELS.MY_RECORDS, icon: FileText, to: ROUTES.RECORDS },
-  { label: MY_CREDENTIALS_LABELS.NAV_LABEL, icon: Inbox, to: ROUTES.MY_CREDENTIALS },
-  { label: NAV_LABELS.ORGANIZATION, icon: Building2, to: ROUTES.ORGANIZATION },
+  { label: NAV_LABELS.DOCUMENTS, icon: FileText, to: ROUTES.DOCUMENTS },
+  { label: NAV_LABELS.ORGANIZATION, icon: Building2, to: ROUTES.ORGANIZATIONS },
   { label: NAV_LABELS.SEARCH, icon: Search, to: ROUTES.SEARCH },
+  { label: 'Developers', icon: Code2, to: ROUTES.DEVELOPERS },
+  { label: NAV_LABELS.SETTINGS, icon: Settings, to: ROUTES.SETTINGS },
 ];
 
-// UI-only visibility hint — NOT a security control. Actual admin access must be
-// enforced server-side via RLS/roles. TODO: migrate to profiles.is_platform_admin flag.
-const PLATFORM_ADMIN_EMAILS = ['carson@arkova.ai', 'sarah@arkova.ai'];
+import { isPlatformAdmin as checkPlatformAdmin } from '@/lib/platform';
 
 const adminNavItems: NavItem[] = [
+  { label: 'Overview', icon: BarChart3, to: ROUTES.ADMIN_OVERVIEW },
+  { label: 'System Health', icon: Activity, to: ROUTES.ADMIN_HEALTH },
   { label: NAV_LABELS.TREASURY, icon: Landmark, to: ROUTES.ADMIN_TREASURY },
-];
-
-const secondaryNavItems: NavItem[] = [
-  { label: BILLING_LABELS.PAGE_TITLE, icon: CreditCard, to: ROUTES.BILLING },
-  { label: NAV_LABELS.SETTINGS, icon: Settings, to: ROUTES.SETTINGS },
-  { label: NAV_LABELS.HELP, icon: HelpCircle, to: ROUTES.HELP },
+  { label: 'Pipeline', icon: Database, to: ROUTES.ADMIN_PIPELINE },
+  { label: 'Organizations', icon: Building2, to: ROUTES.ADMIN_ORGANIZATIONS },
+  { label: 'Payments', icon: DollarSign, to: ROUTES.ADMIN_PAYMENTS },
 ];
 
 // ---------------------------------------------------------------------------
@@ -138,8 +141,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEmail }: Readonly<SidebarProps>) {
-  const isPlatformAdmin = PLATFORM_ADMIN_EMAILS.includes(userEmail ?? '');
+  const isPlatformAdmin = checkPlatformAdmin(userEmail);
   const [collapsed, setCollapsed] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
   const location = useLocation();
 
   // Close mobile sidebar on navigation
@@ -151,17 +155,35 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  // Check if any admin route is active to auto-expand
+  const isAdminActive = adminNavItems.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
+  );
+
+  const isNavActive = (item: NavItem) => {
+    if (item.to === ROUTES.DOCUMENTS) {
+      // Documents tab should be active for /documents, /records, /my-credentials, /attestations
+      return location.pathname === ROUTES.DOCUMENTS
+        || location.pathname.startsWith(ROUTES.DOCUMENTS + '/')
+        || location.pathname === ROUTES.RECORDS
+        || location.pathname.startsWith(ROUTES.RECORDS + '/')
+        || location.pathname === ROUTES.MY_CREDENTIALS
+        || location.pathname === ROUTES.ATTESTATIONS;
+    }
+    return location.pathname === item.to || location.pathname.startsWith(item.to + '/');
+  };
+
   const sidebarContent = (
     <aside
       className={cn(
-        'flex h-full flex-col border-r bg-sidebar transition-all duration-300',
+        'flex h-full flex-col bg-[#0d141b] border-r border-white/5 transition-all duration-300',
         collapsed ? 'w-16' : 'w-64',
         className
       )}
     >
       {/* Logo + close button (mobile) */}
       <div className={cn(
-        'flex h-16 items-center border-b px-4',
+        'flex h-16 items-center border-b border-white/5 px-4',
         collapsed ? 'justify-center' : 'justify-between'
       )}>
         <Link
@@ -174,7 +196,7 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
         >
           <ArkovaLogo size={36} />
           {!collapsed && (
-            <span className="text-lg font-semibold text-sidebar-foreground">
+            <span className="text-lg font-semibold text-[#dce3ed]">
               Arkova
             </span>
           )}
@@ -195,38 +217,48 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
 
       {/* Org context (UF-09) */}
       {orgName && !collapsed && (
-        <div className="px-4 py-2 border-b">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="px-4 py-2 border-b border-white/5">
+          <p className="font-mono text-[10px] font-medium uppercase tracking-widest text-[#859398]">
             {NAV_POLISH_LABELS.MANAGING_ORG}
           </p>
-          <p className="text-sm font-medium text-sidebar-foreground truncate">
+          <p className="text-sm font-medium text-[#dce3ed] truncate">
             {orgName}
           </p>
         </div>
       )}
 
-      {/* Scrollable nav area — ensures bottom items visible on short screens */}
+      {/* Scrollable nav area */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {/* Main Navigation */}
+        {/* Main Navigation — max 5 items */}
         <nav className="space-y-1 p-3">
           {mainNavItems.map((item) => (
             <SidebarNavLink
               key={item.label}
               item={item}
               collapsed={collapsed}
-              active={location.pathname === item.to || location.pathname.startsWith(item.to + '/')}
+              active={isNavActive(item)}
             />
           ))}
 
-          {/* Admin-only items */}
+          {/* Admin section — collapsible toggle, platform admins only */}
           {isPlatformAdmin && (
             <>
-              {!collapsed && (
-                <p className="px-3 pt-4 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Admin
-                </p>
+              {!collapsed ? (
+                <button
+                  onClick={() => setAdminExpanded(!adminExpanded)}
+                  className="flex w-full items-center justify-between px-3 pt-4 pb-1 font-mono text-[10px] font-medium uppercase tracking-widest text-[#859398] hover:text-[#bbc9cf] transition-colors"
+                >
+                  <span>Admin</span>
+                  {adminExpanded || isAdminActive ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                </button>
+              ) : (
+                <div className="my-2 border-t border-white/5" />
               )}
-              {adminNavItems.map((item) => (
+              {(adminExpanded || isAdminActive || collapsed) && adminNavItems.map((item) => (
                 <SidebarNavLink
                   key={item.label}
                   item={item}
@@ -237,24 +269,10 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
             </>
           )}
         </nav>
-
-        <Separator className="mx-3" />
-
-        {/* Secondary Navigation */}
-        <nav className="space-y-1 p-3">
-          {secondaryNavItems.map((item) => (
-            <SidebarNavLink
-              key={item.label}
-              item={item}
-              collapsed={collapsed}
-              active={location.pathname === item.to || location.pathname.startsWith(item.to + '/')}
-            />
-          ))}
-        </nav>
       </div>
 
       {/* Theme Toggle + Collapse */}
-      <div className="border-t p-3 space-y-1">
+      <div className="border-t border-white/5 p-3 space-y-1">
         <ThemeToggle collapsed={collapsed} />
         {/* Collapse button — desktop only (mobile uses overlay) */}
         <div className="hidden md:block">
@@ -320,11 +338,11 @@ function SidebarNavLink({ item, collapsed, active }: Readonly<SidebarNavLinkProp
     <Link
       to={item.to}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
         active
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-        collapsed && 'justify-center px-2'
+          ? 'border-l-4 border-[#00d4ff] bg-[#192028] text-[#00d4ff] rounded-l-none'
+          : 'border-l-4 border-transparent text-[#bbc9cf] hover:bg-[#192028]/50 hover:text-[#dce3ed]',
+        collapsed && 'justify-center px-2 border-l-0'
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />

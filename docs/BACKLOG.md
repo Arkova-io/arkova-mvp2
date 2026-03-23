@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-20 (E2E demo readiness — anchoring pipeline fix, 6+ Signet txs confirmed, DEMO backlog added) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-22 (Pipeline activated: EDGAR 2,340 + OpenAlex 200 records ingested, embeddings generating, Merkle anchoring live, Nessie RAG returning real results) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -12,16 +12,18 @@ _Last updated: 2026-03-20 (E2E demo readiness — anchoring pipeline fix, 6+ Sig
 | **BETA Readiness Stories** | **13** | **13** | **0** | No (all complete) |
 | BETA Activation Items | 2 | 2 | 0 | No (signet confirmed) |
 | E2E Validation Bugs | 7 | 7 fixed | 0 | No |
-| Demo Readiness (DEMO) | 4 | 2 | 2 | No (enhancement) |
-| Stories (NOT STARTED) | 8 | — | 8 | No (post-launch) |
-| Stories (PARTIAL) | 2 | — | 2 | 1 blocking (INFRA-07) |
+| Demo Readiness (DEMO) | 4 | 4 | 0 | No |
+| Phase 1.5 Foundation | 16 | 14 | 2 | No |
+| Stories (NOT STARTED) | 7 | — | 7 | No (post-launch) |
+| Stories (PARTIAL) | 2 | — | 2 | No (external/ops) |
 | Security Findings | 12 | 12 fixed | 0 | No |
 | UAT Bugs | 29 | 29 | 0 | No |
 | Audit Findings | 24 | 24 resolved | 0 | No |
-| Operational Tasks | 7 | 0 | 7 | **YES** |
-| TLA+ Verification Findings | 3 | 1 fixed | 2 | No |
+| GitHub CodeQL | 29 | 9 fixed | 20 | No (false positives) |
+| Operational Tasks | 8 | 2 | 6 | **YES** |
+| TLA+ Verification Findings | 3 | 3 fixed | 0 | No |
 | Code TODOs | 1 | — | 1 | No |
-| **Total Open Items** | | | **22** | |
+| **Total Open Items** | | | **12** | |
 
 ---
 
@@ -44,13 +46,14 @@ _Last updated: 2026-03-20 (E2E demo readiness — anchoring pipeline fix, 6+ Sig
 
 | # | ID | Issue | Status |
 |---|-----|-------|--------|
-| 9 | OPS-01 | Apply migrations 0059-0071 to production Supabase + regenerate types | PENDING |
-| 10 | OPS-02 | Run `scripts/strip-demo-seeds.sql` on production | PENDING |
+| 9 | ~~OPS-01~~ | ~~Apply migrations 0059-0071 to production Supabase + regenerate types~~ | **DONE** — All migrations applied (0059-0075) |
+| 10 | ~~OPS-02~~ | ~~Run `scripts/strip-demo-seeds.sql` on production~~ | **DONE** — Session 6: `admin@umich-demo.arkova.io` deleted, 0 demo users remain |
 | 11 | OPS-03 | Set Sentry DSN env vars (Vercel + Cloud Run) | PENDING |
 | 12 | OPS-04 | Sentry source map upload plugin | PENDING |
 | 13 | OPS-05 | AWS KMS key provisioning (mainnet signing) | PENDING |
 | 14 | OPS-06 | Mainnet treasury funding | PENDING |
 | 15 | OPS-07 | Key rotation (Stripe + Supabase service role) | PENDING |
+| 16 | ~~OPS-08~~ | ~~Fix BITCOIN_TREASURY_WIF in Secret Manager~~ | **FIXED** — Secret Manager version 3 set to correct WIF. Revision `arkova-worker-00024-f9p` deployed, treasury address confirmed `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. PENDING anchor processed to SUBMITTED (TX `a5f6d9d9...`). |
 
 ---
 
@@ -199,7 +202,7 @@ _All 13 stories completed 2026-03-18 (PRs #98, #100, #101). Migrations 0068-0071
 ### MVP Launch Gaps — 1 not started
 | ID | Description | Priority |
 |----|-------------|----------|
-| MVP-12 | Dark mode toggle | LOW |
+| ~~MVP-12~~ | ~~Dark mode toggle~~ | ~~LOW~~ — **DONE** (sidebar ThemeToggle cycles light/dark/system) |
 
 > ~~MVP-20 (LinkedIn badge integration)~~ — Superseded by BETA-09 (LinkedInShare.tsx)
 
@@ -209,7 +212,7 @@ _All P8 stories complete including Phase II: P8-S6 (feedback loop), P8-S8 (integ
 ### GEO & SEO — 5 not started
 | ID | Description | Priority |
 |----|-------------|----------|
-| GEO-03 | Publish /privacy and /terms on marketing site | CRITICAL |
+| ~~GEO-03~~ | ~~Publish /privacy and /terms on marketing site~~ | ~~CRITICAL~~ — **COMPLETE** (pages exist in arkova-marketing) |
 | GEO-08 | Content expansion — 5 core pages | HIGH |
 | GEO-09 | Community & brand presence launch | MEDIUM |
 | GEO-10 | IndexNow for Bing/Copilot | MEDIUM |
@@ -235,23 +238,17 @@ _From TLA+ model checking of Bitcoin anchor state machine (`machines/bitcoinAnch
 
 | # | ID | Category | Finding | Status | Action |
 |---|-----|----------|---------|--------|--------|
-| 1 | TLA-01 | Schema Gap | `credential_type` column is NOT immutable after SECURED — `protect_anchor_status_transition()` trigger does not guard it, unlike `metadata` | OPEN | Add guard to trigger (new migration) |
-| 2 | TLA-02 | CI Gate | TLA+ verification not in CI pipeline — model can drift from code | OPEN | Add `npx tla-precheck check` step to CI |
+| 1 | ~~TLA-01~~ | ~~Schema Gap~~ | ~~`credential_type` column is NOT immutable after SECURED~~ | **FIXED** | Migration 0073 + TLA+ model INV-7 |
+| 2 | ~~TLA-02~~ | ~~CI Gate~~ | ~~TLA+ verification not in CI pipeline~~ | **FIXED** | Added `tla-verify` job to `.github/workflows/ci.yml` |
 | 3 | TLA-03 | Design Fix | Legal hold invariant was overly strict — disallowed valid legal hold on revoked anchors | **FIXED** | Invariant refined in model (PR #94) |
 
-### TLA-01: credential_type Immutability (OPEN)
+### ~~TLA-01: credential_type Immutability~~ — FIXED
 
-**Problem:** The `metadata` column is protected by `prevent_metadata_edit_after_secured()` trigger (migration 0030), but `credential_type` has no equivalent guard. A user could change the credential type of a SECURED anchor via UPDATE.
+Migration `0073_credential_type_immutability.sql` adds `credential_type` guard to `protect_anchor_status_transition()` trigger. Blocks changes when status is SUBMITTED, SECURED, or REVOKED. TLA+ model updated with `credentialTypeLocked` variable and INV-7 invariant. Applied to production Supabase.
 
-**Impact:** LOW — RLS policies and frontend validation make this unlikely in practice, but it violates the immutability principle.
+### ~~TLA-02: CI Gate for State Machine Verification~~ — FIXED
 
-**Fix:** New migration adding `credential_type` to `protect_anchor_status_transition()` trigger, blocking changes when status != 'PENDING'.
-
-### TLA-02: CI Gate for State Machine Verification (OPEN)
-
-**Problem:** The TLA+ spec and proof certificate exist but aren't checked in CI. Changes to the anchor lifecycle could invalidate the proof without anyone noticing.
-
-**Fix:** Add a CI step that runs `cd machines && npx tla-precheck check bitcoinAnchor` on PRs that touch `machines/` or `services/worker/src/jobs/anchor.ts` or `services/worker/src/chain/`.
+Added `tla-verify` job to CI pipeline (`.github/workflows/ci.yml`). Runs `npx tla-precheck check machines/bitcoinAnchor.machine.ts` on PRs that modify `machines/`, `services/worker/src/jobs/anchor.ts`, or `services/worker/src/chain/`. Skips automatically if no relevant files changed.
 
 ---
 
@@ -263,8 +260,8 @@ _Discovered during E2E demo readiness session. Enhancement items for demo polish
 |---|-----|----------|-------------|--------|
 | 1 | DEMO-01 | **HIGH** | OP_RETURN metadata hash — include truncated SHA-256 of metadata JSON alongside document fingerprint in OP_RETURN. Format: `ARKV` + 32 bytes doc fingerprint + 8 bytes metadata hash. Enables fully independent verification of both document and metadata without Arkova. | **COMPLETE** |
 | 2 | DEMO-02 | **HIGH** | Verification walkthrough UI — "How Verification Works" explainer on record detail page. Explains: (1) SHA-256 fingerprint = the document's unique identity, (2) OP_RETURN on network = permanent timestamped proof, (3) anyone can verify by hashing the document and searching the network, (4) no dependency on Arkova being online. | **COMPLETE** |
-| 3 | DEMO-03 | **MEDIUM** | Search page dark mode — public routes (/search, /verify) don't inherit dark theme class because they're outside AuthGuard/ProfileProvider. Need to apply theme at app root level. | NOT STARTED |
-| 4 | DEMO-04 | **LOW** | Credential template visual rendering — upgrade CredentialRenderer to show diploma-style visual cards for different credential types (degree, license, certificate). | NOT STARTED |
+| 3 | ~~DEMO-03~~ | ~~**MEDIUM**~~ | ~~Search page dark mode~~ | **RESOLVED** — `useTheme()` already called at App root (line 106 of App.tsx). Public routes inherit dark class via `document.documentElement`. No code change needed. |
+| 4 | ~~DEMO-04~~ | ~~**LOW**~~ | ~~Credential template visual rendering — upgrade CredentialRenderer to show diploma-style visual cards for different credential types (degree, license, certificate).~~ | **COMPLETE** (PRs #117-120, 16 templates in production, type-specific visual cards) |
 
 ---
 
@@ -291,6 +288,37 @@ _From E2E journey validation across 7 user flows. Report: `docs/bugs/e2e_journey
 | File | Line | Comment |
 |------|------|---------|
 | Sidebar.tsx | 58 | `// TODO: migrate to profiles.is_platform_admin flag` |
+
+---
+
+## TIER 0: PHASE 1.5 — FOUNDATION (Active Sprint, 2026-03-22)
+
+> Source: Arkova-Master-Strategy-Complete, Verification-Bootstrap-Deep-Dive, Verified-Intelligence-SLM-Analysis
+> Story doc: [17_phase1_5_foundation.md](./stories/17_phase1_5_foundation.md)
+
+**Priority order — all items are immediate needs:**
+
+| ID | Story | Priority | Status | Sprint | Depends On |
+|----|-------|----------|--------|--------|------------|
+| ~~PH1-UI-01~~ | ~~Design system refresh (match arkova.ai)~~ | P0 | **COMPLETE** | S1 | — |
+| ~~PH1-DATA-01~~ | ~~EDGAR full-text fetcher enhancement~~ | P0 | **COMPLETE** | S5 | Migration 0077 |
+| ~~PH1-DATA-06~~ | ~~OpenAlex academic paper fetcher~~ | P1 | **COMPLETE** | S5 | Migration 0077 |
+| ~~PH1-DATA-02~~ | ~~USPTO patent fetcher~~ | P0 | **COMPLETE** | S1 | Migration 0077 |
+| ~~PH1-DATA-04~~ | ~~Merkle batch anchoring for public records~~ | P0 | **COMPLETE** | S2 | PH1-DATA-01 |
+| ~~PH1-PAY-01~~ | ~~x402 Express middleware integration~~ | P0 | **COMPLETE** | S2 | Migration 0078 |
+| ~~PH1-DATA-03~~ | ~~Federal Register fetcher~~ | P1 | **COMPLETE** | S2 | Migration 0077 |
+| ~~PH1-INT-01~~ | ~~Vector DB enhancement for public records~~ | P0 | **COMPLETE** | S3 | Migration 0077 |
+| ~~PH1-INT-02~~ | ~~RAG retrieval endpoint (Nessie query)~~ | P0 | **COMPLETE** | S3 | PH1-INT-01 |
+| PH1-PAY-02 | Self-hosted x402 facilitator | P0 | **PARTIAL** — flag enabled, needs USDC address + facilitator deploy | S3 | PH1-PAY-01 |
+| ~~PH1-INT-03~~ | ~~Gemini RAG integration~~ | P1 | **COMPLETE** | S4 | PH1-INT-02 |
+| ~~PH1-SDK-01~~ | ~~TypeScript SDK (@arkova/sdk)~~ | P1 | **COMPLETE** | S4 | PH1-PAY-01 |
+| ~~PH1-SDK-03~~ | ~~MCP server enhancement (nessie tools)~~ | P1 | **COMPLETE** | S4 | PH1-INT-02 |
+| ~~PH1-DATA-05~~ | ~~Pipeline monitoring dashboard~~ | P1 | **COMPLETE** | S4 | PH1-DATA-01 |
+| ~~PH1-PAY-03~~ | ~~Payment analytics & revenue tracking~~ | P1 | **COMPLETE** | S4 | PH1-PAY-01 |
+| PH1-SDK-02 | Python SDK (arkova-python) | P2 | NOT STARTED | S5 | PH1-PAY-01 |
+
+**PR #127 merged 2026-03-22:** Sprints 1-4 complete (12/15 stories). PRs #125, #126 superseded and closed.
+**Remaining:** PH1-PAY-02 (facilitator deploy), PH1-SDK-02 (Python SDK)
 
 ---
 

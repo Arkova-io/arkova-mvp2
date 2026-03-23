@@ -22,14 +22,23 @@ export const ExtractedFieldsSchema = z.object({
   licenseNumber: z.string().optional(),
   accreditingBody: z.string().optional(),
   jurisdiction: z.string().optional(),
+  // CLE-specific fields (Session 10)
+  creditHours: z.number().optional(),
+  creditType: z.string().optional(),
+  barNumber: z.string().optional(),
+  activityNumber: z.string().optional(),
+  providerName: z.string().optional(),
+  approvedBy: z.string().optional(),
+  // Fraud signals (Session 10)
+  fraudSignals: z.array(z.string()).optional(),
 }).strict();
 
 /**
  * Schema for extraction request validation (inbound to the extraction endpoint).
  */
 export const ExtractionRequestSchema = z.object({
-  strippedText: z.string().min(1, 'Stripped text is required'),
-  credentialType: z.string().min(1, 'Credential type hint is required'),
+  strippedText: z.string().min(1, 'Stripped text is required').max(50_000, 'Stripped text exceeds 50,000 character limit'),
+  credentialType: z.string().min(1, 'Credential type hint is required').max(50, 'Credential type hint too long'),
   fingerprint: z.string().length(64, 'Fingerprint must be a 64-char SHA-256 hex string'),
   issuerHint: z.string().max(200).optional(),
 });

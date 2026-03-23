@@ -1,5 +1,5 @@
 # agents.md — components/vault
-_Last updated: 2026-03-12_
+_Last updated: 2026-03-21_
 
 ## What This Folder Contains
 Vault-related components for the INDIVIDUAL user experience, including the VaultDashboard.

@@ -582,6 +582,152 @@ export type Database = {
           },
         ]
       }
+      attestation_evidence: {
+        Row: {
+          attestation_id: string
+          created_at: string
+          description: string | null
+          evidence_type: string
+          filename: string | null
+          fingerprint: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          attestation_id: string
+          created_at?: string
+          description?: string | null
+          evidence_type?: string
+          filename?: string | null
+          fingerprint: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          attestation_id?: string
+          created_at?: string
+          description?: string | null
+          evidence_type?: string
+          filename?: string | null
+          fingerprint?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attestation_evidence_attestation_id_fkey"
+            columns: ["attestation_id"]
+            isOneToOne: false
+            referencedRelation: "attestations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attestations: {
+        Row: {
+          anchor_id: string | null
+          attestation_type: Database["public"]["Enums"]["attestation_type"]
+          attester_name: string
+          attester_org_id: string | null
+          attester_title: string | null
+          attester_type: Database["public"]["Enums"]["attester_type"]
+          attester_user_id: string
+          chain_block_height: number | null
+          chain_timestamp: string | null
+          chain_tx_id: string | null
+          claims: Json
+          created_at: string
+          evidence_fingerprint: string | null
+          expires_at: string | null
+          fingerprint: string | null
+          id: string
+          issued_at: string
+          jurisdiction: string | null
+          metadata: Json | null
+          public_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["attestation_status"]
+          subject_identifier: string
+          subject_type: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          anchor_id?: string | null
+          attestation_type: Database["public"]["Enums"]["attestation_type"]
+          attester_name: string
+          attester_org_id?: string | null
+          attester_title?: string | null
+          attester_type?: Database["public"]["Enums"]["attester_type"]
+          attester_user_id: string
+          chain_block_height?: number | null
+          chain_timestamp?: string | null
+          chain_tx_id?: string | null
+          claims?: Json
+          created_at?: string
+          evidence_fingerprint?: string | null
+          expires_at?: string | null
+          fingerprint?: string | null
+          id?: string
+          issued_at?: string
+          jurisdiction?: string | null
+          metadata?: Json | null
+          public_id: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["attestation_status"]
+          subject_identifier: string
+          subject_type?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anchor_id?: string | null
+          attestation_type?: Database["public"]["Enums"]["attestation_type"]
+          attester_name?: string
+          attester_org_id?: string | null
+          attester_title?: string | null
+          attester_type?: Database["public"]["Enums"]["attester_type"]
+          attester_user_id?: string
+          chain_block_height?: number | null
+          chain_timestamp?: string | null
+          chain_tx_id?: string | null
+          claims?: Json
+          created_at?: string
+          evidence_fingerprint?: string | null
+          expires_at?: string | null
+          fingerprint?: string | null
+          id?: string
+          issued_at?: string
+          jurisdiction?: string | null
+          metadata?: Json | null
+          public_id?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["attestation_status"]
+          subject_identifier?: string
+          subject_type?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attestations_anchor_id_fkey"
+            columns: ["anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attestations_attester_org_id_fkey"
+            columns: ["attester_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           actor_email: string | null
@@ -1246,6 +1392,41 @@ export type Database = {
           },
         ]
       }
+      org_members: {
+        Row: {
+          id: string
+          invited_by: string | null
+          joined_at: string
+          org_id: string
+          role: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -1253,6 +1434,7 @@ export type Database = {
           domain: string | null
           id: string
           legal_name: string
+          org_prefix: string | null
           public_id: string | null
           updated_at: string
           verification_status: string
@@ -1263,6 +1445,7 @@ export type Database = {
           domain?: string | null
           id?: string
           legal_name: string
+          org_prefix?: string | null
           public_id?: string | null
           updated_at?: string
           verification_status?: string
@@ -1273,6 +1456,7 @@ export type Database = {
           domain?: string | null
           id?: string
           legal_name?: string
+          org_prefix?: string | null
           public_id?: string | null
           updated_at?: string
           verification_status?: string
@@ -1397,6 +1581,88 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_record_embeddings: {
+        Row: {
+          created_at: string
+          embedding: string | null
+          id: string
+          model_version: string | null
+          public_record_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          model_version?: string | null
+          public_record_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          model_version?: string | null
+          public_record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_record_embeddings_public_record_id_fkey"
+            columns: ["public_record_id"]
+            isOneToOne: false
+            referencedRelation: "public_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_records: {
+        Row: {
+          anchor_id: string | null
+          content_hash: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          record_type: string
+          source: string
+          source_id: string
+          source_url: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          anchor_id?: string | null
+          content_hash: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          record_type: string
+          source: string
+          source_id: string
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anchor_id?: string | null
+          content_hash?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          record_type?: string
+          source?: string
+          source_id?: string
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_records_anchor_id_fkey"
+            columns: ["anchor_id"]
+            isOneToOne: false
+            referencedRelation: "anchors"
             referencedColumns: ["id"]
           },
         ]
@@ -1917,6 +2183,48 @@ export type Database = {
           },
         ]
       }
+      x402_payments: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          facilitator_url: string
+          id: string
+          network: string
+          payee_address: string
+          payer_address: string
+          raw_response: Json | null
+          token: string
+          tx_hash: string
+          verification_request_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          facilitator_url: string
+          id?: string
+          network: string
+          payee_address: string
+          payer_address: string
+          raw_response?: Json | null
+          token?: string
+          tx_hash: string
+          verification_request_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          facilitator_url?: string
+          id?: string
+          network?: string
+          payee_address?: string
+          payer_address?: string
+          raw_response?: Json | null
+          token?: string
+          tx_hash?: string
+          verification_request_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1974,6 +2282,10 @@ export type Database = {
         Args: { p_endpoint_id: string }
         Returns: undefined
       }
+      generate_attestation_public_id: {
+        Args: { p_attestation_type: string; p_org_prefix: string }
+        Returns: string
+      }
       generate_public_id: { Args: never; Returns: string }
       get_extraction_accuracy: {
         Args: { p_credential_type?: string; p_days?: number; p_org_id?: string }
@@ -1989,7 +2301,7 @@ export type Database = {
         }[]
       }
       get_flag: {
-        Args: { p_default?: boolean; p_flag_id: string }
+        Args: { p_default?: boolean; p_flag_key: string }
         Returns: boolean
       }
       get_my_credentials: {
@@ -2017,12 +2329,24 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_org_id: string }
         Returns: Json
       }
+      get_public_records_stats: { Args: never; Returns: Json }
       get_public_template: {
         Args: { p_credential_type: string; p_org_id: string }
         Returns: Json
       }
+      get_unembedded_public_records: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          metadata: Json
+          record_type: string
+          source: string
+          title: string
+        }[]
+      }
       get_user_credits: { Args: { p_user_id?: string }; Returns: Json }
       get_user_org_id: { Args: never; Returns: string }
+      get_user_org_ids: { Args: never; Returns: string[] }
       invite_member: {
         Args: {
           invitee_email: string
@@ -2032,6 +2356,8 @@ export type Database = {
         Returns: string
       }
       is_org_admin: { Args: never; Returns: boolean }
+      is_org_admin_of: { Args: { target_org_id: string }; Returns: boolean }
+      join_org_by_domain: { Args: { p_org_id: string }; Returns: Json }
       link_recipient_on_signup: {
         Args: { p_email_hash: string; p_user_id: string }
         Returns: number
@@ -2047,6 +2373,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      lookup_org_by_email_domain: { Args: { p_email: string }; Returns: Json }
       revoke_anchor:
         | { Args: { anchor_id: string }; Returns: undefined }
         | { Args: { anchor_id: string; reason?: string }; Returns: undefined }
@@ -2096,6 +2423,17 @@ export type Database = {
           org_name: string
         }[]
       }
+      search_public_record_embeddings: {
+        Args: {
+          p_match_count?: number
+          p_match_threshold?: number
+          p_query_embedding: string
+        }
+        Returns: {
+          public_record_id: string
+          similarity: number
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       update_profile_onboarding: {
@@ -2112,6 +2450,29 @@ export type Database = {
       ai_report_status: "QUEUED" | "GENERATING" | "COMPLETE" | "FAILED"
       anchor_status: "PENDING" | "SECURED" | "REVOKED" | "EXPIRED" | "SUBMITTED"
       api_key_rate_limit_tier: "free" | "paid" | "custom"
+      attestation_status:
+        | "DRAFT"
+        | "PENDING"
+        | "ACTIVE"
+        | "REVOKED"
+        | "EXPIRED"
+        | "CHALLENGED"
+      attestation_type:
+        | "VERIFICATION"
+        | "ENDORSEMENT"
+        | "AUDIT"
+        | "APPROVAL"
+        | "WITNESS"
+        | "COMPLIANCE"
+        | "SUPPLY_CHAIN"
+        | "IDENTITY"
+        | "CUSTOM"
+      attester_type:
+        | "INSTITUTION"
+        | "CORPORATION"
+        | "INDIVIDUAL"
+        | "REGULATORY"
+        | "THIRD_PARTY"
       credential_type:
         | "DEGREE"
         | "LICENSE"
@@ -2119,6 +2480,7 @@ export type Database = {
         | "TRANSCRIPT"
         | "PROFESSIONAL"
         | "OTHER"
+        | "CLE"
       credit_transaction_type:
         | "ALLOCATION"
         | "PURCHASE"
@@ -2127,6 +2489,7 @@ export type Database = {
         | "REFUND"
       integrity_level: "HIGH" | "MEDIUM" | "LOW" | "FLAGGED"
       job_status: "pending" | "processing" | "completed" | "failed"
+      org_member_role: "owner" | "admin" | "member"
       profile_status: "ACTIVE" | "PENDING_ACTIVATION" | "DEACTIVATED"
       report_status: "pending" | "generating" | "completed" | "failed"
       report_type:
@@ -2272,6 +2635,32 @@ export const Constants = {
       ai_report_status: ["QUEUED", "GENERATING", "COMPLETE", "FAILED"],
       anchor_status: ["PENDING", "SECURED", "REVOKED", "EXPIRED", "SUBMITTED"],
       api_key_rate_limit_tier: ["free", "paid", "custom"],
+      attestation_status: [
+        "DRAFT",
+        "PENDING",
+        "ACTIVE",
+        "REVOKED",
+        "EXPIRED",
+        "CHALLENGED",
+      ],
+      attestation_type: [
+        "VERIFICATION",
+        "ENDORSEMENT",
+        "AUDIT",
+        "APPROVAL",
+        "WITNESS",
+        "COMPLIANCE",
+        "SUPPLY_CHAIN",
+        "IDENTITY",
+        "CUSTOM",
+      ],
+      attester_type: [
+        "INSTITUTION",
+        "CORPORATION",
+        "INDIVIDUAL",
+        "REGULATORY",
+        "THIRD_PARTY",
+      ],
       credential_type: [
         "DEGREE",
         "LICENSE",
@@ -2279,6 +2668,7 @@ export const Constants = {
         "TRANSCRIPT",
         "PROFESSIONAL",
         "OTHER",
+        "CLE",
       ],
       credit_transaction_type: [
         "ALLOCATION",
@@ -2289,6 +2679,7 @@ export const Constants = {
       ],
       integrity_level: ["HIGH", "MEDIUM", "LOW", "FLAGGED"],
       job_status: ["pending", "processing", "completed", "failed"],
+      org_member_role: ["owner", "admin", "member"],
       profile_status: ["ACTIVE", "PENDING_ACTIVATION", "DEACTIVATED"],
       report_status: ["pending", "generating", "completed", "failed"],
       report_type: [
@@ -2309,4 +2700,3 @@ export const Constants = {
     },
   },
 } as const
-
