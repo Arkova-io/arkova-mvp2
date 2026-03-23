@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 170/192 stories complete (~89%) incl. 13 Beta stories (BETA-01–13). 2,094+ tests. 86 migration files (0001-0086, 0033+0078 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed** (incl. Merkle batch anchor `5d652cf4...`). Worker rev 00053 deploying. Frontend on arkova-26.vercel.app (app.arkova.ai). **Pipeline LIVE:** 11,567+ public records, 1,000+ embeddings, Nessie RAG returning real results. MCP server live at edge.arkova.ai. **Unified Secure Document flow** — single catchall for all uploads (single/bulk/attestation). **Pipeline records filtered from individual anchor processor** — Merkle batch only. **x402 payments enabled** (switchboard flag on). **Demo seeds stripped** from production (OPS-02). Dark mode toggle confirmed in sidebar (MVP-12).
+**Overall progress:** 170/192 stories complete (~89%) incl. 13 Beta stories (BETA-01–13). 974 tests. 89 migration files (0001-0089, 0033+0078 skipped, 0068 split into 0068a/0068b). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed**. Worker **rev00058**. Frontend on arkova-26.vercel.app. **Pipeline LIVE:** 22,289+ public records (12K EDGAR, 7.7K Fed Register, 2K+ DAPIP, 492+ OpenAlex), 9,300+ embeddings, 1,112 SECURED anchors. 12 Cloud Scheduler jobs. MCP server live at edge.arkova.ai. **TLA-01 resolved:** credential_type immutability trigger (migration 0089).
 
 ### Open Blockers
 
@@ -21,6 +21,32 @@
 | ~~CRIT-2~~ | ~~Bitcoin chain client~~ | ~~**OPS-ONLY**~~ | ~~CODE COMPLETE~~ | ~~AWS KMS key provisioning, mainnet treasury funding.~~ |
 
 **No active code blockers.** All remaining items are operational (infrastructure provisioning).
+
+### Recent Changes (2026-03-23, Session 9)
+
+**PRs #143-144 merged:** DAPIP API fix + UX overhaul + pipeline fixes + TLA-01
+
+| Change | Detail |
+|--------|--------|
+| DAPIP fetcher fix | API URL migrated to surveys.ope.ed.gov, resumable batching for Cloud Run timeout |
+| OpenAlex cursor fix | Was reading response headers (wrong), now reads meta.next_cursor |
+| Dashboard simplification | Removed redundant account card + privacy toggle (moved to Settings) |
+| Status labels | "Pending" → "Processing", "Secured" → "Verified" with tooltips |
+| TLA-01 | credential_type immutability trigger (migration 0089) |
+| Cloud Scheduler | Added fetch-dapip (every 10 min), OpenAlex increased to every 30 min |
+| Worker deploy | rev00058 with DAPIP batching + OpenAlex cursor fix |
+| CI/CD | deploy-worker.yml memory corrected 512Mi → 1Gi |
+| Test fixes | PipelineAdminPage mock, lint errors cleaned |
+| UX PRD | docs/stories/16_ux_overhaul.md |
+| Branch cleanup | 17 stale branches deleted (local + remote) |
+
+### Known UX Issues (Session 9 — user-reported)
+
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| Sidebar too many items | HIGH | My Records / My Credentials / Attestations should be ONE item |
+| Create Organization broken | HIGH | Button redirects to dashboard instead of creating org |
+| Document types confusing | HIGH | Users don't understand credential vs document vs attestation — auto-classify from metadata |
 
 ### Recent Changes (2026-03-23, Session 6)
 

@@ -1,7 +1,7 @@
 # ARKOVA — Claude Code Engineering Directive
 
 > **Version:** 2026-03-21 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
-> **Stats:** 86 migrations | 2,094 tests | 192 stories (165 complete, 86%) | 24/24 audit findings resolved
+> **Stats:** 89 migrations | 974 tests | 192 stories (165 complete, 86%) | 24/24 audit findings resolved
 
 Read this file before every task. Rules here override all other documents.
 
@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 85 files (0001-0086, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0086_attestation_anchoring_flag.sql`. Migrations 0001-0084 applied to production. 0085-0086 pending.
+**Current:** 88 files (0001-0089, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0089_credential_type_immutable.sql`. Migrations 0001-0089 applied to production.
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -270,8 +270,8 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 **GEO & SEO (5 not started, 2 partial):**
 - See `docs/stories/15_geo_seo.md` and `docs/BACKLOG.md` for details
 
-**TLA+ Verification Findings (2 open):**
-- TLA-01: `credential_type` not immutable after SECURED (needs migration to add trigger guard)
+**TLA+ Verification Findings (1 open):**
+- ~~TLA-01: `credential_type` not immutable after SECURED~~ — **RESOLVED** (migration 0089: `trg_credential_type_immutable` trigger)
 - TLA-02: TLA+ check not in CI pipeline (add step for `machines/` changes)
 
 ### Remaining Production Blockers
@@ -375,5 +375,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-21 | 83 migrations | 2,050 tests | 192 stories (164 complete, 85%) | 24/24 audit findings resolved_
+_Directive version: 2026-03-23 | 89 migrations | 974 tests | 192 stories (165 complete, 86%) | 24/24 audit findings resolved_
 _Reference docs: `docs/reference/` (FILE_MAP, BRAND, TESTING, STORY_ARCHIVE)_
