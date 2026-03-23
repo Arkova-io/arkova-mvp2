@@ -805,6 +805,7 @@ export const AI_EXTRACTION_LABELS = {
   EXTRACT_BUTTON: 'Extract with AI',
   EXTRACTING: 'Analyzing...',
   EXTRACT_DESCRIPTION: 'Automatically extract credential fields from the uploaded document',
+  EXTRACTION_FAILED_TOAST: 'AI extraction unavailable — document will be secured without metadata.',
 } as const;
 
 // =============================================================================
