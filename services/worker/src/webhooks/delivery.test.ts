@@ -661,7 +661,7 @@ describe('deliverToEndpoint', () => {
 
     await dispatchWebhookEvent('org-001', 'anchor.secured', 'evt-001', MOCK_PAYLOAD_DATA);
 
-    const insertCall = deliveryLogInsert.insert.mock.calls[0][0] as Record<string, unknown>;
+    const insertCall = (deliveryLogInsert.insert.mock.calls[0] as unknown[])?.[0] as Record<string, unknown>;
     const key = insertCall.idempotency_key as string;
 
     // Key should be endpoint_id-event_id (no attempt suffix)

@@ -29,7 +29,7 @@ const credentialTypeLocked = variable("credentialTypeLocked");
 const actor = variable("actor");
 
 export const bitcoinAnchorMachine = defineMachine({
-  version: 3,
+  version: 2,
   moduleName: "BitcoinAnchor",
 
   variables: {
