@@ -234,14 +234,14 @@ export function SecureDocumentDialog({
         await autoSelectTemplate('OTHER');
       }
       // One-click flow: skip confirm, go straight to anchoring
-      // Description auto-generated from AI fields
-      handleConfirm();
+      // Pass fields directly to avoid stale closure (React state not yet updated)
+      handleConfirm(autoAccepted);
       return;
     } else {
       // Extraction failed — auto-select General Document and anchor immediately
       setExtractionProgress(null);
       await autoSelectTemplate('OTHER');
-      handleConfirm();
+      handleConfirm([]);
       return;
     }
   }, [fileData, selectedTemplate, autoSelectTemplate]);
@@ -255,7 +255,7 @@ export function SecureDocumentDialog({
     } else {
       // No AI — auto-select General Document and anchor immediately
       await autoSelectTemplate('OTHER');
-      handleConfirm();
+      handleConfirm([]);
     }
   }, [fileData, aiEnabled, handleStartExtraction]);
 
@@ -287,7 +287,7 @@ export function SecureDocumentDialog({
     );
   }, []);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = useCallback(async (fieldsOverride?: ExtractionField[]) => {
     if (!fileData || !user) return;
 
     setStep('processing');
@@ -295,7 +295,9 @@ export function SecureDocumentDialog({
 
     try {
       // Build metadata from AI-extracted fields (all non-rejected fields)
-      const acceptedFields = extractedFields
+      // Use fieldsOverride when called directly from extraction (avoids stale state)
+      const fieldsToUse = fieldsOverride ?? extractedFields;
+      const acceptedFields = fieldsToUse
         .filter(f => f.status !== 'rejected')
         .reduce<Record<string, string>>((acc, f) => {
           acc[f.key] = f.value;
@@ -748,7 +750,7 @@ export function SecureDocumentDialog({
               <Button variant="outline" onClick={() => setStep('template')}>
                 {SECURE_DIALOG_LABELS.BACK}
               </Button>
-              <Button onClick={handleConfirm}>
+              <Button onClick={() => handleConfirm()}>
                 <Shield className="mr-2 h-4 w-4" />
                 {SECURE_DIALOG_LABELS.SECURE_BUTTON}
               </Button>

@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 176/198 stories complete (~89%) incl. 13 Beta stories (BETA-01–13) + 6 AI infra stories. **2,098+ tests** (979 frontend + 1,120 worker, all green). 92 migration files (0001-0092). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval, calibration, prompt versioning, few-shot expansion, fraud audit, metrics dashboard). GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed**. Worker **rev00058**. Frontend on arkova-26.vercel.app. **Pipeline LIVE:** 29,000+ public records, 1,572+ SECURED anchors. 12 Cloud Scheduler jobs. MCP server live at edge.arkova.ai. **TLA-01+02 resolved.** Branch protection enabled. Session 12: AI infrastructure sprint (eval framework, live Gemini eval F1=82.1%, confidence calibration r=0.426, anchoring 110x throughput fix).
+**Overall progress:** 176/198 stories complete (~89%) incl. 13 Beta stories (BETA-01–13) + 6 AI infra stories. **2,148 tests** (979 frontend + 1,169 worker, all green). 91 migration files (0001-0092, gaps at 0033+0078). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval, calibration, prompt versioning, few-shot expansion, fraud audit, metrics dashboard). GEO: 6 complete, 2 partial, 4 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed**. Worker **rev00058**. Frontend on arkova-26.vercel.app. **Pipeline LIVE:** 29,000+ public records, 1,572+ SECURED anchors. 12 Cloud Scheduler jobs. MCP server live at edge.arkova.ai. **TLA-01+02 resolved.** Branch protection enabled. Session 12: AI infrastructure sprint (eval framework, live Gemini eval F1=82.1%, confidence calibration r=0.426, anchoring 110x throughput fix).
 
 ### Open Blockers
 
@@ -39,7 +39,7 @@
 | Org page fix | Records count query instead of hardcoded "—" |
 | ExtractedFieldsSchema | CLE fields + fraudSignals added (was silently rejecting Gemini responses) |
 | Pipeline metadata display | Arrays formatted (join with commas), nulls hidden |
-| Test total | 2,098+ tests (979 frontend + 1,120 worker), all green |
+| Test total | 2,148 tests (979 frontend + 1,120 worker), all green |
 
 ### Recent Changes (2026-03-23, Session 11)
 
@@ -156,7 +156,7 @@
 
 ### What's Production-Ready
 
-- Database layer (83 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
+- Database layer (91 migrations, RLS on all tables, audit trail immutable, GDPR erasure RPCs)
 - Auth flow (Supabase auth, Google OAuth, AuthGuard + RouteGuard)
 - Org admin credential issuance + individual anchor creation
 - Public verification portal (5-section display, verification event logging)
