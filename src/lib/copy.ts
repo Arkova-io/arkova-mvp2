@@ -57,6 +57,10 @@ export const CREDENTIAL_TYPE_LABELS = {
   TRANSCRIPT: 'Transcript',
   PROFESSIONAL: 'Professional Credential',
   CLE: 'CLE Credit',
+  SEC_FILING: 'SEC Filing',
+  PATENT: 'Patent',
+  REGULATION: 'Regulation',
+  PUBLICATION: 'Publication',
   OTHER: 'Other',
 } as const;
 
@@ -67,6 +71,10 @@ export const CREDENTIAL_TYPE_DESCRIPTIONS = {
   TRANSCRIPT: 'Academic transcript or record of courses',
   PROFESSIONAL: 'Professional certification or accreditation',
   CLE: 'Continuing Legal Education credit',
+  SEC_FILING: 'SEC regulatory filing (10-K, 8-K, DEF 14A, etc.)',
+  PATENT: 'Intellectual property patent',
+  REGULATION: 'Government regulation or notice',
+  PUBLICATION: 'Academic publication or research paper',
   OTHER: 'Other credential type',
 } as const;
 

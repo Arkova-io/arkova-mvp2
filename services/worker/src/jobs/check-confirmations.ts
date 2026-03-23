@@ -21,8 +21,11 @@ import { generateAndStoreEmbedding } from '../ai/embeddings.js';
 import { createAIProvider } from '../ai/factory.js';
 import { sendEmail, buildAnchorSecuredEmail } from '../email/index.js';
 
-/** Maximum anchors to check per cron run (rate limit mempool.space) */
-const MAX_CHECKS_PER_RUN = 10;
+/** Maximum unique transactions to check per cron run (rate limit mempool.space) */
+const MAX_TX_CHECKS_PER_RUN = 50;
+
+/** Concurrency for parallel mempool.space API calls */
+const MEMPOOL_CONCURRENCY = 5;
 
 /** Minimum confirmations to consider a transaction confirmed */
 const MIN_CONFIRMATIONS = 1;
@@ -203,6 +206,10 @@ async function checkAnchorConfirmation(anchor: {
 /**
  * Check all SUBMITTED anchors for confirmation.
  * Called by cron every 2 minutes.
+ *
+ * Groups anchors by chain_tx_id so Merkle-batched anchors (which share a tx)
+ * only require one mempool API call per group. This dramatically improves
+ * throughput: 50 tx checks can confirm 1000+ anchors per run.
  */
 export async function checkSubmittedConfirmations(): Promise<{ checked: number; confirmed: number }> {
   logger.info('Starting confirmation check for SUBMITTED anchors');
@@ -212,14 +219,16 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
     return autoConfirmMockAnchors();
   }
 
-  // Fetch SUBMITTED anchors with chain_tx_id
+  // Fetch SUBMITTED anchors — get enough to fill MAX_TX_CHECKS_PER_RUN unique tx_ids
+  // We fetch more anchors than tx limit since many share a tx_id (Merkle batching)
   const { data: anchors, error } = await db
     .from('anchors')
     .select('id, chain_tx_id, user_id, org_id, fingerprint, public_id')
     .eq('status', 'SUBMITTED')
     .not('chain_tx_id', 'is', null)
     .is('deleted_at', null)
-    .limit(MAX_CHECKS_PER_RUN);
+    .order('created_at', { ascending: true })
+    .limit(5000);
 
   if (error) {
     logger.error({ error }, 'Failed to fetch SUBMITTED anchors');
@@ -231,27 +240,77 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
     return { checked: 0, confirmed: 0 };
   }
 
-  logger.info({ count: anchors.length }, 'Checking SUBMITTED anchors for confirmation');
-
-  let confirmed = 0;
-
+  // Group anchors by chain_tx_id
+  const txGroups = new Map<string, typeof anchors>();
   for (const anchor of anchors) {
     if (!anchor.chain_tx_id) continue;
-
-    const wasConfirmed = await checkAnchorConfirmation({
-      id: anchor.id,
-      chain_tx_id: anchor.chain_tx_id,
-      user_id: anchor.user_id,
-      org_id: anchor.org_id,
-      fingerprint: anchor.fingerprint,
-      public_id: anchor.public_id,
-    });
-
-    if (wasConfirmed) confirmed++;
+    const group = txGroups.get(anchor.chain_tx_id) || [];
+    group.push(anchor);
+    txGroups.set(anchor.chain_tx_id, group);
   }
 
-  logger.info({ checked: anchors.length, confirmed }, 'Confirmation check complete');
-  return { checked: anchors.length, confirmed };
+  // Take only MAX_TX_CHECKS_PER_RUN unique tx_ids
+  const txIds = Array.from(txGroups.keys()).slice(0, MAX_TX_CHECKS_PER_RUN);
+
+  logger.info(
+    { uniqueTxIds: txIds.length, totalAnchors: anchors.length, totalUniqueTx: txGroups.size },
+    'Checking SUBMITTED anchors grouped by tx_id',
+  );
+
+  let confirmed = 0;
+  let checked = 0;
+
+  // Process tx groups in parallel batches
+  for (let i = 0; i < txIds.length; i += MEMPOOL_CONCURRENCY) {
+    const batch = txIds.slice(i, i + MEMPOOL_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(async (txId) => {
+        const txData = await fetchTxStatus(txId);
+        checked++;
+
+        if (!txData?.status.confirmed) {
+          return 0;
+        }
+
+        // Transaction confirmed — promote ALL anchors sharing this tx_id
+        const groupAnchors = txGroups.get(txId) || [];
+        let groupConfirmed = 0;
+
+        for (const anchor of groupAnchors) {
+          const wasConfirmed = await checkAnchorConfirmation({
+            id: anchor.id,
+            chain_tx_id: anchor.chain_tx_id!,
+            user_id: anchor.user_id,
+            org_id: anchor.org_id,
+            fingerprint: anchor.fingerprint,
+            public_id: anchor.public_id,
+          });
+          if (wasConfirmed) groupConfirmed++;
+        }
+
+        if (groupConfirmed > 0) {
+          logger.info(
+            { txId, groupSize: groupAnchors.length, confirmed: groupConfirmed },
+            'Confirmed anchor group (shared tx)',
+          );
+        }
+
+        return groupConfirmed;
+      }),
+    );
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        confirmed += result.value;
+      }
+    }
+  }
+
+  logger.info(
+    { txChecked: checked, anchorsConfirmed: confirmed, totalSubmitted: anchors.length },
+    'Confirmation check complete',
+  );
+  return { checked, confirmed };
 }
 
 /**
