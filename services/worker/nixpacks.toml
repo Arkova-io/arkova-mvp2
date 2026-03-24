@@ -1,0 +1,8 @@
+[phases.install]
+cmds = ['NODE_OPTIONS=--max-old-space-size=512 npm ci --omit=dev']
+
+[phases.build]
+cmds = ['npm run build']
+
+[start]
+cmd = 'node dist/index.js'
