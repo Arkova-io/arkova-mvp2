@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'services/worker/**'
-      - '.github/workflows/deploy-worker.yml'
+      - '.github/workflows/worker-deploy.yml'
   workflow_dispatch:
 
 concurrency:
@@ -61,7 +61,6 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --platform managed \
-            --allow-unauthenticated \
             --port 3001 \
             --cpu 1 \
             --memory 1Gi \
