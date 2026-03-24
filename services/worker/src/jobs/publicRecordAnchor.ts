@@ -28,8 +28,8 @@ import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Max records per batch — Merkle tree handles thousands efficiently.
- * Increased from 2,000 to 2,500 per audit recommendation. Monitor performance. */
-export const PUBLIC_RECORD_BATCH_SIZE = 2500;
+ * Increased from 2,500 to 4,000 per efficiency study. Monitored via batch metrics. */
+export const PUBLIC_RECORD_BATCH_SIZE = 4000;
 
 /** Minimum records to trigger a batch */
 export const MIN_BATCH_SIZE = 1;
@@ -136,7 +136,9 @@ export async function processPublicRecordAnchoring(
     return { processed: 0, anchorsCreated: 0, batchId: null, merkleRoot: null, txId: null };
   }
 
-  logger.info({ recordCount: records.length }, 'Creating individual anchors for public records');
+  const batchStartTime = Date.now();
+  const heapBefore = process.memoryUsage().heapUsed;
+  logger.info({ recordCount: records.length, batchSize: PUBLIC_RECORD_BATCH_SIZE }, 'Creating individual anchors for public records');
 
   // Step 1: Create individual anchor records for each public record
   const anchorInserts = records.map((r) => ({
@@ -298,8 +300,27 @@ export async function processPublicRecordAnchoring(
     }
   }
 
+  // Batch performance metrics
+  const batchDurationMs = Date.now() - batchStartTime;
+  const heapAfter = process.memoryUsage().heapUsed;
+  const heapDeltaMB = (heapAfter - heapBefore) / 1024 / 1024;
+
   logger.info(
-    { batchId, processed: updateCount, anchorsCreated: createdAnchors.length, txId },
+    {
+      batchId,
+      processed: updateCount,
+      anchorsCreated: createdAnchors.length,
+      txId,
+      batchMetrics: {
+        batchSize: records.length,
+        maxBatchSize: PUBLIC_RECORD_BATCH_SIZE,
+        durationMs: batchDurationMs,
+        recordsPerSecond: records.length > 0 ? (records.length / (batchDurationMs / 1000)).toFixed(1) : '0',
+        heapDeltaMB: heapDeltaMB.toFixed(2),
+        heapUsedMB: (heapAfter / 1024 / 1024).toFixed(1),
+        merkleTreeDepth: Math.ceil(Math.log2(records.length || 1)),
+      },
+    },
     'Public record anchoring complete — individual anchors visible in Treasury',
   );
 
