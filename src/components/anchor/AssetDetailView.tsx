@@ -47,6 +47,25 @@ import {
 import { ExplorerLink } from '@/components/ui/ExplorerLink';
 import { verifyUrl } from '@/lib/routes';
 
+/** Inline copy button for values */
+function CopyButton({ value }: { value: string }) {
+  const [justCopied, setJustCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-foreground transition-colors"
+      onClick={async () => {
+        await navigator.clipboard.writeText(value);
+        setJustCopied(true);
+        setTimeout(() => setJustCopied(false), 1500);
+      }}
+      aria-label="Copy"
+    >
+      {justCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
 interface AnchorRecord {
   id: string;
   publicId?: string;
@@ -288,28 +307,71 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
 
           <Separator />
 
-          {/* Dates */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                Created
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(anchor.createdAt)}
-              </p>
-            </div>
-            {anchor.securedAt && (
+          {/* ANCHOR RECORD — pipeline-style 2-column grid */}
+          <div className="space-y-4">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Anchor Record</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Status */}
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                  Secured
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {formatDate(anchor.securedAt)}
+                <p className="text-xs text-muted-foreground">Status</p>
+                <Badge
+                  variant={status.variant}
+                  className={`text-xs ${anchor.status === 'SECURED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : anchor.status === 'SUBMITTED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : ''}`}
+                >
+                  {status.label.toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Network Receipt */}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
+                {anchor.chainTxId ? (
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`https://mempool.space/signet/tx/${anchor.chainTxId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#00d4ff] hover:underline font-mono truncate"
+                    >
+                      <ExternalLink className="inline h-3 w-3 mr-1" />
+                      {anchor.chainTxId.slice(0, 16)}…
+                    </a>
+                    <CopyButton value={anchor.chainTxId} />
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-500">
+                    {anchor.status === 'SUBMITTED' ? 'Awaiting confirmation' : anchor.status === 'PENDING' ? 'Awaiting submission' : '—'}
+                  </p>
+                )}
+              </div>
+
+              {/* Block Height */}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Block Height</p>
+                <p className="text-sm font-semibold">
+                  {anchor.chainBlockHeight ? anchor.chainBlockHeight.toLocaleString() : '—'}
                 </p>
               </div>
-            )}
+
+              {/* Network Observed Time */}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Network Observed Time</p>
+                <p className="text-sm">
+                  {anchor.securedAt ? formatDate(anchor.securedAt) : formatDate(anchor.createdAt)}
+                </p>
+              </div>
+
+              {/* Public ID */}
+              {anchor.publicId && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Public ID</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-mono">{anchor.publicId}</span>
+                    <CopyButton value={anchor.publicId} />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Description (BETA-12) */}
@@ -317,7 +379,7 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             <>
               <Separator />
               <div className="space-y-2">
-                <p className="text-sm font-medium">Description</p>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Description</span>
                 <p className="text-sm text-muted-foreground break-words">{anchor.description}</p>
               </div>
             </>
@@ -329,83 +391,50 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
             const pipelineSource = String(anchor.metadata?.pipeline_source ?? '');
             const recordType = String(anchor.metadata?.record_type ?? '');
             if (typeof sourceUrl !== 'string' || !sourceUrl) return null;
-            const linkLabel = pipelineSource === 'edgar' ? 'View on SEC EDGAR' :
-              pipelineSource === 'openalex' ? 'View on OpenAlex' :
-              pipelineSource === 'uspto' ? 'View on USPTO' :
-              pipelineSource === 'federal_register' ? 'View on Federal Register' :
-              'View Original Document';
+            const linkLabel = pipelineSource === 'edgar' ? 'SEC EDGAR' :
+              pipelineSource === 'openalex' ? 'OpenAlex' :
+              pipelineSource === 'uspto' ? 'USPTO' :
+              pipelineSource === 'federal_register' ? 'Federal Register' :
+              'Source';
             return (
               <>
                 <Separator />
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Source Document</p>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Source</span>
                   <a
                     href={sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm text-[#00d4ff] hover:underline"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     {linkLabel}
                   </a>
-                  {recordType && (
-                    <p className="text-xs text-muted-foreground">
-                      {recordType.replace(/_/g, ' ')}
-                      {pipelineSource && ` via ${pipelineSource.toUpperCase()}`}
-                    </p>
-                  )}
                 </div>
               </>
             );
           })()}
 
-          {/* Network Receipt (BETA-11) — fixed SUBMITTED condition (Design Audit #4) */}
-          {anchor.status === 'SECURED' && anchor.chainTxId ? (
+          {/* METADATA — pipeline-style key-value pairs */}
+          {anchor.metadata && Object.keys(anchor.metadata).filter(k => !['pipeline_source', 'source_url', 'abstract', 'description', 'summary', 'merkle_proof', 'merkle_root', 'merkle_index', 'batch_id'].includes(k)).length > 0 && (
             <>
               <Separator />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
-                <ExplorerLink receiptId={anchor.chainTxId} showFull />
-                {anchor.chainBlockHeight && (
-                  <p className="text-xs text-muted-foreground">
-                    Confirmed at height {anchor.chainBlockHeight.toLocaleString()}
-                  </p>
-                )}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Metadata</span>
+                <div className="space-y-2">
+                  {Object.entries(anchor.metadata)
+                    .filter(([k]) => !['pipeline_source', 'source_url', 'abstract', 'description', 'summary', 'merkle_proof', 'merkle_root', 'merkle_index', 'batch_id'].includes(k))
+                    .map(([key, value]) => (
+                      <div key={key} className="flex gap-4">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[120px]">{key.replace(/_/g, ' ')}:</span>
+                        <span className="text-xs font-mono break-all">{typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}</span>
+                      </div>
+                    ))
+                  }
+                </div>
               </div>
             </>
-          ) : anchor.status === 'SUBMITTED' ? (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
-                {anchor.chainTxId ? (
-                  <a
-                    href={`https://mempool.space/signet/tx/${anchor.chainTxId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Awaiting confirmation — view on network
-                  </a>
-                ) : (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Submitted — awaiting network confirmation
-                  </p>
-                )}
-              </div>
-            </>
-          ) : anchor.status === 'PENDING' ? (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">{EXPLORER_LABELS.NETWORK_RECEIPT}</p>
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Processing — awaiting network submission
-                </p>
-              </div>
-            </>
-          ) : null}
+          )}
         </CardContent>
       </Card>
 
