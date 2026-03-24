@@ -15,6 +15,7 @@ import { ExtractionRequestSchema } from '../../ai/schemas.js';
 import { createAIProvider } from '../../ai/factory.js';
 import { checkAICredits, deductAICredits, logAIUsageEvent } from '../../ai/cost-tracker.js';
 import { getExtractionPromptVersion } from '../../ai/prompts/extraction.js';
+import { calibrateConfidence } from '../../ai/eval/calibration.js';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
 
@@ -121,20 +122,27 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const durationMs = Date.now() - startMs;
 
+    // Apply confidence calibration (AI-EVAL-02): maps raw model confidence
+    // to calibrated confidence that better reflects actual extraction accuracy.
+    const rawConfidence = result.confidence;
+    const calibrated = calibrateConfidence(rawConfidence);
+
     // Structured observability log — AI extraction latency + quality metrics
     logger.info({
       event: 'ai.extraction.complete',
       provider: result.provider,
       credentialType,
-      confidence: result.confidence,
+      rawConfidence,
+      calibratedConfidence: calibrated,
       fieldsExtracted: Object.keys(result.fields).length,
       tokensUsed: result.tokensUsed ?? 0,
       durationMs,
       userId,
       orgId,
-    }, `AI extraction: ${result.provider} ${durationMs}ms conf=${result.confidence} fields=${Object.keys(result.fields).length}`);
+    }, `AI extraction: ${result.provider} ${durationMs}ms conf=${rawConfidence.toFixed(2)}→${calibrated.toFixed(2)} fields=${Object.keys(result.fields).length}`);
 
     // Log usage event with result cache (EFF-1: enables cache-by-fingerprint)
+    // Store calibrated confidence in the cache for consistency
     logAIUsageEvent({
       orgId,
       userId,
@@ -143,7 +151,7 @@ router.post('/', async (req: Request, res: Response) => {
       tokensUsed: result.tokensUsed,
       creditsConsumed: 1,
       fingerprint,
-      confidence: result.confidence,
+      confidence: calibrated,
       durationMs,
       success: true,
       promptVersion: getExtractionPromptVersion(),
@@ -154,7 +162,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.json({
       fields: result.fields,
-      confidence: result.confidence,
+      confidence: calibrated,
       provider: result.provider,
       creditsRemaining: creditBalance ? creditBalance.remaining - 1 : null,
     });

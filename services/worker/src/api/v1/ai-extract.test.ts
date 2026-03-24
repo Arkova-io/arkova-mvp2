@@ -184,17 +184,78 @@ describe('AI Extraction Endpoint', () => {
     (deductAICredits as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
     await handler!(req, res);
+    // Confidence is now calibrated: raw 0.92 maps to 0.95 via calibration knots
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         fields: expect.objectContaining({
           credentialType: 'DEGREE',
           issuerName: 'University of Michigan',
         }),
-        confidence: 0.92,
+        confidence: 0.95,
         provider: 'gemini',
         creditsRemaining: 489, // 490 - 1 credit deducted
       }),
     );
+  });
+
+  it('applies confidence calibration to AI model output (AI-EVAL-02)', async () => {
+    const handler = getPostHandler();
+    const { req, res } = createMockReqRes(validBody, 'user-123');
+
+    (db.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
+      if (table === 'ai_usage_events') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  not: vi.fn().mockReturnValue({
+                    order: vi.fn().mockReturnValue({
+                      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { org_id: 'org-456' }, error: null }),
+      };
+    });
+
+    (checkAICredits as ReturnType<typeof vi.fn>).mockResolvedValue({
+      monthlyAllocation: 500,
+      usedThisMonth: 10,
+      remaining: 490,
+      hasCredits: true,
+    });
+
+    // Model reports 0.75 confidence — calibration should map this upward
+    // 0.75 is between knots [0.70, 0.92] and [0.80, 0.94]
+    // t = (0.75 - 0.70) / (0.80 - 0.70) = 0.5
+    // calibrated = 0.92 + 0.5 * (0.94 - 0.92) = 0.93
+    (createAIProvider as ReturnType<typeof vi.fn>).mockReturnValue({
+      extractMetadata: vi.fn().mockResolvedValue({
+        fields: { credentialType: 'CERTIFICATE', issuerName: 'AWS' },
+        confidence: 0.75,
+        provider: 'gemini',
+        tokensUsed: 100,
+      }),
+    });
+
+    (deductAICredits as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+
+    await handler!(req, res);
+
+    const responseJson = (res.json as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    // Calibrated confidence should differ from raw 0.75
+    expect(responseJson.confidence).not.toBe(0.75);
+    // Should be calibrated to 0.93 (piecewise linear interpolation)
+    expect(responseJson.confidence).toBeCloseTo(0.93, 2);
   });
 
   it('returns 503 on circuit breaker open', async () => {

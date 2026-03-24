@@ -82,6 +82,8 @@ export interface EntryEvalResult {
   reportedConfidence: number;
   /** Post-hoc calibrated confidence (after applying calibration layer) */
   calibratedConfidence?: number;
+  /** Feature-based meta-model adjusted confidence */
+  adjustedConfidence?: number;
   /** Actual accuracy for this entry (fraction of fields correct) */
   actualAccuracy: number;
   /** Extraction latency in ms */

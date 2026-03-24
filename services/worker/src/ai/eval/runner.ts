@@ -14,6 +14,7 @@ import type {
 } from './types.js';
 import { compareFields, computeAggregateMetrics } from './scoring.js';
 import { calibrateConfidence } from './calibration.js';
+import { computeAdjustedConfidence } from '../confidence-model.js';
 import { EXTRACTION_SYSTEM_PROMPT } from '../prompts/extraction.js';
 
 /**
@@ -88,6 +89,11 @@ async function evaluateEntry(
     fieldResults,
     reportedConfidence: confidence,
     calibratedConfidence: calibrateConfidence(confidence),
+    adjustedConfidence: computeAdjustedConfidence(
+      extractedFields as import('../types.js').ExtractedFields,
+      confidence,
+      entry.strippedText,
+    ),
     actualAccuracy,
     latencyMs,
     provider: provider.name,
