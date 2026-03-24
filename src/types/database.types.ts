@@ -1547,36 +1547,57 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          description: string | null
           display_name: string
           domain: string | null
+          founded_date: string | null
           id: string
           legal_name: string
+          linkedin_url: string | null
+          location: string | null
+          logo_url: string | null
           org_prefix: string | null
+          org_type: string | null
           public_id: string | null
           updated_at: string
           verification_status: string
+          website_url: string | null
         }
         Insert: {
           created_at?: string
+          description?: string | null
           display_name: string
           domain?: string | null
+          founded_date?: string | null
           id?: string
           legal_name: string
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
           org_prefix?: string | null
+          org_type?: string | null
           public_id?: string | null
           updated_at?: string
           verification_status?: string
+          website_url?: string | null
         }
         Update: {
           created_at?: string
+          description?: string | null
           display_name?: string
           domain?: string | null
+          founded_date?: string | null
           id?: string
           legal_name?: string
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
           org_prefix?: string | null
+          org_type?: string | null
           public_id?: string | null
           updated_at?: string
           verification_status?: string
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -2696,6 +2717,7 @@ export type Database = {
         Returns: undefined
       }
       lookup_org_by_email_domain: { Args: { p_email: string }; Returns: Json }
+      release_advisory_lock: { Args: { lock_id: number }; Returns: boolean }
       revoke_anchor:
         | { Args: { anchor_id: string }; Returns: undefined }
         | { Args: { anchor_id: string; reason?: string }; Returns: undefined }
@@ -2766,6 +2788,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      try_advisory_lock: { Args: { lock_id: number }; Returns: boolean }
       update_profile_onboarding: {
         Args: {
           p_org_display_name?: string

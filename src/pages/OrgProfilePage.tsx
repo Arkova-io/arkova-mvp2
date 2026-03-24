@@ -72,6 +72,12 @@ export function OrgProfilePage() {
   // Settings state
   const [orgDisplayName, setOrgDisplayName] = useState('');
   const [orgDomain, setOrgDomain] = useState('');
+  const [orgDescription, setOrgDescription] = useState('');
+  const [orgWebsiteUrl, setOrgWebsiteUrl] = useState('');
+  const [orgType, setOrgType] = useState('');
+  const [orgLinkedinUrl, setOrgLinkedinUrl] = useState('');
+  const [orgLocation, setOrgLocation] = useState('');
+  const [orgFoundedDate, setOrgFoundedDate] = useState('');
   const [orgSettingsInit, setOrgSettingsInit] = useState(false);
   const [orgSaved, setOrgSaved] = useState(false);
 
@@ -117,6 +123,12 @@ export function OrgProfilePage() {
   if (organization && !orgSettingsInit) {
     setOrgDisplayName(organization.display_name ?? '');
     setOrgDomain(organization.domain ?? '');
+    setOrgDescription((organization as Record<string, unknown>).description as string ?? '');
+    setOrgWebsiteUrl((organization as Record<string, unknown>).website_url as string ?? '');
+    setOrgType((organization as Record<string, unknown>).org_type as string ?? '');
+    setOrgLinkedinUrl((organization as Record<string, unknown>).linkedin_url as string ?? '');
+    setOrgLocation((organization as Record<string, unknown>).location as string ?? '');
+    setOrgFoundedDate((organization as Record<string, unknown>).founded_date as string ?? '');
     setOrgSettingsInit(true);
   }
 
@@ -357,38 +369,121 @@ export function OrgProfilePage() {
               Organization Settings
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Update your organization display name and domain
+              Manage your public organization profile. This information is visible on your public page.
             </p>
-            <div className="space-y-4 max-w-lg">
+            <div className="space-y-5 max-w-xl">
+              {/* Basic Info */}
               <div className="space-y-2">
-                <Label htmlFor="org-display-name">Display Name</Label>
+                <Label htmlFor="org-display-name">Organization Name *</Label>
                 <Input
                   id="org-display-name"
                   value={orgDisplayName}
                   onChange={(e) => { setOrgDisplayName(e.target.value); setOrgSaved(false); }}
-                  placeholder="Organization display name"
+                  placeholder="Acme Corporation"
                   disabled={orgUpdating}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="org-domain">Domain</Label>
+                <Label htmlFor="org-description">Description</Label>
+                <textarea
+                  id="org-description"
+                  value={orgDescription}
+                  onChange={(e) => { setOrgDescription(e.target.value); setOrgSaved(false); }}
+                  placeholder="Brief description of your organization..."
+                  disabled={orgUpdating}
+                  rows={3}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-type">Organization Type</Label>
+                <select
+                  id="org-type"
+                  value={orgType}
+                  onChange={(e) => { setOrgType(e.target.value); setOrgSaved(false); }}
+                  disabled={orgUpdating}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">Select type...</option>
+                  <option value="corporation">Corporation</option>
+                  <option value="university">University / Educational Institution</option>
+                  <option value="government">Government Agency</option>
+                  <option value="nonprofit">Non-Profit Organization</option>
+                  <option value="law_firm">Law Firm</option>
+                  <option value="healthcare">Healthcare Organization</option>
+                  <option value="financial">Financial Institution</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Links & Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="org-domain">Domain</Label>
+                  <Input
+                    id="org-domain"
+                    value={orgDomain}
+                    onChange={(e) => { setOrgDomain(e.target.value); setOrgSaved(false); }}
+                    placeholder="example.com"
+                    disabled={orgUpdating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="org-website">Website URL</Label>
+                  <Input
+                    id="org-website"
+                    value={orgWebsiteUrl}
+                    onChange={(e) => { setOrgWebsiteUrl(e.target.value); setOrgSaved(false); }}
+                    placeholder="https://example.com"
+                    disabled={orgUpdating}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="org-linkedin">LinkedIn Page</Label>
+                  <Input
+                    id="org-linkedin"
+                    value={orgLinkedinUrl}
+                    onChange={(e) => { setOrgLinkedinUrl(e.target.value); setOrgSaved(false); }}
+                    placeholder="https://linkedin.com/company/..."
+                    disabled={orgUpdating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="org-location">Headquarters</Label>
+                  <Input
+                    id="org-location"
+                    value={orgLocation}
+                    onChange={(e) => { setOrgLocation(e.target.value); setOrgSaved(false); }}
+                    placeholder="San Francisco, CA"
+                    disabled={orgUpdating}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-founded">Founded</Label>
                 <Input
-                  id="org-domain"
-                  value={orgDomain}
-                  onChange={(e) => { setOrgDomain(e.target.value); setOrgSaved(false); }}
-                  placeholder="example.com"
+                  id="org-founded"
+                  type="date"
+                  value={orgFoundedDate}
+                  onChange={(e) => { setOrgFoundedDate(e.target.value); setOrgSaved(false); }}
                   disabled={orgUpdating}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Used for verifier display on public verification pages
-                </p>
               </div>
+
               <Button
                 onClick={async () => {
                   const success = await updateOrganization({
                     display_name: orgDisplayName.trim(),
                     domain: orgDomain.trim() || null,
-                  });
+                    description: orgDescription.trim() || null,
+                    website_url: orgWebsiteUrl.trim() || null,
+                    org_type: orgType || null,
+                    linkedin_url: orgLinkedinUrl.trim() || null,
+                    location: orgLocation.trim() || null,
+                    founded_date: orgFoundedDate || null,
+                  } as Record<string, unknown>);
                   if (success) {
                     setOrgSaved(true);
                     setTimeout(() => setOrgSaved(false), 2000);
