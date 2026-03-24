@@ -37,8 +37,9 @@ jobs:
       - name: Install dependencies
         working-directory: services/worker
         run: |
-          npm ci
-          npm rebuild
+          rm -rf node_modules
+          npm install --no-optional
+          npm install @rollup/rollup-linux-x64-gnu || true
 
       - name: TypeScript check
         working-directory: services/worker
