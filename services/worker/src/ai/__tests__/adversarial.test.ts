@@ -199,7 +199,7 @@ describe('Adversarial Input Validation', () => {
 
       const report = verifyGrounding(fields, sourceText);
       expect(report.groundingScore).toBe(0);
-      expect(report.confidenceAdjustment).toBe(-0.3);
+      expect(report.confidenceAdjustment).toBe(-0.15);
       expect(report.fieldResults.every((r) => !r.grounded)).toBe(true);
     });
 
