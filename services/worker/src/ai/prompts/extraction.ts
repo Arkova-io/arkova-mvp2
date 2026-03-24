@@ -44,7 +44,7 @@ Licenses are highly variable in format. Pay special attention to:
 - License numbers often have prefixes (RN-, PE-, CPA-, etc.) — include the full format.
 - CRITICAL: If the license number is redacted (e.g., "[REDACTED]", "RN-[REDACTED]", "AR-[REDACTED]", "A-[REDACTED]", "NMW[REDACTED]"), do NOT extract licenseNumber. Only extract actual visible numbers like "TX-PE-89012" or "475.123456".
 - Expiration dates may say "Exp:", "Expires:", "Valid through:", "Renewal date:" — all mean expiryDate.
-- The jurisdiction is the STATE, not the city. Format as "State, USA" (e.g., "California, USA"). For federal agencies (FAA, SEC, etc.), use "United States".
+- The jurisdiction is the STATE, not the city. Format as "State, USA" (e.g., "California, USA"). For federal agencies (FAA, SEC, etc.), use "United States". For international credentials, use the COUNTRY name (e.g., "Germany", "Japan", "Nigeria", "Australia", "United Kingdom"). Look for country names, city names (→ infer country), or language-specific org names (e.g., TÜV Rheinland → "Germany", JLPT → "Japan").
 - accreditingBody: Include when a SEPARATE accrediting, certifying, or regulatory organization is explicitly named in the text and is DIFFERENT from the issuerName. Also include when the issuer IS the accrediting body for CERTIFICATE credentials (e.g., "AWS" issues AND accredits → accreditingBody: "Amazon Web Services"). Key patterns:
   - AHPRA oversees the Nursing Board → accreditingBody: "AHPRA" (different from issuer)
   - "ABIM" board certifies, "State Education Department" issues license → accreditingBody: "ABIM"

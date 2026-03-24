@@ -38,7 +38,7 @@ const DATE_FIELDS = new Set(['issuedDate', 'expiryDate']);
 const ARRAY_FIELDS = new Set(['fraudSignals']);
 const NUMERIC_FIELDS = new Set(['creditHours']);
 /** Fields that accept fuzzy/semantic matching (normalized generalizations are OK) */
-const FUZZY_FIELDS = new Set(['fieldOfStudy', 'issuerName']);
+const FUZZY_FIELDS = new Set(['fieldOfStudy', 'issuerName', 'accreditingBody']);
 
 /**
  * Normalize a string for comparison: lowercase, trim, collapse whitespace.

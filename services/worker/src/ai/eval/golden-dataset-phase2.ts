@@ -104,7 +104,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Red Cross First Aid/CPR/AED',
     strippedText: 'American Red Cross. First Aid/CPR/AED Certificate. [NAME_REDACTED] has successfully completed the requirements for certification. Issue Date: 07/15/2025. Expiration Date: 07/15/2027. Certificate ID: [REDACTED].',
     credentialTypeHint: 'CERTIFICATE',
-    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'American Red Cross', issuedDate: '2025-07-15', expiryDate: '2027-07-15', fieldOfStudy: 'First Aid / CPR / AED', fraudSignals: [] },
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'American Red Cross', issuedDate: '2025-07-15', expiryDate: '2027-07-15', fieldOfStudy: 'First Aid / CPR / AED', accreditingBody: 'American Red Cross', fraudSignals: [] },
     source: 'synthetic', category: 'certificate', tags: ['synthetic', 'clean', 'medical'],
   },
   {

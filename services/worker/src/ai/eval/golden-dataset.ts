@@ -1675,10 +1675,11 @@ export const GOLDEN_DATASET: GoldenDatasetEntry[] = [
     strippedText: 'ACCA — Association of Chartered Certified Accountants. [NAME_REDACTED] is admitted as a Fellow of the Association (FCCA). Membership Number: [REDACTED]. Admitted: January 2023. London, United Kingdom.',
     credentialTypeHint: 'CERTIFICATE',
     groundTruth: {
-      credentialType: 'CERTIFICATE',
+      credentialType: 'PROFESSIONAL',
       issuerName: 'Association of Chartered Certified Accountants',
       issuedDate: '2023-01-01',
       fieldOfStudy: 'Accounting',
+      accreditingBody: 'Association of Chartered Certified Accountants',
       jurisdiction: 'United Kingdom',
       fraudSignals: [],
     },
