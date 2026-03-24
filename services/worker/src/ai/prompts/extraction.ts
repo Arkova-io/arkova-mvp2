@@ -59,7 +59,8 @@ Licenses are highly variable in format. Pay special attention to:
   - CERTIFICATE from CompTIA → accreditingBody: "CompTIA"
   - CERTIFICATE from The Linux Foundation, administered by CNCF → accreditingBody: "Cloud Native Computing Foundation"
   - Fellowship from Royal College → accreditingBody: "Royal College of Physicians of London"
-  When to OMIT: Only omit when the license issuer IS the sole regulatory body (FAA for aviation, California Medical Board when no separate certifying body is named)
+  When to OMIT for LICENSES: Only omit when the license issuer IS the sole regulatory body (FAA for aviation, California Medical Board when no separate certifying body is named)
+  When to OMIT for PROFESSIONAL: Omit when the board IS the issuer (e.g., "American Board of Surgery" issues AND certifies → do NOT add accreditingBody since issuer is self-evident as certifier). Only add accreditingBody when a SEPARATE org accredits (e.g., ACGME accredits a residency program)
 - fieldOfStudy for licenses: ALWAYS infer the professional field from context. "Real Estate Broker" → "Real Estate", "Pharmacist" → "Pharmacy", "Speech-Language Pathologist" → "Speech-Language Pathology", "Registered Nurse" → "Nursing", "Electrician" → "Electrical Contracting", "Cosmetologist" → "Cosmetology", "Plumber" → "Plumbing", "Social Worker" → "Social Work", "Psychologist" → "Psychology", "Optometrist" → "Optometry", "Chiropractor" → "Chiropractic".
 
 FIELDOFSTUDY NORMALIZATION (applies to ALL credential types):

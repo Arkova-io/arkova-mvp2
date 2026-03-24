@@ -256,11 +256,36 @@ export async function processAnchor(anchorId: string): Promise<boolean> {
 }
 
 /**
- * Check if anchoring is enabled via switchboard_flags (runtime kill switch).
+ * Check if anchoring is enabled.
+ *
+ * In production: DB switchboard flag is authoritative (runtime kill switch).
+ * In non-production: env var ENABLE_PROD_NETWORK_ANCHORING is authoritative,
+ * with DB flag as override-only (prevents dev seed data mismatch from blocking anchoring).
+ *
  * Fails closed (returns false) on errors — prevents unintended chain submissions
  * when the control plane is unreachable.
  */
 async function isAnchoringEnabled(): Promise<boolean> {
+  // Non-production: env var is authoritative. The DB flag can only DISABLE
+  // anchoring if it's explicitly set, but can't block when env says enabled.
+  // This prevents the chronic issue where seed data resets the flag to false.
+  if (config.nodeEnv !== 'production') {
+    if (config.enableProdNetworkAnchoring) {
+      return true;
+    }
+    // Env says disabled — check if DB overrides to enabled (admin toggle)
+    try {
+      const { data } = await callRpc<boolean>(db, 'get_flag', {
+        p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING',
+      });
+      if (data === true) return true;
+    } catch {
+      // Non-fatal in dev
+    }
+    return false;
+  }
+
+  // Production: DB switchboard flag is authoritative (runtime kill switch)
   try {
     const { data, error } = await callRpc<boolean>(db, 'get_flag', {
       p_flag_key: 'ENABLE_PROD_NETWORK_ANCHORING',

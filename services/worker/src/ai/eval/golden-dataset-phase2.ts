@@ -184,7 +184,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'German TÜV Functional Safety Engineer',
     strippedText: 'TÜV Rheinland. Functional Safety Engineer (TÜV). Certified according to IEC 61508. [NAME_REDACTED]. Certificate No.: [REDACTED]. Date: 15.06.2025. Valid until: 15.06.2030.',
     credentialTypeHint: 'CERTIFICATE',
-    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'TÜV Rheinland', issuedDate: '2025-06-15', expiryDate: '2030-06-15', fieldOfStudy: 'Functional Safety Engineering', jurisdiction: 'Germany', fraudSignals: [] },
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'TÜV Rheinland', issuedDate: '2025-06-15', expiryDate: '2030-06-15', fieldOfStudy: 'Functional Safety Engineering', accreditingBody: 'TÜV Rheinland', jurisdiction: 'Germany', fraudSignals: [] },
     source: 'synthetic', category: 'certificate', tags: ['synthetic', 'international', 'germany', 'engineering'],
   },
   {
@@ -192,7 +192,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Japanese JLPT N1',
     strippedText: 'Japan Foundation and Japan Educational Exchanges and Services. Japanese-Language Proficiency Test. Certificate of Result and Scores. [NAME_REDACTED]. Level N1. Test Date: July 2025. Result: Pass. Total Score: 142/180.',
     credentialTypeHint: 'CERTIFICATE',
-    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Japan Foundation', issuedDate: '2025-07-01', fieldOfStudy: 'Japanese Language Proficiency', jurisdiction: 'Japan', fraudSignals: [] },
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Japan Foundation', issuedDate: '2025-07-01', fieldOfStudy: 'Japanese Language Proficiency', accreditingBody: 'Japan Foundation', jurisdiction: 'Japan', fraudSignals: [] },
     source: 'synthetic', category: 'certificate', tags: ['synthetic', 'international', 'japan', 'language'],
   },
   {
@@ -216,7 +216,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Heavily truncated certificate (OCR failure)',
     strippedText: 'Micro...ft. Azure Sol...ions Arch...ct Expert. [NAME_RE...TED]. Date: 2025. Cred ID:',
     credentialTypeHint: 'CERTIFICATE',
-    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Microsoft', issuedDate: '2025-01-01', fieldOfStudy: 'Cloud Architecture', fraudSignals: [] },
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Microsoft', issuedDate: '2025-01-01', fieldOfStudy: 'Cloud Architecture', accreditingBody: 'Microsoft', fraudSignals: [] },
     source: 'synthetic', category: 'certificate', tags: ['synthetic', 'truncated', 'ocr-failure', 'edge-case'],
   },
 
@@ -236,7 +236,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'UK Chartered Accountant (ICAEW)',
     strippedText: 'Institute of Chartered Accountants in England and Wales. This is to certify that [NAME_REDACTED] has been admitted as a member and is entitled to describe themselves as a Chartered Accountant. Admitted: 1 September 2025.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Institute of Chartered Accountants in England and Wales', issuedDate: '2025-09-01', fieldOfStudy: 'Accounting', jurisdiction: 'United Kingdom', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Institute of Chartered Accountants in England and Wales', issuedDate: '2025-09-01', fieldOfStudy: 'Accounting', accreditingBody: 'Institute of Chartered Accountants in England and Wales', jurisdiction: 'United Kingdom', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'international', 'uk', 'finance'],
   },
   {
@@ -252,7 +252,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Actuarial Fellow (FSA)',
     strippedText: 'Society of Actuaries. Fellowship Diploma. [NAME_REDACTED] has completed the educational requirements and is hereby admitted as a Fellow of the Society of Actuaries (FSA). October 2025.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Society of Actuaries', issuedDate: '2025-10-01', fieldOfStudy: 'Actuarial Science', accreditingBody: 'Society of Actuaries', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Society of Actuaries', issuedDate: '2025-10-01', fieldOfStudy: 'Actuarial Science', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'finance', 'actuarial'],
   },
   {
@@ -260,7 +260,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Board Certified Internal Medicine',
     strippedText: 'American Board of Internal Medicine. Certificate of Qualification. [NAME_REDACTED], M.D. is certified as a Diplomate in Internal Medicine. Date of Certification: 2024. Certificate expires: 2034.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Internal Medicine', issuedDate: '2024-01-01', expiryDate: '2034-01-01', fieldOfStudy: 'Internal Medicine', accreditingBody: 'American Board of Medical Specialties', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Internal Medicine', issuedDate: '2024-01-01', expiryDate: '2034-01-01', fieldOfStudy: 'Internal Medicine', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical'],
   },
   {
@@ -300,7 +300,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Chartered Surveyor (RICS — UK)',
     strippedText: 'Royal Institution of Chartered Surveyors. This is to certify that [NAME_REDACTED] MRICS has been admitted as a Member. Pathway: Commercial Real Estate. Date of Admission: 15 July 2025.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Royal Institution of Chartered Surveyors', issuedDate: '2025-07-15', fieldOfStudy: 'Commercial Real Estate', jurisdiction: 'United Kingdom', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Royal Institution of Chartered Surveyors', issuedDate: '2025-07-15', fieldOfStudy: 'Commercial Real Estate', accreditingBody: 'Royal Institution of Chartered Surveyors', jurisdiction: 'United Kingdom', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'international', 'uk', 'real-estate'],
   },
   {
@@ -308,7 +308,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Board Certified Behavior Analyst (BCBA)',
     strippedText: 'Behavior Analyst Certification Board. Board Certified Behavior Analyst. [NAME_REDACTED], BCBA. Certification Number: [REDACTED]. Certified Since: 2023-04-01. Cycle End: 2026-03-31.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Behavior Analyst Certification Board', issuedDate: '2023-04-01', expiryDate: '2026-03-31', fieldOfStudy: 'Behavior Analysis', accreditingBody: 'Behavior Analyst Certification Board', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Behavior Analyst Certification Board', issuedDate: '2023-04-01', expiryDate: '2026-03-31', fieldOfStudy: 'Behavior Analysis', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'psychology'],
   },
   {
@@ -324,7 +324,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Indian Chartered Accountant (ICAI)',
     strippedText: 'The Institute of Chartered Accountants of India. This is to certify that [NAME_REDACTED] having complied with the regulations made under the Chartered Accountants Act, 1949, is admitted as a member. Membership No.: [REDACTED]. Date: 01-01-2025.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Institute of Chartered Accountants of India', issuedDate: '2025-01-01', fieldOfStudy: 'Chartered Accountancy', jurisdiction: 'India', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'Institute of Chartered Accountants of India', issuedDate: '2025-01-01', fieldOfStudy: 'Chartered Accountancy', accreditingBody: 'Institute of Chartered Accountants of India', jurisdiction: 'India', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'international', 'india', 'finance'],
   },
   {
@@ -552,7 +552,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'South African Chartered Accountant',
     strippedText: 'South African Institute of Chartered Accountants (SAICA). Certificate. [NAME_REDACTED] CA(SA) has been registered as a Chartered Accountant (South Africa). Registration Date: 2025-05-01. Registration No.: [REDACTED].',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'South African Institute of Chartered Accountants', issuedDate: '2025-05-01', fieldOfStudy: 'Chartered Accountancy', jurisdiction: 'South Africa', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'South African Institute of Chartered Accountants', issuedDate: '2025-05-01', fieldOfStudy: 'Chartered Accountancy', accreditingBody: 'South African Institute of Chartered Accountants', jurisdiction: 'South Africa', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'international', 'south-africa', 'finance'],
   },
   {
@@ -700,7 +700,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Certificate from future year (2035)',
     strippedText: 'Google. Google Professional Machine Learning Engineer. [NAME_REDACTED]. Date: 2035-06-15.',
     credentialTypeHint: 'CERTIFICATE',
-    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Google', issuedDate: '2035-06-15', fieldOfStudy: 'Machine Learning', fraudSignals: ['SUSPICIOUS_DATES'] },
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'Google', issuedDate: '2035-06-15', fieldOfStudy: 'Machine Learning', accreditingBody: 'Google', fraudSignals: ['SUSPICIOUS_DATES'] },
     source: 'synthetic', category: 'certificate', tags: ['synthetic', 'fraud', 'future-date'],
   },
   {

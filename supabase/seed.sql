@@ -193,7 +193,7 @@ INSERT INTO switchboard_flags (id, value, default_value, description, is_dangero
   ('ENABLE_AI_FRAUD', true, false, 'Enable AI-powered fraud detection (P8)', false),
   ('ENABLE_VERIFICATION_API', true, false, 'Enable Verification API v1 endpoints (P4.5)', false),
   ('ENABLE_AI_REPORTS', true, false, 'Enable AI-powered report generation (P8)', false)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description;
 
 
 -- =============================================================================

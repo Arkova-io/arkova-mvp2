@@ -284,7 +284,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board certification in pediatrics',
     strippedText: 'American Board of Pediatrics. [NAME_REDACTED], MD is certified in Pediatrics. Certificate Number: [REDACTED]. Date of Certification: July 2023. Valid Through: December 2033.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Pediatrics', issuedDate: '2023-07-01', expiryDate: '2033-12-31', fieldOfStudy: 'Pediatrics', accreditingBody: 'American Board of Pediatrics', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Pediatrics', issuedDate: '2023-07-01', expiryDate: '2033-12-31', fieldOfStudy: 'Pediatrics', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
   {
@@ -340,7 +340,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board cert in anesthesiology',
     strippedText: 'American Board of Anesthesiology. [NAME_REDACTED], MD is certified. Initial Certification: 2021. Continuing Certification due: 2031.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Anesthesiology', issuedDate: '2021-01-01', expiryDate: '2031-01-01', fieldOfStudy: 'Anesthesiology', accreditingBody: 'American Board of Anesthesiology', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Anesthesiology', issuedDate: '2021-01-01', expiryDate: '2031-01-01', fieldOfStudy: 'Anesthesiology', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
 
@@ -588,7 +588,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board cert in orthopedic surgery',
     strippedText: 'American Board of Orthopaedic Surgery. [NAME_REDACTED], MD. Diplomate. Certified: 2022. Recertification: 2032.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Orthopaedic Surgery', issuedDate: '2022-01-01', expiryDate: '2032-01-01', fieldOfStudy: 'Orthopaedic Surgery', accreditingBody: 'American Board of Orthopaedic Surgery', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Orthopaedic Surgery', issuedDate: '2022-01-01', expiryDate: '2032-01-01', fieldOfStudy: 'Orthopaedic Surgery', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
   {
@@ -756,7 +756,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board cert in radiology',
     strippedText: 'American Board of Radiology. [NAME_REDACTED], MD is certified in Diagnostic Radiology. Certificate: 2023. MOC Due: 2033.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Radiology', issuedDate: '2023-01-01', expiryDate: '2033-01-01', fieldOfStudy: 'Diagnostic Radiology', accreditingBody: 'American Board of Radiology', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Radiology', issuedDate: '2023-01-01', expiryDate: '2033-01-01', fieldOfStudy: 'Diagnostic Radiology', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
   {
@@ -828,7 +828,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board cert in psychiatry',
     strippedText: 'American Board of Psychiatry and Neurology. [NAME_REDACTED], MD. Certified in Psychiatry. Year of Certification: 2020. Valid through: 2030.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Psychiatry and Neurology', issuedDate: '2020-01-01', expiryDate: '2030-01-01', fieldOfStudy: 'Psychiatry', accreditingBody: 'American Board of Psychiatry and Neurology', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Psychiatry and Neurology', issuedDate: '2020-01-01', expiryDate: '2030-01-01', fieldOfStudy: 'Psychiatry', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
   {
@@ -868,7 +868,7 @@ export const GOLDEN_DATASET_EXTENDED: GoldenDatasetEntry[] = [
     description: 'Board cert in emergency medicine',
     strippedText: 'American Board of Emergency Medicine. [NAME_REDACTED], MD, FACEP. Certified 2021. Recertification 2031.',
     credentialTypeHint: 'PROFESSIONAL',
-    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Emergency Medicine', issuedDate: '2021-01-01', expiryDate: '2031-01-01', fieldOfStudy: 'Emergency Medicine', accreditingBody: 'American Board of Emergency Medicine', fraudSignals: [] },
+    groundTruth: { credentialType: 'PROFESSIONAL', issuerName: 'American Board of Emergency Medicine', issuedDate: '2021-01-01', expiryDate: '2031-01-01', fieldOfStudy: 'Emergency Medicine', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'clean', 'medical', 'board-cert'],
   },
   {

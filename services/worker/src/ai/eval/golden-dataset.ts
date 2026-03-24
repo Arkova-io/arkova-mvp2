@@ -498,7 +498,6 @@ export const GOLDEN_DATASET: GoldenDatasetEntry[] = [
       issuedDate: '2022-08-01',
       expiryDate: '2032-12-31',
       fieldOfStudy: 'General Surgery',
-      accreditingBody: 'American Board of Surgery',
       fraudSignals: [],
     },
     source: 'synthetic',
@@ -1944,12 +1943,16 @@ export const GOLDEN_DATASET: GoldenDatasetEntry[] = [
 
 import { GOLDEN_DATASET_EXTENDED } from './golden-dataset-extended.js';
 import { GOLDEN_DATASET_PHASE2 } from './golden-dataset-phase2.js';
+import { GOLDEN_DATASET_PHASE3 } from './golden-dataset-phase3.js';
+import { GOLDEN_DATASET_PHASE4 } from './golden-dataset-phase4.js';
 
-/** Full golden dataset: core (100) + extended (110) + phase2 (100) = 310 entries */
+/** Full golden dataset: core (100) + extended (110) + phase2 (100) + phase3 (190) + phase4 (250) = 750 entries */
 export const FULL_GOLDEN_DATASET: GoldenDatasetEntry[] = [
   ...GOLDEN_DATASET,
   ...GOLDEN_DATASET_EXTENDED,
   ...GOLDEN_DATASET_PHASE2,
+  ...GOLDEN_DATASET_PHASE3,
+  ...GOLDEN_DATASET_PHASE4,
 ];
 
 /** Helper: get entries filtered by credential type */
