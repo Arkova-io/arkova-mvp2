@@ -147,7 +147,7 @@ export type Config = z.infer<typeof ConfigSchema>;
 
 function loadConfig(): Config {
   const result = ConfigSchema.safeParse({
-    port: process.env.WORKER_PORT ?? process.env.PORT,
+    port: process.env.PORT ?? process.env.WORKER_PORT,
     nodeEnv: process.env.NODE_ENV,
     logLevel: process.env.LOG_LEVEL,
     supabaseUrl: process.env.SUPABASE_URL,
