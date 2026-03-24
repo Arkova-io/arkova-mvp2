@@ -110,6 +110,39 @@ describe('compareField', () => {
     const result = compareField('creditHours', 3.0, 3);
     expect(result.correct).toBe(true);
   });
+
+  it('fieldOfStudy fuzzy: containment match ("Python" ~ "Python Programming")', () => {
+    const result = compareField('fieldOfStudy', 'Python Programming', 'Python');
+    expect(result.correct).toBe(true);
+    expect(result.matchType).toBe('normalized');
+  });
+
+  it('fieldOfStudy fuzzy: token overlap ("First Aid / CPR / AED" ~ "CPR/AED")', () => {
+    const result = compareField('fieldOfStudy', 'First Aid / CPR / AED', 'CPR/AED');
+    expect(result.correct).toBe(true);
+  });
+
+  it('fieldOfStudy fuzzy: completely different = mismatch', () => {
+    const result = compareField('fieldOfStudy', 'Physics', 'Art History');
+    expect(result.correct).toBe(false);
+    expect(result.matchType).toBe('mismatch');
+  });
+
+  it('issuerName fuzzy: containment ("Columbia University" ~ "Columbia University Teachers College")', () => {
+    const result = compareField('issuerName', 'Columbia University', 'Columbia University Teachers College');
+    expect(result.correct).toBe(true);
+  });
+
+  it('issuerName fuzzy: abbreviation vs full ("PMI" vs "Project Management Institute") = mismatch', () => {
+    // Pure abbreviation with no token overlap should NOT match
+    const result = compareField('issuerName', 'Project Management Institute', 'PMI');
+    expect(result.correct).toBe(false);
+  });
+
+  it('non-fuzzy fields still require exact match ("jurisdiction")', () => {
+    const result = compareField('jurisdiction', 'California, USA', 'California');
+    expect(result.correct).toBe(false);
+  });
 });
 
 describe('compareFields', () => {

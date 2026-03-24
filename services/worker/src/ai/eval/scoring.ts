@@ -37,6 +37,8 @@ const ALL_FIELDS = [
 const DATE_FIELDS = new Set(['issuedDate', 'expiryDate']);
 const ARRAY_FIELDS = new Set(['fraudSignals']);
 const NUMERIC_FIELDS = new Set(['creditHours']);
+/** Fields that accept fuzzy/semantic matching (normalized generalizations are OK) */
+const FUZZY_FIELDS = new Set(['fieldOfStudy', 'issuerName']);
 
 /**
  * Normalize a string for comparison: lowercase, trim, collapse whitespace.
@@ -123,8 +125,34 @@ export function compareField(
     return { field, expected, actual, correct: true, matchType: 'exact' };
   }
 
-  if (normalizeString(expStr) === normalizeString(actStr)) {
+  const normExp = normalizeString(expStr);
+  const normAct = normalizeString(actStr);
+
+  if (normExp === normAct) {
     return { field, expected, actual, correct: true, matchType: 'normalized' };
+  }
+
+  // Fuzzy matching for fields where semantic equivalence is acceptable
+  if (FUZZY_FIELDS.has(field) && normExp && normAct) {
+    // Containment check: one contains the other (e.g., "Python" ⊂ "Python Programming")
+    if (normExp.includes(normAct) || normAct.includes(normExp)) {
+      return { field, expected, actual, correct: true, matchType: 'normalized' };
+    }
+
+    // Token overlap: >60% of tokens match (e.g., "First Aid / CPR / AED" ~ "CPR/AED")
+    const expTokens = normExp.replace(/[\/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+    const actTokens = normAct.replace(/[\/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+    if (expTokens.length > 0 && actTokens.length > 0) {
+      const matchedFromExp = expTokens.filter(t => actTokens.some(a => a.includes(t) || t.includes(a)));
+      const matchedFromAct = actTokens.filter(t => expTokens.some(e => e.includes(t) || t.includes(e)));
+      const overlapRatio = Math.max(
+        matchedFromExp.length / expTokens.length,
+        matchedFromAct.length / actTokens.length,
+      );
+      if (overlapRatio >= 0.6) {
+        return { field, expected, actual, correct: true, matchType: 'normalized' };
+      }
+    }
   }
 
   return { field, expected, actual, correct: false, matchType: 'mismatch' };
