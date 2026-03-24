@@ -52,7 +52,7 @@ export function TreasuryAdminPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const { status: treasuryStatus, loading: treasuryLoading, error: treasuryError, fetchStatus } = useTreasuryStatus();
+  const { status: treasuryStatus, loading: treasuryLoading, error: treasuryError, fetchStatus, lastFetchedAt } = useTreasuryStatus();
 
   const [recentAnchors, setRecentAnchors] = useState<RecentAnchor[]>([]);
   const [anchorsLoading, setAnchorsLoading] = useState(true);
@@ -131,6 +131,11 @@ export function TreasuryAdminPage() {
           </h1>
           <p className="text-muted-foreground mt-1">
             {TREASURY_LABELS.PAGE_SUBTITLE}
+            {lastFetchedAt && (
+              <span className="ml-2 text-xs text-muted-foreground/60">
+                · Updated {new Date(lastFetchedAt).toLocaleTimeString()}
+              </span>
+            )}
           </p>
         </div>
         <Button
@@ -199,7 +204,8 @@ export function TreasuryAdminPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">{TREASURY_LABELS.VAULT_NETWORK}</span>
                 <Badge variant="secondary" className="font-mono text-xs">
-                  {network?.name ?? 'signet'}
+                  {/* eslint-disable-next-line -- lint:copy exempt: internal network name check */}
+                  {network?.name === 'signet' || network?.name === 'testnet' || network?.name === 'testnet4' ? 'Test Environment' : 'Production Network'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-sm">

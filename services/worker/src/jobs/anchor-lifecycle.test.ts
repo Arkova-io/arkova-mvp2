@@ -65,6 +65,19 @@ vi.mock('../webhooks/delivery.js', () => ({
   dispatchWebhookEvent: mockDispatchWebhookEvent,
 }));
 
+// Mock billing modules added by M2M payments audit
+vi.mock('../billing/paymentGuard.js', () => ({
+  checkPaymentGuard: vi.fn().mockResolvedValue({
+    authorized: true,
+    source: { id: 'beta_override', type: 'beta_unlimited' },
+  }),
+}));
+
+vi.mock('../billing/reconciliation.js', () => ({
+  isFreeTierUser: vi.fn().mockResolvedValue(false),
+  isWithinBatchWindow: vi.fn().mockReturnValue(true),
+}));
+
 // Stateful DB mock that tracks mutations
 vi.mock('../utils/db.js', () => {
   const createSelectChain = (_anchorId?: string) => {
@@ -76,6 +89,7 @@ vi.mock('../utils/db.js', () => {
       return chain;
     });
     chain.is = vi.fn(() => chain);
+    chain.order = vi.fn(() => chain);
     chain.single = vi.fn(() => {
       const id = chain._id;
       const anchor = id ? dbState.anchors.get(id) : undefined;
@@ -87,7 +101,7 @@ vi.mock('../utils/db.js', () => {
     chain.limit = vi.fn(() => {
       const pending = Array.from(dbState.anchors.entries())
         .filter(([, a]) => a.status === 'PENDING' && !a.deleted_at)
-        .map(([id]) => ({ id }));
+        .map(([id, a]) => ({ id, metadata: (a as Record<string, unknown>).metadata ?? null }));
       return Promise.resolve({ data: pending, error: null });
     });
 
@@ -123,7 +137,11 @@ vi.mock('../utils/db.js', () => {
 
   return {
     db: {
-      rpc: vi.fn(() => Promise.resolve({ data: true, error: null })),
+      rpc: vi.fn((fnName: string) => {
+        if (fnName === 'get_flag') return Promise.resolve({ data: true, error: null });
+        // get_pending_user_anchors: return error to trigger fallback to db.from('anchors')
+        return Promise.resolve({ data: null, error: { message: 'RPC not in cache' } });
+      }),
       from: vi.fn((table: string) => {
         if (table === 'anchors') {
           return {
