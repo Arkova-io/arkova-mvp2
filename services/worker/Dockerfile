@@ -28,7 +28,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN NODE_OPTIONS=--max-old-space-size=384 npm ci
 
 COPY tsconfig.json tsconfig.build.json ./
 COPY src/ ./src/
@@ -56,7 +56,7 @@ RUN addgroup --system --gid 1001 arkova && \
 # Production dependencies only (need build tools for native modules, then remove)
 RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN NODE_OPTIONS=--max-old-space-size=384 npm ci --omit=dev && npm cache clean --force
 RUN apk del python3 make g++
 
 # Compiled output from builder
