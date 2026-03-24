@@ -114,6 +114,15 @@ export function compareField(
     if (normExp === normAct) {
       return { field, expected, actual, correct: true, matchType: 'exact' };
     }
+    // Same-month tolerance for expiryDate: "2026-06-01" ≈ "2026-06-30"
+    // Credentials commonly expire at end-of-month; models may output 1st or last day
+    if (field === 'expiryDate' && normExp && normAct) {
+      const expYM = normExp.slice(0, 7); // "YYYY-MM"
+      const actYM = normAct.slice(0, 7);
+      if (expYM === actYM) {
+        return { field, expected, actual, correct: true, matchType: 'normalized' };
+      }
+    }
     return { field, expected, actual, correct: false, matchType: 'mismatch' };
   }
 

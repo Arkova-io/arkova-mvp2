@@ -86,6 +86,22 @@ describe('compareField', () => {
     expect(result.correct).toBe(true);
   });
 
+  it('expiryDate same-month tolerance: 1st vs 31st of same month', () => {
+    const result = compareField('expiryDate', '2026-06-30', '2026-06-01');
+    expect(result.correct).toBe(true);
+    expect(result.matchType).toBe('normalized');
+  });
+
+  it('expiryDate different months are NOT equivalent', () => {
+    const result = compareField('expiryDate', '2026-06-30', '2026-07-01');
+    expect(result.correct).toBe(false);
+  });
+
+  it('issuedDate does NOT get same-month tolerance', () => {
+    const result = compareField('issuedDate', '2026-06-30', '2026-06-01');
+    expect(result.correct).toBe(false);
+  });
+
   it('handles fraudSignals comparison (arrays)', () => {
     const result = compareField('fraudSignals', ['SUSPICIOUS_DATES'], ['SUSPICIOUS_DATES']);
     expect(result.correct).toBe(true);
