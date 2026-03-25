@@ -13,9 +13,16 @@ import { verifyAuthToken } from '../auth.js';
 import { logger } from '../utils/logger.js';
 
 // ─── CORS for browser-facing routes (billing, admin, etc.) ───
-const CORS_ALLOWED_ORIGINS = config.frontendUrl
-  ? [config.frontendUrl]
-  : ['http://localhost:5173'];
+// Support multiple origins: FRONTEND_URL + CORS_ALLOWED_ORIGINS (comma-separated)
+const CORS_ALLOWED_ORIGINS: string[] = (() => {
+  const origins = new Set<string>();
+  if (config.frontendUrl) origins.add(config.frontendUrl);
+  if (config.corsAllowedOrigins) {
+    config.corsAllowedOrigins.split(',').map(o => o.trim()).filter(Boolean).forEach(o => origins.add(o));
+  }
+  if (origins.size === 0) origins.add('http://localhost:5173');
+  return [...origins];
+})();
 
 /**
  * Sets CORS headers for browser-facing routes.
