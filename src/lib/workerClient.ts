@@ -10,7 +10,7 @@
 
 import { supabase } from './supabase';
 
-export const WORKER_URL = import.meta.env.VITE_WORKER_URL ?? 'http://localhost:3001';
+export const WORKER_URL = import.meta.env.VITE_WORKER_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
 const WORKER_UNAVAILABLE_MESSAGE =
   'Unable to connect to the server. Please check your connection and try again.';
