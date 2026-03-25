@@ -113,7 +113,7 @@ export function parseIXBRL(html: string): IXBRLFinancialData | null {
     if (fieldName) {
       // Prefer values with longer context refs (usually the annual period)
       if (result[fieldName] === undefined || contextRef.length > 10) {
-        (result as Record<string, unknown>)[fieldName] = numValue;
+        (result as unknown as Record<string, unknown>)[fieldName] = numValue;
       }
     } else if (name.startsWith('us-gaap:') || name.startsWith('dei:')) {
       result.additionalFacts[name] = numValue;
@@ -150,14 +150,14 @@ export function parseIXBRL(html: string): IXBRLFinancialData | null {
     if (!name || !value) return;
 
     // Skip if we already processed this element
-    const tagName = (el as cheerio.Element).tagName?.toLowerCase() ?? '';
+    const tagName = ((el as unknown as { tagName?: string }).tagName ?? '').toLowerCase();
     if (tagName.includes('nonfraction') || tagName.includes('nonnumeric')) return;
 
     const fieldName = CONCEPT_MAP[name];
     if (fieldName && result[fieldName] === undefined) {
       const numValue = parseXBRLNumber(value);
       if (numValue !== null) {
-        (result as Record<string, unknown>)[fieldName] = numValue;
+        (result as unknown as Record<string, unknown>)[fieldName] = numValue;
         result.factCount++;
       }
     }
