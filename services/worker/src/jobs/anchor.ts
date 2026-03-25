@@ -287,7 +287,7 @@ async function revertToPending(anchorId: string, metadata: Record<string, unknow
     .from('anchors')
     .update({
       status: 'PENDING',
-      metadata: cleanMeta,
+      metadata: cleanMeta as unknown as import('../types/database.types.js').Json,
     })
     .eq('id', anchorId)
     .eq('status', 'BROADCASTING');
