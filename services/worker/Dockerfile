@@ -1,14 +1,16 @@
 # Arkova Worker — Railway Build (minimal, single-stage)
+# NOTE: Build context is repo root (Railway Root Directory is empty).
+# All COPY paths use services/worker/ prefix.
 FROM node:lts-alpine
 WORKDIR /app
 
 # Copy manifests and install ALL deps (need typescript for build)
-COPY package.json package-lock.json ./
+COPY services/worker/package.json services/worker/package-lock.json ./
 RUN npm install
 
 # Copy source and build
-COPY tsconfig.json tsconfig.build.json ./
-COPY src/ ./src/
+COPY services/worker/tsconfig.json services/worker/tsconfig.build.json ./
+COPY services/worker/src/ ./src/
 RUN npm run build
 
 # Remove dev dependencies after build
