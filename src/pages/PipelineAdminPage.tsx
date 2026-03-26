@@ -28,6 +28,7 @@ import {
   Copy,
   Check,
   Link2,
+  Layers,
   Building2,
   Heart,
 } from 'lucide-react';
@@ -502,6 +503,7 @@ export function PipelineAdminPage() {
                 { path: 'fetch-acnc', label: 'Run ACNC Fetch', icon: <Heart className="h-4 w-4" /> },
                 { path: 'embed-public-records', label: 'Run Embedder', icon: <Cpu className="h-4 w-4" /> },
                 { path: 'anchor-public-records', label: 'Run Anchoring', icon: <Shield className="h-4 w-4" /> },
+                { path: 'batch-anchors', label: 'Run Batch Anchoring', icon: <Layers className="h-4 w-4" /> },
               ] as const).map(({ path, label, icon }) => {
                 const status = triggerStatus[path] ?? 'idle';
                 return (
