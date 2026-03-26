@@ -26,6 +26,7 @@ import { ROUTES } from '@/lib/routes';
 import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS, NAV_POLISH_LABELS, SHARE_LABELS, ACCOUNT_DELETE_LABELS, DISCLAIMER_LABELS, PROFILE_LABELS } from '@/lib/copy';
 import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
+import { IdentityVerification } from '@/components/auth/IdentityVerification';
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -447,6 +448,12 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Identity Verification (IDT WS1) */}
+        <IdentityVerification
+          status={profileAny?.identity_verification_status ?? 'unstarted'}
+          verifiedAt={profileAny?.identity_verified_at ?? null}
+        />
 
         {/* Two-Factor Authentication */}
         <TwoFactorSetup />

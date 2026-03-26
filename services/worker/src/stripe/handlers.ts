@@ -361,6 +361,86 @@ export async function handlePaymentFailed(event: StripeEvent): Promise<void> {
 // Main Webhook Router
 // =========================================================================
 
+// =========================================================================
+// Identity Verification Handlers (IDT WS1)
+// =========================================================================
+
+/**
+ * Handle identity.verification_session.verified
+ *
+ * Stripe Identity has confirmed the user's identity. Update profile status.
+ */
+async function handleIdentityVerified(event: StripeEvent): Promise<void> {
+  const session = event.data.object as { id: string; metadata?: { user_id?: string } };
+  const userId = session.metadata?.user_id;
+
+  if (!userId) {
+    logger.warn({ sessionId: session.id }, 'Identity verification has no user_id in metadata');
+    return;
+  }
+
+  const { error } = await db
+    .from('profiles')
+    .update({
+      identity_verification_status: 'verified',
+      identity_verified_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .eq('identity_verification_session_id', session.id);
+
+  if (error) {
+    logger.error({ error, userId }, 'Failed to update identity verification status to verified');
+    throw error;
+  }
+
+  // Log audit event
+  await db.from('audit_events').insert({
+    user_id: userId,
+    event_type: 'IDENTITY_VERIFIED',
+    metadata: { session_id: session.id },
+  });
+
+  logger.info({ userId }, 'Identity verification completed successfully');
+}
+
+/**
+ * Handle identity.verification_session.requires_input
+ *
+ * Stripe needs additional information — photos rejected, retry needed.
+ */
+async function handleIdentityRequiresInput(event: StripeEvent): Promise<void> {
+  const session = event.data.object as { id: string; metadata?: { user_id?: string } };
+  const userId = session.metadata?.user_id;
+
+  if (!userId) return;
+
+  await db
+    .from('profiles')
+    .update({ identity_verification_status: 'requires_input' })
+    .eq('id', userId)
+    .eq('identity_verification_session_id', session.id);
+
+  logger.info({ userId }, 'Identity verification requires additional input');
+}
+
+/**
+ * Handle identity.verification_session.canceled
+ */
+async function handleIdentityCanceled(event: StripeEvent): Promise<void> {
+  const session = event.data.object as { id: string; metadata?: { user_id?: string } };
+  const userId = session.metadata?.user_id;
+
+  if (!userId) return;
+
+  await db
+    .from('profiles')
+    .update({ identity_verification_status: 'canceled' })
+    .eq('id', userId)
+    .eq('identity_verification_session_id', session.id);
+
+  logger.info({ userId }, 'Identity verification canceled');
+}
+
 /**
  * Main webhook handler — routes events, checks idempotency, records processing.
  */
@@ -391,6 +471,15 @@ export async function handleStripeWebhook(event: StripeEvent): Promise<void> {
       break;
     case 'invoice.payment_failed':
       await handlePaymentFailed(event);
+      break;
+    case 'identity.verification_session.verified':
+      await handleIdentityVerified(event);
+      break;
+    case 'identity.verification_session.requires_input':
+      await handleIdentityRequiresInput(event);
+      break;
+    case 'identity.verification_session.canceled':
+      await handleIdentityCanceled(event);
       break;
     default:
       logger.info({ eventType: event.type }, 'Unhandled event type');
