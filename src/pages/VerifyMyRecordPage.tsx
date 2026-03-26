@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { ROUTES } from '@/lib/routes';
+import { AnchorDisclaimer } from '@/components/anchor/AnchorDisclaimer';
 import { CREDENTIAL_TYPE_LABELS, ANCHOR_STATUS_LABELS } from '@/lib/copy';
 import { ExplorerLink } from '@/components/ui/ExplorerLink';
 
@@ -244,6 +245,9 @@ export function VerifyMyRecordPage() {
             )}
           </>
         )}
+
+        {/* Platform Disclaimer (IDT WS3) */}
+        <AnchorDisclaimer />
       </div>
     </AppShell>
   );

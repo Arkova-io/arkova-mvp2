@@ -33,6 +33,7 @@ import { ShareSheet } from './ShareSheet';
 import { LinkedInShareButton, LinkedInBadgeSnippet } from './LinkedInShare';
 import { AnchorLifecycleTimeline } from './AnchorLifecycleTimeline';
 import { VerificationWalkthrough } from './VerificationWalkthrough';
+import { AnchorDisclaimer } from './AnchorDisclaimer';
 import { CredentialRenderer } from '@/components/credentials/CredentialRenderer';
 import { useCredentialTemplate } from '@/hooks/useCredentialTemplate';
 import { formatFingerprint } from '@/lib/fileHasher';
@@ -737,6 +738,9 @@ export function AssetDetailView({ anchor, onBack, onDownloadProof, onDownloadPro
           </CardContent>
         </Card>
       )}
+
+      {/* Platform Disclaimer (IDT WS3) */}
+      <AnchorDisclaimer />
     </div>
   );
 }
