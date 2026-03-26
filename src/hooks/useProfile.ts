@@ -47,7 +47,7 @@ interface ProfileState {
 
 interface ProfileActions {
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>>) => Promise<boolean>;
+  updateProfile: (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>> & Record<string, unknown>) => Promise<boolean>;
 }
 
 type ProfileContextValue = ProfileState & ProfileActions;
@@ -166,7 +166,7 @@ function useProfileInternal(): ProfileState & ProfileActions {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(
-    async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>>): Promise<boolean> => {
+    async (updates: Partial<Pick<Profile, 'full_name' | 'avatar_url' | 'is_public_profile'>> & Record<string, unknown>): Promise<boolean> => {
       if (!user) {
         setError('Not authenticated');
         return false;

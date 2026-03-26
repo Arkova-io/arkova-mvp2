@@ -8,7 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Settings, User, Shield, Eye, EyeOff, Loader2, Check, Copy, Fingerprint, Key, Webhook, FileText, ChevronRight, Trash2 } from 'lucide-react';
+import { Settings, User, Shield, Eye, EyeOff, Loader2, Check, Copy, Fingerprint, Key, Webhook, FileText, ChevronRight, Trash2, Globe, Linkedin, Github, Twitter, FileWarning } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { SETTINGS_PAGE_LABELS } from '@/lib/copy';
@@ -17,12 +17,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { ROUTES } from '@/lib/routes';
-import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS, NAV_POLISH_LABELS, SHARE_LABELS, ACCOUNT_DELETE_LABELS } from '@/lib/copy';
+import { NAV_LABELS, USER_ROLE_LABELS, IDENTITY_LABELS, NAV_POLISH_LABELS, SHARE_LABELS, ACCOUNT_DELETE_LABELS, DISCLAIMER_LABELS, PROFILE_LABELS } from '@/lib/copy';
 import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 
@@ -32,14 +33,22 @@ export function SettingsPage() {
   const { profile, loading: profileLoading, updating, updateProfile } = useProfile();
 
   const [fullName, setFullName] = useState('');
+  const [bio, setBio] = useState('');
+  const [socialLinks, setSocialLinks] = useState<{ linkedin?: string; twitter?: string; github?: string; website?: string }>({});
   const [nameInitialized, setNameInitialized] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [bioSaved, setBioSaved] = useState(false);
+  const [socialSaved, setSocialSaved] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize name field once profile loads
+  // Initialize fields once profile loads
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profileAny = profile as any;
   if (profile && !nameInitialized) {
     setFullName(profile.full_name ?? '');
+    setBio(profileAny?.bio ?? '');
+    setSocialLinks(profileAny?.social_links ?? {});
     setNameInitialized(true);
   }
 
@@ -69,6 +78,39 @@ export function SettingsPage() {
     setTimeout(() => setCopied(null), 2000);
   }, []);
 
+  const handleSaveBio = useCallback(async () => {
+    setError(null);
+    const success = await updateProfile({ bio: bio.trim() || null } );
+    if (success) {
+      setBioSaved(true);
+      setTimeout(() => setBioSaved(false), 2000);
+    } else {
+      setError('Failed to update bio');
+    }
+  }, [bio, updateProfile]);
+
+  const handleSaveSocial = useCallback(async () => {
+    setError(null);
+    const cleaned = Object.fromEntries(
+      Object.entries(socialLinks).filter(([, v]) => v && v.trim()),
+    );
+    const success = await updateProfile({ social_links: Object.keys(cleaned).length > 0 ? cleaned : null } );
+    if (success) {
+      setSocialSaved(true);
+      setTimeout(() => setSocialSaved(false), 2000);
+    } else {
+      setError('Failed to update social links');
+    }
+  }, [socialLinks, updateProfile]);
+
+  const handleAcceptDisclaimer = useCallback(async () => {
+    setError(null);
+    const success = await updateProfile({ disclaimer_accepted_at: new Date().toISOString() } );
+    if (!success) {
+      setError('Failed to accept disclaimer');
+    }
+  }, [updateProfile]);
+
   const handleTogglePublicProfile = useCallback(async (checked: boolean) => {
     await updateProfile({ is_public_profile: checked });
   }, [updateProfile]);
@@ -91,6 +133,27 @@ export function SettingsPage() {
       </div>
 
       <div className="space-y-6 max-w-2xl">
+        {/* Disclaimer Banner (IDT-01) */}
+        {profile && !profileAny?.disclaimer_accepted_at && (
+          <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <FileWarning className="h-5 w-5" />
+                {DISCLAIMER_LABELS.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {DISCLAIMER_LABELS.body}
+              </p>
+              <Button onClick={handleAcceptDisclaimer} disabled={updating}>
+                {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {DISCLAIMER_LABELS.acceptButton}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Profile Information */}
         <Card>
           <CardHeader>
@@ -167,6 +230,122 @@ export function SettingsPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Bio (IDT-02) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {PROFILE_LABELS.bio.label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              value={bio}
+              onChange={(e) => {
+                setBio(e.target.value.slice(0, 500));
+                setBioSaved(false);
+              }}
+              placeholder={PROFILE_LABELS.bio.placeholder}
+              rows={3}
+              disabled={updating}
+              className="resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {bio.length}/500 {PROFILE_LABELS.bio.hint.toLowerCase().replace('up to 500 characters', '')}
+              </p>
+              <Button
+                onClick={handleSaveBio}
+                disabled={updating || bio === (profileAny?.bio ?? '')}
+                size="sm"
+              >
+                {updating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : bioSaved ? (
+                  <><Check className="mr-1 h-4 w-4" />Saved</>
+                ) : (
+                  'Save'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Social Links (IDT-02) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              {PROFILE_LABELS.socialLinks.heading}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Linkedin className="h-4 w-4" />
+                {PROFILE_LABELS.socialLinks.linkedin.label}
+              </Label>
+              <Input
+                value={socialLinks.linkedin ?? ''}
+                onChange={(e) => { setSocialLinks(prev => ({ ...prev, linkedin: e.target.value })); setSocialSaved(false); }}
+                placeholder={PROFILE_LABELS.socialLinks.linkedin.placeholder}
+                disabled={updating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Twitter className="h-4 w-4" />
+                {PROFILE_LABELS.socialLinks.twitter.label}
+              </Label>
+              <Input
+                value={socialLinks.twitter ?? ''}
+                onChange={(e) => { setSocialLinks(prev => ({ ...prev, twitter: e.target.value })); setSocialSaved(false); }}
+                placeholder={PROFILE_LABELS.socialLinks.twitter.placeholder}
+                disabled={updating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Github className="h-4 w-4" />
+                {PROFILE_LABELS.socialLinks.github.label}
+              </Label>
+              <Input
+                value={socialLinks.github ?? ''}
+                onChange={(e) => { setSocialLinks(prev => ({ ...prev, github: e.target.value })); setSocialSaved(false); }}
+                placeholder={PROFILE_LABELS.socialLinks.github.placeholder}
+                disabled={updating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                {PROFILE_LABELS.socialLinks.website.label}
+              </Label>
+              <Input
+                value={socialLinks.website ?? ''}
+                onChange={(e) => { setSocialLinks(prev => ({ ...prev, website: e.target.value })); setSocialSaved(false); }}
+                placeholder={PROFILE_LABELS.socialLinks.website.placeholder}
+                disabled={updating}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveSocial}
+                disabled={updating}
+                size="sm"
+              >
+                {updating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : socialSaved ? (
+                  <><Check className="mr-1 h-4 w-4" />Saved</>
+                ) : (
+                  'Save'
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

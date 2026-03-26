@@ -1289,3 +1289,41 @@ export const TERM_REPLACEMENTS: Record<string, string> = {
   mining: '(remove)',
   token: '(remove or rephrase)',
 };
+
+// =============================================================================
+// IDENTITY TRUST LAYER (IDT)
+// =============================================================================
+
+export const DISCLAIMER_LABELS = {
+  title: 'Platform Disclaimer',
+  heading: 'Important Information About Arkova',
+  body: `Arkova provides timestamped cryptographic verification of documents and credentials. Our service creates permanent, tamper-evident records that a specific document existed at a specific time.
+
+Arkova does NOT:
+• Verify the truthfulness or accuracy of document contents
+• Guarantee the authenticity of the original document
+• Provide legal certification or notarization
+• Replace official verification processes required by law
+
+A secured record on Arkova confirms that a document's digital fingerprint was anchored at a given time — nothing more. Users and third parties should perform their own due diligence when relying on any credential.
+
+By using this platform, you acknowledge and accept these limitations.`,
+  acceptButton: 'I Understand and Accept',
+  accepted: 'Disclaimer accepted',
+  notAccepted: 'Please review and accept the platform disclaimer to continue.',
+} as const;
+
+export const PROFILE_LABELS = {
+  bio: {
+    label: 'Bio',
+    placeholder: 'Tell others about yourself or your professional background...',
+    hint: 'Up to 500 characters',
+  },
+  socialLinks: {
+    heading: 'Social Profiles',
+    linkedin: { label: 'LinkedIn', placeholder: 'https://linkedin.com/in/yourprofile' },
+    twitter: { label: 'X (Twitter)', placeholder: '@yourhandle' },
+    github: { label: 'GitHub', placeholder: 'https://github.com/yourprofile' },
+    website: { label: 'Website', placeholder: 'https://yourwebsite.com' },
+  },
+} as const;
