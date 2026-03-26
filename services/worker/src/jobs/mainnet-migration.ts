@@ -35,12 +35,12 @@ export async function runMainnetMigration(): Promise<MigrationResult> {
 
   while (true) {
     // Fetch a batch of anchors that haven't been migrated yet
-    // Exclude PENDING (already ready) and any with mainnet_migrated flag
+    // Exclude PENDING (already ready for mainnet) and any already flagged
+    // Include BROADCASTING — these are stuck signet broadcasts that will never confirm
     const { data: anchors, error: fetchError } = await db
       .from('anchors')
       .select('id, status, chain_tx_id, chain_block_height, chain_timestamp, chain_confirmations, metadata')
       .not('status', 'eq', 'PENDING')
-      .not('status', 'eq', 'BROADCASTING')
       .or('metadata->mainnet_migrated.is.null,metadata->>mainnet_migrated.eq.false')
       .order('created_at', { ascending: true })
       .limit(MIGRATION_BATCH_SIZE);
