@@ -45,10 +45,13 @@ export type { EvalRunOptions } from './runner.js';
 
 export {
   analyzeCalibration,
+  analyzeCalibrationByType,
+  deriveCalibrationKnots,
+  getCurrentCalibrationKnots,
   formatCalibrationReport,
   calibrateConfidence,
 } from './calibration.js';
-export type { CalibrationResult, CalibrationBucket } from './calibration.js';
+export type { CalibrationResult, CalibrationBucket, TypeCalibrationResult } from './calibration.js';
 
 export {
   FRAUD_EVAL_DATASET,
