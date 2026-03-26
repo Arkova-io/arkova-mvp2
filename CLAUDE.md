@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 109 files (0001-0109, 0033+0078 skipped, 0068 split into 0068a/0068b). Last: `0098_orphan_anchor_check.sql` (note: 0108 and 0109 exist as uncommitted new work). All migrations 0001-0107 applied to production.
+**Current:** 121 files (0001-0121, 0033+0078 skipped, 0068 split into 0068a/0068b). Committed: 0001-0117, 0120. Untracked: 0118, 0119, 0121. All migrations 0001-0107 applied to production; 0108-0117+0120 merged to main, pending production deploy.
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -289,8 +289,10 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 
 | Task | Detail |
 |------|--------|
-| AWS KMS signing | Key provisioning for mainnet. SignetChainClient done, mainnet needs KMS. |
-| Mainnet treasury funding | Fund production treasury wallet. |
+| ~~AWS KMS signing~~ | ~~Key provisioning for mainnet~~ — **DONE** (AWS + GCP KMS providers complete, 69 tests, GCP KMS configured in Cloud Run) |
+| Mainnet treasury funding | Fund production treasury wallet. Derive address from GCP KMS key, send BTC. |
+| Flip to mainnet | Change `BITCOIN_NETWORK=signet` → `mainnet` in worker-deploy.yml once treasury funded. |
+| Deploy migrations 0108-0117 | 10 migrations merged to main but not yet applied to production Supabase. |
 
 ### Pre-Launch Tasks
 
