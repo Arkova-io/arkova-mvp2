@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1007.0",
+    "@google-cloud/kms": "^5.4.0",
     "@google/generative-ai": "^0.24.1",
     "@sentry/node": "^10.43.0",
     "@sentry/profiling-node": "^10.43.0",

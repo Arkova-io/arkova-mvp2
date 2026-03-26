@@ -274,18 +274,23 @@ Recommended CloudWatch alarms:
 
 As an alternative to AWS KMS, Arkova supports GCP Cloud KMS for environments already running on Google Cloud (e.g., Cloud Run worker deployment).
 
-### GCP Key Setup
+### GCP Key Setup (Production)
+
+The production keyring is `arkova-signing` in the `global` location (same project as Cloud Run):
 
 ```bash
-# Create a keyring
-gcloud kms keyrings create arkova-treasury \
-  --location=us-central1 \
+# Production key already provisioned:
+# projects/arkova1/locations/global/keyRings/arkova-signing/cryptoKeys/bitcoin-mainnet/cryptoKeyVersions/1
+
+# To create a new keyring (if needed):
+gcloud kms keyrings create arkova-signing \
+  --location=global \
   --project=arkova1
 
-# Create an asymmetric signing key (secp256k1)
-gcloud kms keys create mainnet-signer \
-  --keyring=arkova-treasury \
-  --location=us-central1 \
+# To create an asymmetric signing key (secp256k1):
+gcloud kms keys create bitcoin-mainnet \
+  --keyring=arkova-signing \
+  --location=global \
   --purpose=asymmetric-signing \
   --default-algorithm=ec-sign-secp256k1-sha256 \
   --project=arkova1
@@ -294,13 +299,29 @@ gcloud kms keys create mainnet-signer \
 ### GCP Environment Variables
 
 ```bash
-GCP_KMS_KEY_NAME=projects/arkova1/locations/us-central1/keyRings/arkova-treasury/cryptoKeys/mainnet-signer/cryptoKeyVersions/1
-KMS_PROVIDER=gcp    # "aws" (default) or "gcp"
+GCP_KMS_KEY_RESOURCE_NAME=projects/arkova1/locations/global/keyRings/arkova-signing/cryptoKeys/bitcoin-mainnet/cryptoKeyVersions/1
+KMS_PROVIDER=gcp    # "aws" or "gcp" (production uses gcp)
 ```
 
 ### GCP IAM
 
-The Cloud Run service account needs `roles/cloudkms.signerVerifier` on the key resource.
+The Cloud Run service account (`270018525501-compute@developer.gserviceaccount.com`) needs `roles/cloudkms.signerVerifier` on the key resource:
+
+```bash
+gcloud kms keys add-iam-policy-binding bitcoin-mainnet \
+  --keyring=arkova-signing \
+  --location=global \
+  --project=arkova1 \
+  --member="serviceAccount:270018525501-compute@developer.gserviceaccount.com" \
+  --role="roles/cloudkms.signerVerifier"
+```
+
+### Verify Address
+
+```bash
+cd services/worker
+npx tsx scripts/verify-mainnet-address.ts [expected-bc1q-address]
+```
 
 ## Fee Monitoring (PERF-7)
 
@@ -345,12 +366,14 @@ STUCK_TX_REBROADCAST_ENABLED=true  # default: true
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | AWS KMS signing provider | **Complete** | `KmsSigningProvider` tested (39 tests, 98%+ coverage) |
-| GCP Cloud KMS provider | **Complete** | MVP-29, alternative for GCP-hosted deployments |
+| GCP Cloud KMS provider | **Complete** | MVP-29, production deploy uses GCP KMS |
+| GCP KMS key provisioned | **Complete** | `projects/arkova1/locations/global/keyRings/arkova-signing/cryptoKeys/bitcoin-mainnet/cryptoKeyVersions/1` |
 | Fee monitoring (MAX_FEE_SAT_PER_VBYTE) | **Complete** | PERF-7, prevents overpaying during fee spikes |
 | Stuck TX detection | **Complete** | Cron-based detection + rebroadcast |
-| Treasury funding | **Pending** | Requires ops to fund mainnet address |
-| KMS key provisioning | **Pending** | Requires ops to create production key |
-| Switchboard flag (`ENABLE_PROD_NETWORK_ANCHORING`) | **Ready** | Flag exists, currently `false` |
+| Switchboard flag (`ENABLE_PROD_NETWORK_ANCHORING`) | **Complete** | Already `true` in worker-deploy.yml |
+| KMS IAM binding | **Verify** | Cloud Run SA needs `roles/cloudkms.signerVerifier` on key |
+| Treasury funding | **Pending** | Derive address via `verify-mainnet-address.ts`, then fund |
+| Flip `BITCOIN_NETWORK` | **Pending** | Change `signet` → `mainnet` in worker-deploy.yml after funding |
 
 ## Change Log
 
@@ -358,3 +381,4 @@ STUCK_TX_REBROADCAST_ENABLED=true  # default: true
 |------|-------|--------|
 | 2026-03-12 | DH-03 | Initial document — key provisioning, IAM, rotation, DR |
 | 2026-03-24 | MVP-29, PERF-7 | Added GCP Cloud KMS provider option. Added fee monitoring (MAX_FEE_SAT_PER_VBYTE). Added stuck TX detection and rebroadcast. Added mainnet readiness status table. |
+| 2026-03-26 | P7-TS-04 | Corrected GCP key resource name to match deploy config. Added `verify-mainnet-address.ts` script. Updated IAM commands with production SA. Updated readiness table. |

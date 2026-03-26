@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ROUTES } from '@/lib/routes';
 import { WORKER_URL } from '@/lib/workerClient';
+import { AnchorDisclaimerDark } from '@/components/anchor/AnchorDisclaimer';
 
 interface AttestationVerifyData {
   public_id: string;
@@ -403,6 +404,11 @@ export function PublicAttestationVerifyPage() {
           )}
         </div>
       </main>
+
+      {/* Platform Disclaimer (IDT WS3) */}
+      <div className="container px-4 pb-6">
+        <AnchorDisclaimerDark />
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-[#bbc9cf]/15 py-6 px-4">
