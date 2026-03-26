@@ -34,6 +34,7 @@ import { fetchDapipInstitutions } from '../jobs/dapipFetcher.js';
 import { processBatchAnchors } from '../jobs/batch-anchor.js';
 import { fetchAcncCharities } from '../jobs/acncFetcher.js';
 import { detectReorgs, monitorStuckTransactions, rebroadcastDroppedTransactions, consolidateUtxos, monitorFeeRates } from '../jobs/chain-maintenance.js';
+import { runMainnetMigration, getMigrationStatus } from '../jobs/mainnet-migration.js';
 import { runStripeAnchorReconciliation, generateFinancialReport, processFailedPaymentRecovery } from '../billing/reconciliation.js';
 
 export const cronRouter = Router();
@@ -418,6 +419,28 @@ cronRouter.post('/payment-recovery', async (_req, res) => {
     res.json(result);
   } catch (error) {
     logger.error({ error }, 'Payment recovery failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+// ─── Mainnet Migration (one-time) ───
+
+cronRouter.post('/mainnet-migration', async (_req, res) => {
+  try {
+    const result = await runMainnetMigration();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Mainnet migration failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+cronRouter.get('/migration-status', async (_req, res) => {
+  try {
+    const status = await getMigrationStatus();
+    res.json(status);
+  } catch (error) {
+    logger.error({ error }, 'Migration status check failed');
     res.status(500).json({ error: 'Processing failed' });
   }
 });

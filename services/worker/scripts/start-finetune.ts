@@ -22,7 +22,7 @@ dotenvConfig({ path: resolve(import.meta.dirname ?? '.', '../.env') });
 
 const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY;
 const BASE_URL = 'https://api.together.xyz/v1';
-const BASE_MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
+const BASE_MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct-Reference';
 
 if (!TOGETHER_API_KEY) {
   console.error('ERROR: TOGETHER_API_KEY required in .env');
@@ -63,9 +63,10 @@ async function main(): Promise<void> {
   console.log('\n--- Uploading training file ---');
   const formData = new FormData();
   formData.append('file', new Blob([content], { type: 'application/jsonl' }), 'training.jsonl');
+  formData.append('file_name', 'arkova-nessie-training.jsonl');
   formData.append('purpose', 'fine-tune');
 
-  const uploadRes = await fetch(`${BASE_URL}/files`, {
+  const uploadRes = await fetch(`${BASE_URL}/files/upload`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${TOGETHER_API_KEY}` },
     body: formData,
@@ -92,8 +93,9 @@ async function main(): Promise<void> {
       training_file: uploadData.id,
       model: BASE_MODEL,
       n_epochs: 3,
+      n_checkpoints: 3,
       learning_rate: 1e-5,
-      batch_size: 4,
+      batch_size: 8,
       suffix: 'arkova-nessie',
     }),
   });

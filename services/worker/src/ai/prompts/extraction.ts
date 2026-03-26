@@ -442,7 +442,51 @@ Output: {"credentialType":"PUBLICATION","issuerName":"International Conference o
 
 Example 64 — Surety Bond (INSURANCE):
 Input: "SURETY BOND. Bond Number: SB-2026-445566. Principal: [NAME_REDACTED]. Surety: Hartford Fire Insurance Company. Obligee: State of Florida, Department of Financial Services. Penal Sum: $25,000. Effective Date: January 1, 2026. Expiration Date: January 1, 2027."
-Output: {"credentialType":"INSURANCE","issuerName":"Hartford Fire Insurance Company","issuedDate":"2026-01-01","expiryDate":"2027-01-01","licenseNumber":"SB-2026-445566","jurisdiction":"Florida, USA","fraudSignals":[],"confidence":0.90}`;
+Output: {"credentialType":"INSURANCE","issuerName":"Hartford Fire Insurance Company","issuedDate":"2026-01-01","expiryDate":"2027-01-01","licenseNumber":"SB-2026-445566","jurisdiction":"Florida, USA","fraudSignals":[],"confidence":0.90}
+
+Example 65 — Tampered date (issued after expiry = SUSPICIOUS_DATES):
+Input: "State of Texas. Board of Nursing. Licensed Vocational Nurse. [NAME_REDACTED]. License No. LVN-778899. Issue Date: March 15, 2028. Expiration: December 31, 2025."
+Output: {"credentialType":"LICENSE","issuerName":"Texas Board of Nursing","issuedDate":"2028-03-15","expiryDate":"2025-12-31","fieldOfStudy":"Nursing","licenseNumber":"LVN-778899","jurisdiction":"Texas, USA","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.40}
+
+Example 66 — Future-dated degree (SUSPICIOUS_DATES):
+Input: "Massachusetts Institute of Technology. Conferred: December 15, 2031. [NAME_REDACTED]. Doctor of Philosophy in Electrical Engineering and Computer Science."
+Output: {"credentialType":"DEGREE","issuerName":"Massachusetts Institute of Technology","issuedDate":"2031-12-15","fieldOfStudy":"Electrical Engineering and Computer Science","degreeLevel":"Doctorate","jurisdiction":"Massachusetts, USA","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.30}
+
+Example 67 — Unaccredited diploma mill (EXPIRED_ISSUER + MISSING_ACCREDITATION):
+Input: "Belford University. Online Division. Doctor of Business Administration. Awarded to [NAME_REDACTED]. This degree is awarded based on life experience. No coursework required. Processing fee: $549. Delivered within 7 days."
+Output: {"credentialType":"DEGREE","issuerName":"Belford University","degreeLevel":"Doctorate","fieldOfStudy":"Business Administration","fraudSignals":["EXPIRED_ISSUER","MISSING_ACCREDITATION","FORMAT_ANOMALY"],"confidence":0.15}
+
+Example 68 — Font/text substitution artifacts (FORMAT_ANOMALY):
+Input: "University of Oxford. Master of Arts. [NAME_REDACTED]. ConFerRed on the 15th dAy of JuNe 2024. Signed by the Vice-ChancelIor. This certifIes that the above-named person has fuIfiIled aII requirements."
+Output: {"credentialType":"DEGREE","issuerName":"University of Oxford","issuedDate":"2024-06-15","fieldOfStudy":"Arts","degreeLevel":"Master","jurisdiction":"United Kingdom","fraudSignals":["FORMAT_ANOMALY"],"confidence":0.45}
+
+Example 69 — Anachronistic elements (institution name changed years ago):
+Input: "Polytechnic of Central London. Bachelor of Science in Computing. [NAME_REDACTED]. Conferred: June 2024. Registrar: [NAME_REDACTED]."
+Output: {"credentialType":"DEGREE","issuerName":"Polytechnic of Central London","issuedDate":"2024-06-01","fieldOfStudy":"Computing","degreeLevel":"Bachelor","jurisdiction":"United Kingdom","fraudSignals":["SUSPICIOUS_DATES","EXPIRED_ISSUER"],"confidence":0.35}
+
+Example 70 — Credential older than 50 years (flag SUSPICIOUS_DATES):
+Input: "University of Chicago. Bachelor of Arts. Economics. [NAME_REDACTED]. Conferred June 1968."
+Output: {"credentialType":"DEGREE","issuerName":"University of Chicago","issuedDate":"1968-06-01","fieldOfStudy":"Economics","degreeLevel":"Bachelor","jurisdiction":"Illinois, USA","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.55}
+
+Example 71 — Jurisdiction mismatch (US state board, non-US jurisdiction claim):
+Input: "California Board of Registered Nursing. Licensed in the Province of Ontario, Canada. [NAME_REDACTED]. License No. RN-445566. Issued: January 2025."
+Output: {"credentialType":"LICENSE","issuerName":"California Board of Registered Nursing","issuedDate":"2025-01-01","fieldOfStudy":"Nursing","licenseNumber":"RN-445566","jurisdiction":"California, USA","fraudSignals":["JURISDICTION_MISMATCH"],"confidence":0.45}
+
+Example 72 — Clean but unusual credential (NO fraud signals — edge case):
+Input: "International Association of Exorcists. Certificate of Completion. [NAME_REDACTED] has completed the 2-year formation program in Exorcism and Prayer of Liberation. Vatican City, March 2025."
+Output: {"credentialType":"CERTIFICATE","issuerName":"International Association of Exorcists","issuedDate":"2025-03-01","fieldOfStudy":"Exorcism and Prayer of Liberation","jurisdiction":"Vatican City","fraudSignals":[],"confidence":0.75}
+
+Example 73 — Tampered license number format (FORMAT_ANOMALY):
+Input: "State of Michigan. Board of Medicine. [NAME_REDACTED], MD. License No. 4301-AAAA-XXXX-0000. Issued: May 2024. Expires: May 2026."
+Output: {"credentialType":"LICENSE","issuerName":"Michigan Board of Medicine","issuedDate":"2024-05-01","expiryDate":"2026-05-01","fieldOfStudy":"Medicine","licenseNumber":"4301-AAAA-XXXX-0000","jurisdiction":"Michigan, USA","fraudSignals":["FORMAT_ANOMALY"],"confidence":0.50}
+
+Example 74 — Degree with no institution (FORMAT_ANOMALY + MISSING_ACCREDITATION):
+Input: "DOCTORAL DEGREE. Ph.D. in Advanced Sciences. Awarded to [NAME_REDACTED]. Date: 2025. This document certifies completion of doctoral studies."
+Output: {"credentialType":"DEGREE","degreeLevel":"Doctorate","fieldOfStudy":"Advanced Sciences","fraudSignals":["FORMAT_ANOMALY","MISSING_ACCREDITATION"],"confidence":0.20}
+
+Example 75 — Two fraud signals together (SUSPICIOUS_DATES + JURISDICTION_MISMATCH):
+Input: "Tokyo Metropolitan Government. Bureau of Social Welfare. Licensed Clinical Psychologist. [NAME_REDACTED]. License No. CP-2024-1234. Issued: 2024-06-01. Jurisdiction: State of Texas, USA."
+Output: {"credentialType":"LICENSE","issuerName":"Tokyo Metropolitan Government, Bureau of Social Welfare","issuedDate":"2024-06-01","fieldOfStudy":"Clinical Psychology","licenseNumber":"CP-2024-1234","jurisdiction":"Tokyo, Japan","fraudSignals":["JURISDICTION_MISMATCH"],"confidence":0.45}`;
 
 /**
  * Get a stable hash of the current extraction system prompt.
