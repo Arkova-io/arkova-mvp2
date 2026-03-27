@@ -109,27 +109,27 @@ export function IssuerRegistryPage() {
         </Link>
 
         {/* ── Hero Header ─────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-[#00d4ff]/10 bg-gradient-to-br from-[#0d141b] to-[#111a24] p-8 mb-6">
-          <div className="flex items-start gap-6">
+        <div className="rounded-2xl border border-[#00d4ff]/10 bg-gradient-to-br from-[#0d141b] to-[#111a24] p-6 sm:p-8 mb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* Logo */}
             <div className="shrink-0">
               {profile.logo_url ? (
                 <img
                   src={profile.logo_url}
                   alt={profile.display_name}
-                  className="h-20 w-20 rounded-2xl object-contain bg-[#192028] p-2"
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-contain bg-[#192028] p-2"
                 />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#192028]">
-                  <Building2 className="h-10 w-10 text-[#00d4ff]" />
+                <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-[#192028]">
+                  <Building2 className="h-8 w-8 sm:h-10 sm:w-10 text-[#00d4ff]" />
                 </div>
               )}
             </div>
 
             {/* Name + meta */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-3xl font-black tracking-tight truncate">
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 mb-1">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
                   {profile.display_name}
                 </h1>
                 {profile.secured_credentials > 0 && (
@@ -147,7 +147,7 @@ export function IssuerRegistryPage() {
               )}
 
               {/* Meta row */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 {profile.org_type && (
                   <span className="inline-flex items-center gap-1">
                     <Building2 className="h-3 w-3" />
@@ -175,7 +175,7 @@ export function IssuerRegistryPage() {
               </div>
 
               {/* Links */}
-              <div className="flex gap-2 mt-4">
+              <div className="flex justify-center sm:justify-start gap-2 mt-4">
                 {profile.website_url && (
                   <a
                     href={profile.website_url}
