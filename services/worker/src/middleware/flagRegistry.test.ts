@@ -62,6 +62,7 @@ describe('FeatureFlagRegistry', () => {
   it('returns false for unknown flags', async () => {
     await flagRegistry.init();
     // Unknown flag should return false (fail-closed)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(flagRegistry.getFlag('UNKNOWN_FLAG' as any)).toBe(false);
   });
 

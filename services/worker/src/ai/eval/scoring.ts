@@ -149,8 +149,8 @@ export function compareField(
     }
 
     // Token overlap: >60% of tokens match (e.g., "First Aid / CPR / AED" ~ "CPR/AED")
-    const expTokens = normExp.replace(/[\/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
-    const actTokens = normAct.replace(/[\/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+    const expTokens = normExp.replace(/[/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+    const actTokens = normAct.replace(/[/\-,&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
     if (expTokens.length > 0 && actTokens.length > 0) {
       const matchedFromExp = expTokens.filter(t => actTokens.some(a => a.includes(t) || t.includes(a)));
       const matchedFromAct = actTokens.filter(t => expTokens.some(e => e.includes(t) || t.includes(e)));

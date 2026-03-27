@@ -362,8 +362,8 @@ export async function handleAdminOrganizations(
 
     // Enrich with member count + anchor count
     const orgIds = (orgs ?? []).map((o: { id: string }) => o.id);
-    let memberCounts: Record<string, number> = {};
-    let anchorCounts: Record<string, number> = {};
+    const memberCounts: Record<string, number> = {};
+    const anchorCounts: Record<string, number> = {};
 
     if (orgIds.length > 0) {
       // Member counts

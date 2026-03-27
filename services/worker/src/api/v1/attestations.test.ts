@@ -10,7 +10,7 @@
  * - Zod validation enforcement
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Mock db and logger
 const mockFrom = vi.fn();
@@ -20,7 +20,7 @@ const mockSingle = vi.fn();
 const mockInsert = vi.fn();
 const mockIlike = vi.fn();
 const mockOrder = vi.fn();
-const mockRange = vi.fn();
+const _mockRange = vi.fn();
 const mockUpdate = vi.fn();
 
 vi.mock('../../utils/db.js', () => ({
@@ -150,6 +150,7 @@ describe('Attestation Public ID Format', () => {
   });
 
   it('generates unique 6-char suffix from UUID', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto');
     const uuid = crypto.randomUUID();
     const uniquePart = uuid.slice(0, 6).toUpperCase();
@@ -204,6 +205,7 @@ describe('Attestation ID Collision Handling', () => {
     const ids: string[] = [];
     for (let i = 0; i < MAX_RETRIES; i++) {
       attempts++;
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const id = `ARK-IND-VER-${require('crypto').randomUUID().slice(0, 6).toUpperCase()}`;
       ids.push(id);
     }
@@ -222,6 +224,7 @@ describe('Attestation ID Collision Handling', () => {
 // ─── Validation Tests ────────────────────────────────────
 
 describe('Attestation Validation', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { z } = require('zod');
 
   const CreateAttestationSchema = z.object({

@@ -22,8 +22,8 @@ const {
   mockLogger,
   anchorsTable,
   setUpdateResult,
-  updateChain,
-  selectChain,
+  _updateChain,
+  _selectChain,
 } = vi.hoisted(() => {
   // Terminal operations — configured per test
   const mockLimit = vi.fn();
@@ -74,8 +74,8 @@ const {
     mockDispatchWebhookEvent,
     mockLogger,
     anchorsTable,
-    updateChain,
-    selectChain,
+    _updateChain: updateChain,
+    _selectChain: selectChain,
     setUpdateResult,
   };
 });
@@ -148,7 +148,7 @@ vi.mock('../utils/db.js', () => ({
   },
 }));
 
-import { db } from '../utils/db.js';
+import { db as _db } from '../utils/db.js';
 
 // ---- System under test ----
 
@@ -656,7 +656,7 @@ describe('processPendingAnchors', () => {
       error: null,
     });
 
-    const result = await processPendingAnchors();
+    const _result = await processPendingAnchors();
 
     expect(mockLogger.warn).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.any(Object) }),

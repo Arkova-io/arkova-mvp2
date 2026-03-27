@@ -19,7 +19,8 @@ const { mockRpc, mockSelect, mockLogger } = vi.hoisted(() => {
 vi.mock('../utils/db.js', () => ({
   db: {
     rpc: mockRpc,
-    from: vi.fn((table: string) => {
+    from: vi.fn((_table: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const chain: any = {
         select: vi.fn(() => chain),
         eq: vi.fn(() => chain),

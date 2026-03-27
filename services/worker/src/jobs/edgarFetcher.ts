@@ -62,7 +62,7 @@ const BULK_FILING_TYPES = [
   'CB', 'F-1', 'F-3', 'F-4',
 ];
 
-interface EdgarFiling {
+interface _EdgarFiling {
   accessionNumber: string;
   filingDate: string;
   reportDate?: string;

@@ -338,7 +338,7 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
   {
     id: 'GD-250',
     description: 'Licensed Professional Counselor with OCR issues',
-    strippedText: 'Common\/\/ealth of Virginia. Board of Counse1ing. L1censed Profess1onal Counse1or. [NAME_REDACTED]. L1c No. [REDACTED]. lssued: 2025. Exp: 2027.',
+    strippedText: 'Common//ealth of Virginia. Board of Counse1ing. L1censed Profess1onal Counse1or. [NAME_REDACTED]. L1c No. [REDACTED]. lssued: 2025. Exp: 2027.',
     credentialTypeHint: 'LICENSE',
     groundTruth: { credentialType: 'LICENSE', issuerName: 'Virginia Board of Counseling', issuedDate: '2025-01-01', expiryDate: '2027-01-01', jurisdiction: 'Virginia, USA', fieldOfStudy: 'Professional Counseling', fraudSignals: [] },
     source: 'synthetic', category: 'professional', tags: ['synthetic', 'ocr-noise', 'edge-case'],
@@ -436,8 +436,8 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Military DD-214 (Honorable Discharge)',
     strippedText: 'Department of Defense. DD Form 214. Certificate of Release or Discharge from Active Duty. [NAME_REDACTED]. Grade: E-5/SGT. Date Entered Active Duty: [REDACTED]. Separation Date: 2025-03-01. Character of Service: Honorable.',
     credentialTypeHint: 'OTHER',
-    groundTruth: { credentialType: 'OTHER', issuerName: 'United States Department of Defense', issuedDate: '2025-03-01', fraudSignals: [] },
-    source: 'synthetic', category: 'other', tags: ['synthetic', 'clean', 'military'],
+    groundTruth: { credentialType: 'MILITARY', issuerName: 'United States Department of Defense', issuedDate: '2025-03-01', fraudSignals: [] },
+    source: 'synthetic', category: 'military', tags: ['synthetic', 'clean', 'military'],
   },
   {
     id: 'GD-262',
@@ -452,8 +452,8 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Naturalization Certificate',
     strippedText: 'United States of America. Certificate of Naturalization. [NAME_REDACTED]. Certificate No.: [REDACTED]. Date of Naturalization: May 15, 2025. [NAME_REDACTED] is admitted as a citizen of the United States of America.',
     credentialTypeHint: 'OTHER',
-    groundTruth: { credentialType: 'OTHER', issuerName: 'United States Citizenship and Immigration Services', issuedDate: '2025-05-15', jurisdiction: 'United States', fraudSignals: [] },
-    source: 'synthetic', category: 'other', tags: ['synthetic', 'clean', 'government', 'citizenship'],
+    groundTruth: { credentialType: 'IDENTITY', issuerName: 'United States Citizenship and Immigration Services', issuedDate: '2025-05-15', jurisdiction: 'United States', fraudSignals: [] },
+    source: 'synthetic', category: 'identity', tags: ['synthetic', 'clean', 'government', 'citizenship'],
   },
   {
     id: 'GD-264',
@@ -476,8 +476,8 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Aircraft pilot certificate (FAA)',
     strippedText: 'United States of America. Federal Aviation Administration. Airman Certificate. [NAME_REDACTED]. Certificate Number: [REDACTED]. Date of Issue: 08/01/2025. Ratings: Private Pilot, Airplane Single Engine Land.',
     credentialTypeHint: 'OTHER',
-    groundTruth: { credentialType: 'OTHER', issuerName: 'Federal Aviation Administration', issuedDate: '2025-08-01', fieldOfStudy: 'Aviation', jurisdiction: 'United States', fraudSignals: [] },
-    source: 'synthetic', category: 'other', tags: ['synthetic', 'clean', 'aviation', 'government'],
+    groundTruth: { credentialType: 'LICENSE', issuerName: 'Federal Aviation Administration', issuedDate: '2025-08-01', fieldOfStudy: 'Aviation', jurisdiction: 'United States', fraudSignals: [] },
+    source: 'synthetic', category: 'license', tags: ['synthetic', 'clean', 'aviation', 'government'],
   },
   {
     id: 'GD-267',
@@ -500,16 +500,16 @@ export const GOLDEN_DATASET_PHASE2: GoldenDatasetEntry[] = [
     description: 'Apprenticeship completion certificate',
     strippedText: 'International Brotherhood of Electrical Workers. IBEW Local 134. Certificate of Apprenticeship Completion. [NAME_REDACTED] has completed the required 8,000 hours of on-the-job training and 1,000 hours of related instruction. Journeyman Electrician. Date: 2025-04-15. Chicago, IL.',
     credentialTypeHint: 'OTHER',
-    groundTruth: { credentialType: 'OTHER', issuerName: 'International Brotherhood of Electrical Workers', issuedDate: '2025-04-15', fieldOfStudy: 'Electrical Work', jurisdiction: 'Illinois, USA', fraudSignals: [] },
-    source: 'synthetic', category: 'other', tags: ['synthetic', 'clean', 'trade', 'apprenticeship'],
+    groundTruth: { credentialType: 'CERTIFICATE', issuerName: 'International Brotherhood of Electrical Workers', issuedDate: '2025-04-15', fieldOfStudy: 'Electrical Work', jurisdiction: 'Illinois, USA', fraudSignals: [] },
+    source: 'synthetic', category: 'certificate', tags: ['synthetic', 'clean', 'trade', 'apprenticeship'],
   },
   {
     id: 'GD-270',
     description: 'Patent grant document',
     strippedText: 'United States Patent and Trademark Office. Letters Patent. Patent No.: [REDACTED]. Title: Method and System for Blockchain-Based Credential Verification. Inventor: [NAME_REDACTED]. Filed: 2024-01-15. Granted: 2025-06-20.',
     credentialTypeHint: 'OTHER',
-    groundTruth: { credentialType: 'OTHER', issuerName: 'United States Patent and Trademark Office', issuedDate: '2025-06-20', fieldOfStudy: 'Blockchain Technology', jurisdiction: 'United States', fraudSignals: [] },
-    source: 'synthetic', category: 'other', tags: ['synthetic', 'clean', 'patent', 'government'],
+    groundTruth: { credentialType: 'PATENT', issuerName: 'United States Patent and Trademark Office', issuedDate: '2025-06-20', fieldOfStudy: 'Blockchain Technology', jurisdiction: 'United States', fraudSignals: [] },
+    source: 'synthetic', category: 'patent', tags: ['synthetic', 'clean', 'patent', 'government'],
   },
 
   // ============================================================

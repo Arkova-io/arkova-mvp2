@@ -118,6 +118,7 @@ async function verifyCronAuth(req: Request): Promise<boolean> {
 }
 
 /** Middleware that enforces cron authentication */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function cronAuth(req: Request, res: any, next: any): Promise<void> {
   if (!(await verifyCronAuth(req))) {
     res.status(401).json({ error: 'Authentication required' });

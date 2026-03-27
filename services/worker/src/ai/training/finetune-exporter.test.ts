@@ -4,7 +4,7 @@
  * TDD: Tests for stratified export, quality filtering, and format validation.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { formatTrainingExample, stratifyByType, exportFineTuneData } from './finetune-exporter.js';
 import type { RawTrainingRecord, FineTuneExportConfig } from './finetune-exporter.js';
 import { SERVER_MODEL, CLIENT_MODEL } from '../modelTargets.js';

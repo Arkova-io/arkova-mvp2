@@ -26,14 +26,8 @@ import {
   type PublicClient,
   type WalletClient,
   type Chain,
-  type Transport,
   type Hash,
-  type TransactionReceipt,
-  parseGwei,
   formatEther,
-  hexToBytes,
-  bytesToHex,
-  toHex,
 } from 'viem';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
@@ -50,7 +44,7 @@ import type {
 
 /** ARKV prefix as hex (4 bytes: 0x41524b56) */
 const ARKV_PREFIX_HEX = '41524b56';
-const ARKV_PREFIX_BYTES = new Uint8Array([0x41, 0x52, 0x4b, 0x56]);
+const _ARKV_PREFIX_BYTES = new Uint8Array([0x41, 0x52, 0x4b, 0x56]);
 
 /** Maximum retries for transient RPC failures */
 const MAX_RETRIES = 3;

@@ -23,7 +23,7 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
+import { getChainClientAsync } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -156,7 +156,7 @@ export async function processPublicRecordAnchoring(
   // Phase 2: Fill remaining capacity with any other unconverted records
   if (records.length < PUBLIC_RECORD_BATCH_SIZE) {
     const remaining = PUBLIC_RECORD_BATCH_SIZE - records.length;
-    const usedIds = new Set(records.map((r) => r.id));
+    const _usedIds = new Set(records.map((r) => r.id));
 
     for (let offset = 0; offset < remaining; offset += POSTGREST_LIMIT) {
       const chunkSize = Math.min(POSTGREST_LIMIT, remaining - offset);

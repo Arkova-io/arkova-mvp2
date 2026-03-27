@@ -18,6 +18,7 @@ vi.mock('../utils/logger.js', () => ({
 }));
 
 function createMockRes() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res: any = {
     headersSent: false,
     statusCode: 200,
@@ -32,6 +33,7 @@ describe('globalErrorHandler', () => {
     const err = new AppError(400, 'INVALID_INPUT', 'Bad request', { field: 'name' });
     const res = createMockRes();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     globalErrorHandler(err, {} as any, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(400);
@@ -48,6 +50,7 @@ describe('globalErrorHandler', () => {
     const err = new Error('something broke');
     const res = createMockRes();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     globalErrorHandler(err, {} as any, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(500);
@@ -64,6 +67,7 @@ describe('globalErrorHandler', () => {
     const res = createMockRes();
     res.headersSent = true;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     globalErrorHandler(err, {} as any, res, vi.fn());
 
     expect(res.status).not.toHaveBeenCalled();

@@ -191,7 +191,8 @@ describe('POST /api/v1/ai/extract-batch', () => {
           tokensUsed: 50,
         });
       }),
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
 
     const app = createApp();
     const res = await request(app)

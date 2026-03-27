@@ -32,7 +32,7 @@ const BULK_MAX_PAGES = 500;
 /** Max records per batch insert */
 const BULK_INSERT_BATCH = 500;
 
-interface CLOpinion {
+interface _CLOpinion {
   id: number;
   absolute_url: string;
   cluster: string; // URL to cluster

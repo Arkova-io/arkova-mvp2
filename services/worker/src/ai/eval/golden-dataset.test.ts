@@ -10,7 +10,6 @@ import {
   FULL_GOLDEN_DATASET,
   getEntriesByType,
   getEntriesByTag,
-  getEntriesByCategory,
 } from './golden-dataset.js';
 import { GOLDEN_DATASET_PHASE5 } from './golden-dataset-phase5.js';
 import { GOLDEN_DATASET_PHASE6 } from './golden-dataset-phase6.js';

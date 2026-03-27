@@ -22,8 +22,10 @@ const { mockRpc, mockSelect, mockInsert, mockUpdate, mockUpsert, mockLogger } = 
 vi.mock('../utils/db.js', () => ({
   db: {
     rpc: mockRpc,
-    from: vi.fn((table: string) => {
+    from: vi.fn((_table: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const chain: any = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         select: vi.fn((_cols?: string, opts?: any) => {
           if (opts?.count) return { ...chain, count: 0 };
           return chain;
@@ -43,6 +45,7 @@ vi.mock('../utils/db.js', () => ({
         upsert: mockUpsert,
       };
       // Return empty arrays for list queries
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       chain.then = (resolve: any) => resolve({ data: [], error: null });
       return chain;
     }),

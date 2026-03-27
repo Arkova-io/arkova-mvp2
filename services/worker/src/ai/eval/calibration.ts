@@ -11,7 +11,7 @@
  * 4. Recalibration via isotonic regression approximation
  */
 
-import type { EntryEvalResult, EvalRunResult } from './types.js';
+import type { EntryEvalResult } from './types.js';
 import { pearsonCorrelation } from './scoring.js';
 
 export interface CalibrationBucket {

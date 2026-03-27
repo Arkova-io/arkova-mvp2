@@ -17,7 +17,7 @@
 import { db } from '../utils/db.js';
 import { logger, createRpcLogger } from '../utils/logger.js';
 import { callRpc } from '../utils/rpc.js';
-import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
+import { getChainClientAsync } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 import { checkPaymentGuard } from '../billing/paymentGuard.js';
@@ -118,13 +118,15 @@ export async function processAnchor(anchor: ClaimedAnchor): Promise<boolean> {
 
       // ECON-4: Link anchor to payment source for revenue attribution
       if (paymentCheck.source) {
-        await (db as any).from('anchors').update({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db as any).from('anchors').update({
           payment_source_id: paymentCheck.source.id,
           payment_source_type: paymentCheck.source.type,
         }).eq('id', anchorId);
       }
     } else {
       // Pipeline records: tag as admin_bypass for accounting
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (db as any).from('anchors').update({
         payment_source_type: 'pipeline',
       }).eq('id', anchorId);

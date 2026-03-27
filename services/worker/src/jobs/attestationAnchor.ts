@@ -20,7 +20,7 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
+import { getChainClientAsync } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { callRpc } from '../utils/rpc.js';

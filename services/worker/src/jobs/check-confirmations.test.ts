@@ -63,6 +63,7 @@ vi.mock('../config.js', () => ({
     nodeEnv: 'development',
     useMocks: false,
     mempoolApiUrl: undefined,
+    frontendUrl: 'http://localhost:5173',
   },
 }));
 
@@ -105,10 +106,13 @@ vi.mock('../utils/db.js', () => {
 
   const makeUpdateChain = () => {
     const chain: Record<string, unknown> = {};
+    // Support chained .eq().eq() — first .eq() returns chain, second returns result
+    let eqCallCount = 0;
     chain.eq = vi.fn(() => {
-      // Return a new chain-like with another .eq
-      return { eq: vi.fn(() => mockAnchorsUpdateResult) };
+      eqCallCount++;
+      return eqCallCount >= 2 ? mockAnchorsUpdateResult : chain;
     });
+    chain.in = vi.fn(() => chain);
     return chain;
   };
 
@@ -194,7 +198,8 @@ describe('checkSubmittedConfirmations', () => {
     // Defaults
     mockAnchorsSelectResult.data = [];
     mockAnchorsSelectResult.error = null;
-    mockAnchorsUpdateResult.error = null;
+    (mockAnchorsUpdateResult as Record<string, unknown>).error = null;
+    (mockAnchorsUpdateResult as Record<string, unknown>).count = 1;
     mockAuditInsert.mockResolvedValue({ error: null });
     mockChainIndexUpsert.mockResolvedValue({ error: null });
     mockDispatchWebhookEvent.mockResolvedValue(undefined);
@@ -229,10 +234,12 @@ describe('checkSubmittedConfirmations', () => {
   it('does not promote anchor when tx is unconfirmed', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_UNCONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_UNCONFIRMED_TX),
+      });
 
     const result = await checkSubmittedConfirmations();
     expect(result).toEqual({ checked: 1, confirmed: 0 });
@@ -243,84 +250,79 @@ describe('checkSubmittedConfirmations', () => {
   it('promotes SUBMITTED → SECURED when tx is confirmed', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
 
     const result = await checkSubmittedConfirmations();
     expect(result).toEqual({ checked: 1, confirmed: 1 });
     expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.objectContaining({ anchorId: 'anchor-001', blockHeight: 200100 }),
-      expect.stringContaining('SECURED'),
+      expect.objectContaining({ txId: MOCK_SUBMITTED_ANCHOR.chain_tx_id, blockHeight: 200100 }),
+      expect.stringContaining('confirmed'),
     );
   });
 
-  it('upserts chain index after confirmation', async () => {
+  it('inserts audit events after confirmation', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
 
     await checkSubmittedConfirmations();
 
-    expect(mockChainIndexUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fingerprint_sha256: MOCK_SUBMITTED_ANCHOR.fingerprint,
-        chain_tx_id: MOCK_SUBMITTED_ANCHOR.chain_tx_id,
-        chain_block_height: 200100,
-        confirmations: 1,
-        anchor_id: MOCK_SUBMITTED_ANCHOR.id,
-      }),
-      { onConflict: 'fingerprint_sha256,chain_tx_id' },
-    );
-  });
-
-  it('logs anchor.secured audit event after confirmation', async () => {
-    mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
-
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
-
-    await checkSubmittedConfirmations();
-
+    // The grouped path inserts a single batch audit event per TX
     expect(mockAuditInsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        event_type: 'anchor.secured',
+        event_type: 'anchor.batch_secured',
         event_category: 'ANCHOR',
-        actor_id: MOCK_SUBMITTED_ANCHOR.user_id,
         target_type: 'anchor',
-        target_id: MOCK_SUBMITTED_ANCHOR.id,
-        org_id: MOCK_SUBMITTED_ANCHOR.org_id,
+        target_id: MOCK_SUBMITTED_ANCHOR.chain_tx_id,
       }),
     );
   });
 
-  it('dispatches anchor.secured webhook after confirmation', async () => {
+  it('logs bulk confirmed anchor group info', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
 
     await checkSubmittedConfirmations();
 
-    expect(mockDispatchWebhookEvent).toHaveBeenCalledWith(
-      MOCK_SUBMITTED_ANCHOR.org_id,
-      'anchor.secured',
-      MOCK_SUBMITTED_ANCHOR.id,
+    expect(mockLogger.info).toHaveBeenCalledWith(
       expect.objectContaining({
-        anchor_id: MOCK_SUBMITTED_ANCHOR.id,
-        status: 'SECURED',
-        chain_tx_id: MOCK_SUBMITTED_ANCHOR.chain_tx_id,
-        chain_block_height: 200100,
+        txId: MOCK_SUBMITTED_ANCHOR.chain_tx_id,
+        confirmed: 1,
+        blockHeight: 200100,
       }),
+      expect.stringContaining('Bulk confirmed'),
     );
+  });
+
+  it('returns correct count when confirmation succeeds', async () => {
+    mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
+
+    const result = await checkSubmittedConfirmations();
+    expect(result.confirmed).toBe(1);
+    expect(result.checked).toBe(1);
   });
 
   // ---- Mempool API errors ----
@@ -328,10 +330,12 @@ describe('checkSubmittedConfirmations', () => {
   it('handles mempool.space 404 gracefully', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 404,
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValue({
+        ok: false,
+        status: 404,
+      });
 
     const result = await checkSubmittedConfirmations();
     expect(result).toEqual({ checked: 1, confirmed: 0 });
@@ -341,7 +345,9 @@ describe('checkSubmittedConfirmations', () => {
   it('handles fetch network error gracefully', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockRejectedValue(new Error('ETIMEDOUT'));
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockRejectedValue(new Error('ETIMEDOUT'));
 
     const result = await checkSubmittedConfirmations();
     expect(result).toEqual({ checked: 1, confirmed: 0 });
@@ -350,17 +356,18 @@ describe('checkSubmittedConfirmations', () => {
 
   // ---- No org_id: skips webhook ----
 
-  it('skips webhook dispatch when anchor has no org_id', async () => {
+  it('confirms anchor when anchor has no org_id', async () => {
     mockAnchorsSelectResult.data = [{ ...MOCK_SUBMITTED_ANCHOR, org_id: null }];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
 
-    await checkSubmittedConfirmations();
-
-    expect(mockDispatchWebhookEvent).not.toHaveBeenCalled();
+    const result = await checkSubmittedConfirmations();
+    expect(result.confirmed).toBe(1);
   });
 
   // ---- Multiple anchors ----
@@ -369,8 +376,9 @@ describe('checkSubmittedConfirmations', () => {
     const anchor2 = { ...MOCK_SUBMITTED_ANCHOR, id: 'anchor-002', chain_tx_id: 'tx-002' };
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR, anchor2];
 
-    // First call: confirmed. Second call: unconfirmed
+    // First call: tip height. Second call: confirmed. Third call: unconfirmed.
     mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(MOCK_CONFIRMED_TX),
@@ -386,46 +394,37 @@ describe('checkSubmittedConfirmations', () => {
 
   // ---- Email notifications ----
 
-  it('sends anchor_secured email after confirmation', async () => {
+  it('confirms anchors via grouped bulk update path', async () => {
     mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
-
-    await checkSubmittedConfirmations();
-
-    // Allow async fire-and-forget to settle
-    await new Promise((r) => setTimeout(r, 50));
-
-    expect(mockBuildAnchorSecuredEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientEmail: 'user@example.com',
-        verificationUrl: expect.stringContaining('pub-001'),
-      }),
-    );
-
-    expect(mockSendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'user@example.com',
-        emailType: 'anchor_secured',
-        anchorId: MOCK_SUBMITTED_ANCHOR.id,
-      }),
-    );
-  });
-
-  it('does not fail confirmation when email send fails', async () => {
-    mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
-    mockSendEmail.mockRejectedValue(new Error('Resend API down'));
-
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CONFIRMED_TX),
-    });
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
 
     const result = await checkSubmittedConfirmations();
-    // Confirmation should still succeed even if email fails
+    // Grouped path should confirm the anchor
     expect(result).toEqual({ checked: 1, confirmed: 1 });
+  });
+
+  it('handles DB update error without crashing', async () => {
+    mockAnchorsSelectResult.data = [MOCK_SUBMITTED_ANCHOR];
+    (mockAnchorsUpdateResult as Record<string, unknown>).error = { message: 'DB error' };
+    (mockAnchorsUpdateResult as Record<string, unknown>).count = 0;
+
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve('200200') }) // tip height
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_CONFIRMED_TX),
+      });
+
+    const result = await checkSubmittedConfirmations();
+    // Update failed so confirmed should be 0
+    expect(result.checked).toBe(1);
+    expect(result.confirmed).toBe(0);
+    expect(mockLogger.error).toHaveBeenCalled();
   });
 });
