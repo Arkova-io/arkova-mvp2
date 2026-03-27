@@ -16,8 +16,9 @@ import { useState, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Search, Loader2, Building2, Shield, CheckCircle, XCircle, User,
-  ArrowLeft, Upload, FileSearch, Building, Hash,
+  ArrowLeft, Upload, FileSearch, Building, Hash, ExternalLink,
 } from 'lucide-react';
+import { isSearchSubdomain } from '@/App';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,6 +59,7 @@ const EXAMPLE_QUERIES = [
 
 export function SearchPage() {
   const navigate = useNavigate();
+  const standalone = isSearchSubdomain();
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState<SearchType>('issuer');
   const [searchMode, setSearchMode] = useState<SearchMode>('issuers');
@@ -247,14 +249,16 @@ export function SearchPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-3xl mx-auto px-4 py-8">
-        {/* Back navigation */}
-        <Link
-          to={ROUTES.DASHBOARD}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Link>
+        {/* Back navigation — hidden on standalone search subdomain */}
+        {!standalone && (
+          <Link
+            to={ROUTES.DASHBOARD}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        )}
 
         {/* Header */}
         <div className="text-center mb-10 animate-in-view">
@@ -264,10 +268,12 @@ export function SearchPage() {
             </div>
           </div>
           <h1 className="text-4xl font-black tracking-tighter">
-            {SEARCH_LABELS.PAGE_TITLE}
+            {standalone ? 'Arkova Search' : SEARCH_LABELS.PAGE_TITLE}
           </h1>
           <p className="text-[#bbc9cf] mt-2 max-w-md mx-auto font-mono text-xs uppercase tracking-widest">
-            Search by issuer name, verification ID, or document fingerprint
+            {standalone
+              ? 'Verify credentials anchored on the Bitcoin blockchain'
+              : 'Search by issuer name, verification ID, or document fingerprint'}
           </p>
         </div>
 
@@ -495,6 +501,23 @@ export function SearchPage() {
         {isSearching && !verifyingFile && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Standalone footer */}
+        {standalone && (
+          <div className="mt-16 pt-8 border-t border-[#3c494e]/30 text-center">
+            <p className="text-xs text-muted-foreground mb-3">
+              Powered by Arkova — document integrity anchored on Bitcoin
+            </p>
+            <div className="flex justify-center gap-4 text-xs">
+              <a href="https://arkova.ai" target="_blank" rel="noopener noreferrer" className="text-[#00d4ff] hover:text-[#00d4ff]/80 inline-flex items-center gap-1">
+                arkova.ai <ExternalLink className="h-3 w-3" />
+              </a>
+              <Link to={ROUTES.ABOUT} className="text-muted-foreground hover:text-foreground">About</Link>
+              <Link to={ROUTES.PRIVACY} className="text-muted-foreground hover:text-foreground">Privacy</Link>
+              <Link to={ROUTES.TERMS} className="text-muted-foreground hover:text-foreground">Terms</Link>
+            </div>
           </div>
         )}
       </div>

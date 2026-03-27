@@ -62,6 +62,10 @@ export const CREDENTIAL_TYPES = [
   'CHARITY',
   'FINANCIAL_ADVISOR',
   'BUSINESS_ENTITY',
+  'RESUME',
+  'MEDICAL',
+  'MILITARY',
+  'IDENTITY',
   'OTHER',
 ] as const;
 

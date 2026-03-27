@@ -13,21 +13,33 @@ import {
   getEntriesByCategory,
 } from './golden-dataset.js';
 import { GOLDEN_DATASET_PHASE5 } from './golden-dataset-phase5.js';
+import { GOLDEN_DATASET_PHASE6 } from './golden-dataset-phase6.js';
 import { EXTRACTION_SYSTEM_PROMPT } from '../prompts/extraction.js';
 
-const ALL_CREDENTIAL_TYPES = [
+/** Credential types that Gemini classifies (user-uploaded documents) */
+const GEMINI_CREDENTIAL_TYPES = [
   'DEGREE', 'LICENSE', 'CERTIFICATE', 'TRANSCRIPT', 'PROFESSIONAL',
   'CLE', 'BADGE', 'ATTESTATION', 'FINANCIAL', 'LEGAL', 'INSURANCE',
-  'SEC_FILING', 'PATENT', 'REGULATION', 'PUBLICATION', 'OTHER',
+  'RESUME', 'MEDICAL', 'MILITARY', 'IDENTITY', 'OTHER',
+] as const;
+
+/** All credential types including pipeline-only (Nessie) types */
+const ALL_CREDENTIAL_TYPES = [
+  ...GEMINI_CREDENTIAL_TYPES,
+  'SEC_FILING', 'PATENT', 'REGULATION', 'PUBLICATION',
 ] as const;
 
 describe('Golden Dataset Integrity', () => {
-  it('has at least 900 total entries', () => {
-    expect(FULL_GOLDEN_DATASET.length).toBeGreaterThanOrEqual(900);
+  it('has at least 1000 total entries', () => {
+    expect(FULL_GOLDEN_DATASET.length).toBeGreaterThanOrEqual(1000);
   });
 
   it('phase5 adds 200 entries', () => {
     expect(GOLDEN_DATASET_PHASE5.length).toBe(200);
+  });
+
+  it('phase6 adds 80 entries (user-document types)', () => {
+    expect(GOLDEN_DATASET_PHASE6.length).toBe(80);
   });
 
   it('all entries have unique IDs', () => {
@@ -84,8 +96,8 @@ describe('Golden Dataset Integrity', () => {
 });
 
 describe('Golden Dataset Coverage', () => {
-  it('every credential type has at least 5 entries', () => {
-    for (const type of ALL_CREDENTIAL_TYPES) {
+  it('every Gemini credential type has at least 5 entries', () => {
+    for (const type of GEMINI_CREDENTIAL_TYPES) {
       const entries = getEntriesByType(type);
       expect(
         entries.length,
@@ -94,14 +106,13 @@ describe('Golden Dataset Coverage', () => {
     }
   });
 
-  it('every credential type has at least 10 entries after phase5', () => {
-    // Phase5 targeted underrepresented types — all should now have ≥10
+  it('user-document types have sufficient entries after phase6', () => {
     const minPerType: Record<string, number> = {
+      'RESUME': 15,
+      'MEDICAL': 15,
+      'MILITARY': 15,
+      'IDENTITY': 15,
       'FINANCIAL': 10,
-      'SEC_FILING': 10,
-      'PATENT': 10,
-      'REGULATION': 10,
-      'PUBLICATION': 10,
       'LEGAL': 10,
       'INSURANCE': 10,
       'ATTESTATION': 10,
@@ -129,8 +140,8 @@ describe('Golden Dataset Coverage', () => {
 });
 
 describe('Prompt Coverage', () => {
-  it('extraction prompt covers all credential types in guidance', () => {
-    for (const type of ALL_CREDENTIAL_TYPES) {
+  it('extraction prompt covers all Gemini credential types', () => {
+    for (const type of GEMINI_CREDENTIAL_TYPES) {
       expect(
         EXTRACTION_SYSTEM_PROMPT.includes(type),
         `EXTRACTION_SYSTEM_PROMPT missing type: ${type}`,
@@ -138,14 +149,24 @@ describe('Prompt Coverage', () => {
     }
   });
 
-  it('extraction prompt has few-shot examples for SEC_FILING', () => {
-    expect(EXTRACTION_SYSTEM_PROMPT).toContain('SEC_FILING');
-    expect(EXTRACTION_SYSTEM_PROMPT).toContain('Example 57');
+  it('extraction prompt has few-shot examples for RESUME', () => {
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('RESUME');
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('Resume');
   });
 
-  it('extraction prompt has few-shot examples for REGULATION', () => {
-    expect(EXTRACTION_SYSTEM_PROMPT).toContain('REGULATION');
-    expect(EXTRACTION_SYSTEM_PROMPT).toContain('Example 59');
+  it('extraction prompt has few-shot examples for MEDICAL', () => {
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('MEDICAL');
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('Vaccination');
+  });
+
+  it('extraction prompt has few-shot examples for MILITARY', () => {
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('MILITARY');
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('DD-214');
+  });
+
+  it('extraction prompt has few-shot examples for IDENTITY', () => {
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('IDENTITY');
+    expect(EXTRACTION_SYSTEM_PROMPT).toContain('Birth Certificate');
   });
 
   it('extraction prompt has at least 60 few-shot examples', () => {

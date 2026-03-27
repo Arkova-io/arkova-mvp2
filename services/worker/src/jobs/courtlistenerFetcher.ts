@@ -20,8 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 /** CourtListener API base */
 const CL_API_URL = 'https://www.courtlistener.com/api/rest/v4';
 
-/** Rate limit: ~1.4 req/sec anonymous, ~5 req/sec with token */
-const CL_RATE_LIMIT_MS = 750;
+/** Rate limit: ~5 req/sec with token, ~1.4 req/sec anonymous */
+const CL_RATE_LIMIT_MS = 250;
 
 /** Results per page (max 20 for CourtListener) */
 const PER_PAGE = 20;
@@ -97,12 +97,26 @@ function delay(ms: number): Promise<void> {
  */
 function getCourtLabel(courtId: string): string {
   const courts: Record<string, string> = {
+    // Federal
     scotus: 'Supreme Court of the United States',
     ca1: 'First Circuit', ca2: 'Second Circuit', ca3: 'Third Circuit',
     ca4: 'Fourth Circuit', ca5: 'Fifth Circuit', ca6: 'Sixth Circuit',
     ca7: 'Seventh Circuit', ca8: 'Eighth Circuit', ca9: 'Ninth Circuit',
     ca10: 'Tenth Circuit', ca11: 'Eleventh Circuit', cadc: 'D.C. Circuit',
     cafc: 'Federal Circuit',
+    // Major state supreme courts
+    cal: 'California Supreme Court', nyappdiv: 'New York Appellate Division',
+    nysupct: 'New York Supreme Court', tex: 'Texas Supreme Court',
+    fla: 'Florida Supreme Court', ill: 'Illinois Supreme Court',
+    pa: 'Pennsylvania Supreme Court', ohio: 'Ohio Supreme Court',
+    mass: 'Massachusetts Supreme Judicial Court',
+    nj: 'New Jersey Supreme Court', va: 'Virginia Supreme Court',
+    wash: 'Washington Supreme Court', mich: 'Michigan Supreme Court',
+    ga: 'Georgia Supreme Court', nc: 'North Carolina Supreme Court',
+    // Bankruptcy courts
+    bap1: 'First Circuit BAP', bap2: 'Second Circuit BAP',
+    bap6: 'Sixth Circuit BAP', bap8: 'Eighth Circuit BAP',
+    bap9: 'Ninth Circuit BAP', bap10: 'Tenth Circuit BAP',
   };
   return courts[courtId] ?? courtId;
 }
@@ -162,6 +176,19 @@ export async function fetchCourtOpinions(
   let pagesActuallyProcessed = 0;
   let nextUrl: string | null = null;
 
+  // Auto-resume: if no offsetPage given, calculate from existing record count
+  let autoOffset = options.offsetPage ?? 0;
+  if (!options.offsetPage) {
+    const { count: existingCount } = await supabase
+      .from('public_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('source', 'courtlistener');
+    if (existingCount && existingCount > 0) {
+      autoOffset = Math.floor(existingCount / PER_PAGE);
+      logger.info({ existingCount, autoOffset }, 'CourtListener auto-resume from existing records');
+    }
+  }
+
   // Build initial URL
   const params = new URLSearchParams({
     date_filed__gte: startDate,
@@ -171,11 +198,11 @@ export async function fetchCourtOpinions(
   });
   if (courtFilter) params.set('court__id', courtFilter);
   if (statusFilter) params.set('precedential_status', statusFilter);
-  if (options.offsetPage) params.set('offset', String(options.offsetPage * PER_PAGE));
+  if (autoOffset > 0) params.set('offset', String(autoOffset * PER_PAGE));
 
   nextUrl = `${CL_API_URL}/clusters/?${params.toString()}`;
 
-  logger.info({ startDate, endDate, courtFilter, statusFilter, maxPages }, 'Starting CourtListener fetch');
+  logger.info({ startDate, endDate, courtFilter, statusFilter, maxPages, autoOffset }, 'Starting CourtListener fetch');
 
   for (let page = 0; page < maxPages; page++) {
     if (!nextUrl) break;
@@ -245,7 +272,10 @@ export async function fetchCourtOpinions(
     for (const cluster of clusters) {
       const sourceId = `cl-${cluster.id}`;
       const caseName = cluster.case_name || cluster.case_name_short || 'Unknown Case';
-      const courtId = cluster.court_id || cluster.court?.split('/').filter(Boolean).pop() || 'unknown';
+      // court_id may be a direct field or extracted from court URL (e.g. ".../courts/scotus/")
+      const courtUrl = typeof cluster.court === 'string' ? cluster.court : '';
+      const courtFromUrl = courtUrl.replace(/\/+$/, '').split('/').pop() ?? '';
+      const courtId = cluster.court_id || courtFromUrl || 'unknown';
       const citations = cluster.citations?.map(formatCitation) ?? [];
       const primaryCitation = citations[0] ?? '';
 

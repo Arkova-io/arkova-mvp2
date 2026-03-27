@@ -120,9 +120,17 @@ function RouteFallback() {
   );
 }
 
+/** Detect if running on search.arkova.ai subdomain */
+export function isSearchSubdomain(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === 'search.arkova.ai';
+}
+
 export function App() {
   // Apply theme at app root so all routes (including public/auth) get dark mode
   useTheme();
+
+  // On search.arkova.ai, only show search-related routes
+  const searchOnly = isSearchSubdomain();
 
   return (
     <ErrorBoundary>
@@ -130,6 +138,17 @@ export function App() {
         <ProfileProvider>
         <Toaster position="top-right" richColors closeButton />
         <Suspense fallback={<RouteFallback />}>
+        {searchOnly ? (
+        <Routes>
+          <Route path={ROUTES.SEARCH} element={<RouteErrorBoundary section="Search"><SearchPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.VERIFY} element={<RouteErrorBoundary section="PublicVerify"><PublicVerifyPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.VERIFY_FORM} element={<RouteErrorBoundary section="PublicVerify"><PublicVerifyPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+          <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
+          <Route path={ROUTES.TERMS} element={<TermsPage />} />
+          <Route path="*" element={<Navigate to={ROUTES.SEARCH} replace />} />
+        </Routes>
+        ) : (
         <Routes>
           {/* Public routes — no auth required */}
           <Route path={ROUTES.LOGIN} element={<PublicOnly><LoginPage /></PublicOnly>} />
@@ -203,6 +222,7 @@ export function App() {
           {/* 404 */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        )}
         </Suspense>
         </ProfileProvider>
       </BrowserRouter>

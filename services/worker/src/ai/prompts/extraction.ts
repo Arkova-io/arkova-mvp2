@@ -92,24 +92,27 @@ Certificates are one of the broadest credential categories. Pay special attentio
 OTHER-TYPE GUIDANCE:
 OTHER should be your LAST RESORT — only use it when absolutely no other type fits.
 - Before selecting OTHER, re-check ALL specific types:
-  - Employment verification letter → ATTESTATION
-  - Financial data, audit reports, tax docs → FINANCIAL
-  - Legal terms, contracts, NDAs, court orders → LEGAL
-  - Insurance policies, COIs, bonds → INSURANCE
-  - SEC filings (10-K, 10-Q, 8-K) → SEC_FILING
-  - Patents, IP filings → PATENT
-  - Federal Register, compliance notices → REGULATION
-  - Academic papers, journal articles → PUBLICATION
+  - Employment verification letter, recommendation letter → ATTESTATION
+  - Resume, CV, career summary → RESUME
+  - Vaccination card, lab results, medical clearance → MEDICAL
+  - DD-214, military service record, veteran letter → MILITARY
+  - Birth certificate, marriage certificate, naturalization cert → IDENTITY
+  - Pay stubs, W-2, bank statements, tax returns → FINANCIAL
+  - Contracts, NDAs, court orders, divorce decrees → LEGAL
+  - Insurance policies, COIs, bonds, health insurance → INSURANCE
   - Micro-credentials, digital awards → BADGE
   - Professional memberships, fellowships → PROFESSIONAL
   - Sworn statements, notarized letters → ATTESTATION
 - Legitimate uses of OTHER: emoji-only content, CSV/bulk data, completely unrecognizable content, random text with no credential structure.
 - NEGATIVE EXAMPLES (these are NOT OTHER):
-  - "Letter confirming membership in IEEE" → PROFESSIONAL (membership credential)
+  - "Letter confirming membership in IEEE" → PROFESSIONAL
   - "Certificate of Insurance showing $1M coverage" → INSURANCE
   - "Notarized statement that [NAME] completed training" → ATTESTATION
-  - "Research paper published in Nature" → PUBLICATION
   - "Non-Disclosure Agreement between parties" → LEGAL
+  - "Resume of [NAME] — 10 years experience in..." → RESUME
+  - "Immunization Record — Tdap, MMR, COVID-19" → MEDICAL
+  - "DD Form 214 — Certificate of Release or Discharge" → MILITARY
+  - "Certificate of Live Birth — County of..." → IDENTITY
   If you are tempted to use OTHER, ask: "Does this document have ANY identifiable purpose?" If yes, there is almost certainly a more specific type.
 
 INSURANCE-SPECIFIC GUIDANCE:
@@ -148,16 +151,23 @@ FIELDOFSTUDY NORMALIZATION (applies to ALL credential types):
 - OMIT fieldOfStudy ONLY when the document is truly generic with no subject matter (e.g., "Certificate" with no topic, pure financial/insurance documents, generic contracts).
 
 FIELDS TO EXTRACT:
-- credentialType: DEGREE | CERTIFICATE | LICENSE | TRANSCRIPT | PROFESSIONAL | CLE | BADGE | ATTESTATION | FINANCIAL | LEGAL | INSURANCE | SEC_FILING | PATENT | REGULATION | PUBLICATION | OTHER
+- credentialType: DEGREE | CERTIFICATE | LICENSE | TRANSCRIPT | PROFESSIONAL | CLE | BADGE | ATTESTATION | FINANCIAL | LEGAL | INSURANCE | RESUME | MEDICAL | MILITARY | IDENTITY | OTHER
   CLASSIFICATION RULES (choose the MOST SPECIFIC type):
-  - ATTESTATION: employment verifications, reference letters, character references, sworn affidavits, notarized statements, letters of good standing, verification of enrollment
-  - FINANCIAL: financial statements, audit reports, balance sheets, income statements, tax documents, 1099/W-2 forms, bank statements
-  - LEGAL: contracts, service agreements, NDAs, court orders, legal briefs, settlement agreements, powers of attorney, deeds
-  - INSURANCE: certificates of insurance (COI), liability insurance, bonds, surety bonds, policy declarations
-  - SEC_FILING: SEC 10-K, 10-Q, 8-K, DEF 14A, S-1, annual reports filed with securities regulators
-  - PATENT: utility patents, design patents, patent applications, intellectual property filings
-  - REGULATION: Federal Register notices, CFR sections, state regulatory orders, compliance notices
-  - PUBLICATION: academic papers, journal articles, research grants, conference proceedings
+  - DEGREE: diplomas, bachelor's/master's/doctoral degrees, associate degrees, honorary degrees from universities
+  - CERTIFICATE: professional certifications (AWS, CompTIA, PMP, etc.), course completion certificates, trade/vocational certs (OSHA, EPA), training program completions
+  - LICENSE: state-issued professional licenses (nursing, engineering, real estate, pharmacy, law), driver's licenses, occupational permits
+  - TRANSCRIPT: official academic transcripts, grade reports, academic records from schools/universities
+  - PROFESSIONAL: board certifications, fellowships, professional memberships (IEEE, AMA), continuing education completions
+  - CLE: continuing legal education credits, bar-approved courses, legal training certificates
+  - BADGE: digital badges from Credly/Acclaim/Badgr, micro-credentials, skill badges
+  - ATTESTATION: employment verification letters, reference letters, recommendation letters, character references, sworn affidavits, notarized statements, letters of good standing, enrollment verifications, "to whom it may concern" letters
+  - RESUME: resumes, CVs, curriculum vitae, career summaries, professional profiles
+  - MEDICAL: vaccination records, immunization cards, lab results, medical clearance letters, health certificates, COVID test results, physical exam reports, disability documentation
+  - MILITARY: DD-214 discharge papers, military service records, veteran status letters, military awards/decorations, deployment records, military ID copies
+  - IDENTITY: birth certificates, marriage certificates, death certificates, naturalization certificates, passports (copies), social security cards (copies), adoption decrees, name change orders, vital records
+  - FINANCIAL: pay stubs, W-2/1099 tax forms, bank statements, income verification, financial aid documents, tax returns, audit reports
+  - LEGAL: contracts, service agreements, NDAs, court orders, settlement agreements, powers of attorney, deeds, custody agreements, divorce decrees
+  - INSURANCE: certificates of insurance (COI), health insurance cards, policy declarations, bonds, surety bonds
   - OTHER: ONLY use when no other type fits. If you can identify the document purpose at all, use a specific type above
 - issuerName: Full official name of the issuing institution/organization
 - issuedDate: When issued (YYYY-MM-DD)
@@ -376,9 +386,9 @@ Example 47 — Expired license (NOT fraud — just expired):
 Input: "California Medical Board. [NAME_REDACTED]. License No. A-[REDACTED]. Status: EXPIRED. Last Renewal: 2019. Expired: December 31, 2021."
 Output: {"credentialType":"LICENSE","issuerName":"California Medical Board","issuedDate":"2019-01-01","expiryDate":"2021-12-31","fieldOfStudy":"Medicine","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.72}
 
-Example 48 — Patent document (PATENT, not OTHER):
-Input: "United States Patent and Trademark Office. Patent No. 11,234,567. Filed: March 2024. Granted: September 2025. Inventor: [NAME_REDACTED]. Assignee: [COMPANY]."
-Output: {"credentialType":"PATENT","issuerName":"United States Patent and Trademark Office","issuedDate":"2025-09-01","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+Example 48 — Resume / CV (RESUME, not OTHER):
+Input: "[NAME_REDACTED]. Senior Software Engineer. [EMAIL_REDACTED] | [PHONE_REDACTED] | San Francisco, CA. EXPERIENCE: [COMPANY_REDACTED] — Lead Engineer (2021-Present). [COMPANY_REDACTED] — Software Engineer (2018-2021). EDUCATION: Stanford University — BS Computer Science, 2018. SKILLS: Python, Go, Kubernetes, AWS."
+Output: {"credentialType":"RESUME","issuerName":"[NAME_REDACTED]","issuedDate":"2025-01-01","fieldOfStudy":"Software Engineering","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.85}
 
 Example 49 — Tech Certificate — Azure (normalize fieldOfStudy, issuer = accrediting body):
 Input: "Microsoft. Microsoft Certified: Azure Solutions Architect Expert. [NAME_REDACTED]. Achievement Date: June 10, 2025. Certification Number: [REDACTED]. Valid Until: June 10, 2027."
@@ -404,45 +414,45 @@ Example 54 — NDA (LEGAL, not OTHER):
 Input: "MUTUAL NON-DISCLOSURE AGREEMENT. This Agreement is entered into as of February 1, 2026 between [NAME_REDACTED] ('Disclosing Party') and [COMPANY_REDACTED] ('Receiving Party'). Term: This Agreement shall remain in effect for three (3) years from the Effective Date. Governing Law: This Agreement shall be governed by the laws of the State of New York."
 Output: {"credentialType":"LEGAL","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-02-01","expiryDate":"2029-02-01","jurisdiction":"New York, USA","fraudSignals":[],"confidence":0.85}
 
-Example 55 — Utility Patent (PATENT with field):
-Input: "United States Patent. Patent Number: US 12,345,678 B2. Date of Patent: January 14, 2026. Title: Machine Learning System for Anomaly Detection in Network Traffic. Inventor: [NAME_REDACTED]. Assignee: [COMPANY_REDACTED]. Filed: June 3, 2023."
-Output: {"credentialType":"PATENT","issuerName":"United States Patent and Trademark Office","issuedDate":"2026-01-14","fieldOfStudy":"Machine Learning","licenseNumber":"US 12,345,678 B2","jurisdiction":"United States","fraudSignals":[],"confidence":0.92}
+Example 55 — Vaccination Record (MEDICAL, not OTHER):
+Input: "Immunization Record. [NAME_REDACTED]. Date of Birth: [DATE_REDACTED]. Vaccine: COVID-19 Pfizer-BioNTech. Dose 1: 2025-03-15, Lot: EW0182. Dose 2: 2025-04-12, Lot: EW0195. Administered by: [NAME_REDACTED], RN. Facility: County Health Department."
+Output: {"credentialType":"MEDICAL","issuerName":"County Health Department","issuedDate":"2025-04-12","fieldOfStudy":"Immunization","fraudSignals":[],"confidence":0.88}
 
-Example 56 — Journal Article (PUBLICATION, not OTHER):
-Input: "Journal of the American Medical Association (JAMA). Original Investigation. Title: Long-term Outcomes of Novel Immunotherapy Approaches in Non-Small Cell Lung Cancer. Authors: [NAME_REDACTED], [NAME_REDACTED], et al. Published Online: October 5, 2025. DOI: 10.1001/jama.2025.xxxxx. Volume 334, Issue 14, Pages 1201-1215."
-Output: {"credentialType":"PUBLICATION","issuerName":"Journal of the American Medical Association","issuedDate":"2025-10-05","fieldOfStudy":"Oncology","fraudSignals":[],"confidence":0.90}
+Example 56 — DD-214 Military Discharge (MILITARY, not OTHER):
+Input: "DD Form 214. Certificate of Release or Discharge from Active Duty. [NAME_REDACTED]. Branch: United States Army. Date Entered Active Duty: [DATE_REDACTED]. Separation Date: March 15, 2025. Character of Service: Honorable. Primary Specialty: 11B Infantryman. Decorations: Army Commendation Medal, Global War on Terrorism Service Medal."
+Output: {"credentialType":"MILITARY","issuerName":"United States Army","issuedDate":"2025-03-15","fieldOfStudy":"Infantry","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
 
-Example 57 — SEC Filing (SEC_FILING, not FINANCIAL):
-Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM 10-K. Annual Report Pursuant to Section 13 or 15(d) of the Securities Exchange Act of 1934. For the fiscal year ended December 31, 2025. Commission file number: 001-12345. [COMPANY_REDACTED]. State of incorporation: Delaware."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-12-31","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
+Example 57 — Birth Certificate (IDENTITY, not OTHER or CERTIFICATE):
+Input: "Certificate of Live Birth. State of California. Department of Public Health. Child: [NAME_REDACTED]. Date of Birth: [DATE_REDACTED]. Place of Birth: Los Angeles County. File Number: [REDACTED]. Date Filed: January 15, 2025."
+Output: {"credentialType":"IDENTITY","issuerName":"California Department of Public Health","issuedDate":"2025-01-15","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.90}
 
-Example 58 — SEC Quarterly Filing (10-Q):
-Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. FORM 10-Q. Quarterly Report. For the quarterly period ended September 30, 2025. [COMPANY_REDACTED]. Commission File Number 000-56789. Filed: November 14, 2025."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-11-14","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+Example 58 — Marriage Certificate (IDENTITY):
+Input: "Marriage Certificate. Commonwealth of Virginia. This certifies that [NAME_REDACTED] and [NAME_REDACTED] were united in marriage on the 20th day of June, 2025. County of Fairfax. Certificate No. [REDACTED]. Filed: June 25, 2025."
+Output: {"credentialType":"IDENTITY","issuerName":"Commonwealth of Virginia","issuedDate":"2025-06-20","jurisdiction":"Virginia, USA","fraudSignals":[],"confidence":0.90}
 
-Example 59 — Federal Register Notice (REGULATION):
-Input: "Federal Register / Vol. 91, No. 42 / Wednesday, March 5, 2026 / Rules and Regulations. DEPARTMENT OF HEALTH AND HUMAN SERVICES. Centers for Medicare & Medicaid Services. 42 CFR Parts 482 and 485. Medicare and Medicaid Programs; Hospital and Critical Access Hospital Changes. AGENCY: CMS, HHS. ACTION: Final rule. EFFECTIVE DATE: May 5, 2026."
-Output: {"credentialType":"REGULATION","issuerName":"Centers for Medicare & Medicaid Services","issuedDate":"2026-03-05","fieldOfStudy":"Healthcare Regulation","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+Example 59 — Resume with Career Summary (RESUME):
+Input: "CURRICULUM VITAE. [NAME_REDACTED], PhD. Professor of Biomedical Engineering. [EMAIL_REDACTED]. EDUCATION: PhD Biomedical Engineering, MIT 2015. BS Mechanical Engineering, Georgia Tech 2010. POSITIONS: Associate Professor, Johns Hopkins University (2020-Present). Assistant Professor, Duke University (2015-2020). PUBLICATIONS: 47 peer-reviewed articles."
+Output: {"credentialType":"RESUME","issuerName":"[NAME_REDACTED]","fieldOfStudy":"Biomedical Engineering","fraudSignals":[],"confidence":0.88}
 
-Example 60 — State Regulatory Order (REGULATION):
-Input: "STATE OF CALIFORNIA. PUBLIC UTILITIES COMMISSION. Decision 26-02-015. Decision Adopting Updated Building Electrification Standards. Filed: February 12, 2026. Effective: March 1, 2026. Commissioner: [NAME_REDACTED]."
-Output: {"credentialType":"REGULATION","issuerName":"California Public Utilities Commission","issuedDate":"2026-02-12","jurisdiction":"California, USA","fieldOfStudy":"Building Electrification","fraudSignals":[],"confidence":0.85}
+Example 60 — Medical Clearance Letter (MEDICAL):
+Input: "Medical Clearance Letter. Date: February 10, 2026. To Whom It May Concern: I have examined [NAME_REDACTED] on this date and find them medically fit to return to full duties without restrictions. Diagnosis: [REDACTED]. Physician: [NAME_REDACTED], MD. Practice: Southwest Medical Associates. License: [REDACTED]."
+Output: {"credentialType":"MEDICAL","issuerName":"Southwest Medical Associates","issuedDate":"2026-02-10","fraudSignals":[],"confidence":0.85}
 
-Example 61 — Tax Form (FINANCIAL, with specific fields):
-Input: "Department of the Treasury. Internal Revenue Service. Form 1099-MISC. Miscellaneous Information. TAX YEAR 2025. PAYER: [COMPANY_REDACTED]. PAYER TIN: [REDACTED]. RECIPIENT: [NAME_REDACTED]. RECIPIENT TIN: [REDACTED]. 7 Nonemployee compensation: $145,000.00."
-Output: {"credentialType":"FINANCIAL","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-12-31","jurisdiction":"United States","fieldOfStudy":"Tax Documentation","fraudSignals":[],"confidence":0.85}
+Example 61 — Pay Stub (FINANCIAL):
+Input: "Earnings Statement. Pay Period: 01/01/2026 — 01/15/2026. Employee: [NAME_REDACTED]. Employer: [COMPANY_REDACTED]. Gross Pay: $4,250.00. Federal Tax: $637.50. State Tax: $212.50. Net Pay: $3,187.50. YTD Gross: $4,250.00."
+Output: {"credentialType":"FINANCIAL","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-01-15","jurisdiction":"United States","fraudSignals":[],"confidence":0.85}
 
-Example 62 — Audit Report (FINANCIAL, with accreditingBody):
-Input: "Independent Auditors' Report. To the Board of Directors and Shareholders of [COMPANY_REDACTED]. We have audited the accompanying consolidated financial statements of [COMPANY_REDACTED] as of and for the year ended December 31, 2025. In our opinion, the financial statements present fairly, in all material respects. PricewaterhouseCoopers LLP. March 15, 2026."
-Output: {"credentialType":"FINANCIAL","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-12-31","accreditingBody":"PricewaterhouseCoopers LLP","fraudSignals":[],"confidence":0.82}
+Example 62 — W-2 Tax Form (FINANCIAL):
+Input: "Form W-2. Wage and Tax Statement 2025. Employer: [COMPANY_REDACTED]. EIN: [REDACTED]. Employee: [NAME_REDACTED]. SSN: [REDACTED]. Wages: $95,000.00. Federal Tax Withheld: $14,250.00. State: California. State Wages: $95,000.00."
+Output: {"credentialType":"FINANCIAL","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-12-31","jurisdiction":"California, USA","fieldOfStudy":"Tax Documentation","fraudSignals":[],"confidence":0.88}
 
-Example 63 — Conference Paper (PUBLICATION):
-Input: "Proceedings of the 42nd International Conference on Machine Learning (ICML 2025). Paper ID: 8901. Title: Efficient Sparse Attention Mechanisms for Long-Context Language Models. Authors: [NAME_REDACTED] and [NAME_REDACTED]. Accepted: May 2025. Pages 4521-4535."
-Output: {"credentialType":"PUBLICATION","issuerName":"International Conference on Machine Learning","issuedDate":"2025-05-01","fieldOfStudy":"Machine Learning","fraudSignals":[],"confidence":0.88}
+Example 63 — Letter of Recommendation (ATTESTATION, not OTHER):
+Input: "Letter of Recommendation. To the Admissions Committee: I am writing to recommend [NAME_REDACTED] for admission to your graduate program. I have had the privilege of working with [NAME_REDACTED] for three years at [COMPANY_REDACTED] where they demonstrated exceptional analytical skills. Sincerely, [NAME_REDACTED], PhD, Director of Research."
+Output: {"credentialType":"ATTESTATION","issuerName":"[COMPANY_REDACTED]","fieldOfStudy":"Research","fraudSignals":[],"confidence":0.82}
 
-Example 64 — Surety Bond (INSURANCE):
-Input: "SURETY BOND. Bond Number: SB-2026-445566. Principal: [NAME_REDACTED]. Surety: Hartford Fire Insurance Company. Obligee: State of Florida, Department of Financial Services. Penal Sum: $25,000. Effective Date: January 1, 2026. Expiration Date: January 1, 2027."
-Output: {"credentialType":"INSURANCE","issuerName":"Hartford Fire Insurance Company","issuedDate":"2026-01-01","expiryDate":"2027-01-01","licenseNumber":"SB-2026-445566","jurisdiction":"Florida, USA","fraudSignals":[],"confidence":0.90}
+Example 64 — Naturalization Certificate (IDENTITY, not OTHER):
+Input: "United States of America. Certificate of Naturalization. No. [REDACTED]. [NAME_REDACTED] having complied in all respects with the requirements of the naturalization laws of the United States is admitted as a citizen. Date: September 15, 2025. USCIS. Country of Former Nationality: [REDACTED]."
+Output: {"credentialType":"IDENTITY","issuerName":"United States Citizenship and Immigration Services","issuedDate":"2025-09-15","jurisdiction":"United States","fraudSignals":[],"confidence":0.92}
 
 Example 65 — Tampered date (issued after expiry = SUSPICIOUS_DATES):
 Input: "State of Texas. Board of Nursing. Licensed Vocational Nurse. [NAME_REDACTED]. License No. LVN-778899. Issue Date: March 15, 2028. Expiration: December 31, 2025."

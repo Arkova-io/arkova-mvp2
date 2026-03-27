@@ -28,8 +28,8 @@ import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Max records per batch — Merkle tree handles thousands efficiently.
- * Increased from 2,500 to 4,000 per efficiency study. Monitored via batch metrics. */
-export const PUBLIC_RECORD_BATCH_SIZE = 4000;
+ * Increased to 10,000 to maximize pipeline throughput for compliance data anchoring. */
+export const PUBLIC_RECORD_BATCH_SIZE = 10000;
 
 /** Minimum records to trigger a batch */
 export const MIN_BATCH_SIZE = 1;
@@ -62,7 +62,9 @@ function buildAnchorFilename(record: {
         ? 'USPTO'
         : record.source === 'federal_register'
           ? 'FR'
-          : record.source.toUpperCase();
+          : record.source === 'courtlistener'
+            ? 'CASE'
+            : record.source.toUpperCase();
 
   // Use title if available, otherwise source_id
   const name = record.title
@@ -82,6 +84,7 @@ function mapCredentialType(source: string): string {
     case 'uspto': return 'PATENT';
     case 'openalex': return 'PUBLICATION';
     case 'federal_register': return 'REGULATION';
+    case 'courtlistener': return 'LEGAL';
     default: return 'OTHER';
   }
 }
@@ -118,13 +121,64 @@ export async function processPublicRecordAnchoring(
   const ownerId = adminProfile.id as string;
   const ownerOrgId = (adminProfile.org_id as string) ?? null;
 
-  // Fetch unanchored public records
-  const { data: records, error: fetchError } = await client
-    .from('public_records')
-    .select('id, source, source_id, source_url, record_type, title, content_hash, metadata')
-    .is('anchor_id', null)
-    .order('created_at', { ascending: true })
-    .limit(PUBLIC_RECORD_BATCH_SIZE);
+  // Fetch unanchored public records in chunks (PostgREST caps at 1000 rows per request)
+  // Prioritize compliance sources: courtlistener, edgar, federal_register first
+  const POSTGREST_LIMIT = 1000;
+  const PRIORITY_SOURCES = ['courtlistener', 'edgar', 'federal_register', 'dapip'];
+  const records: Array<{ id: string; source: string; source_id: string; source_url: string; record_type: string; title: string; content_hash: string; metadata: Record<string, unknown> }> = [];
+
+  // Phase 1: Fetch priority compliance sources first
+  for (const prioritySource of PRIORITY_SOURCES) {
+    if (records.length >= PUBLIC_RECORD_BATCH_SIZE) break;
+    const remaining = PUBLIC_RECORD_BATCH_SIZE - records.length;
+
+    for (let offset = 0; offset < remaining; offset += POSTGREST_LIMIT) {
+      const chunkSize = Math.min(POSTGREST_LIMIT, remaining - offset);
+      const { data: chunk, error: chunkError } = await client
+        .from('public_records')
+        .select('id, source, source_id, source_url, record_type, title, content_hash, metadata')
+        .is('anchor_id', null)
+        .eq('source', prioritySource)
+        .order('created_at', { ascending: true })
+        .range(offset, offset + chunkSize - 1);
+
+      if (chunkError) {
+        logger.error({ error: chunkError, offset, source: prioritySource }, 'Failed to fetch priority records chunk');
+        break;
+      }
+      if (!chunk || chunk.length === 0) break;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      records.push(...(chunk as any));
+      if (chunk.length < chunkSize) break;
+    }
+  }
+
+  // Phase 2: Fill remaining capacity with any other unconverted records
+  if (records.length < PUBLIC_RECORD_BATCH_SIZE) {
+    const remaining = PUBLIC_RECORD_BATCH_SIZE - records.length;
+    const usedIds = new Set(records.map((r) => r.id));
+
+    for (let offset = 0; offset < remaining; offset += POSTGREST_LIMIT) {
+      const chunkSize = Math.min(POSTGREST_LIMIT, remaining - offset);
+      const { data: chunk, error: chunkError } = await client
+        .from('public_records')
+        .select('id, source, source_id, source_url, record_type, title, content_hash, metadata')
+        .is('anchor_id', null)
+        .not('source', 'in', `(${PRIORITY_SOURCES.join(',')})`)
+        .order('created_at', { ascending: true })
+        .range(offset, offset + chunkSize - 1);
+
+      if (chunkError) {
+        logger.error({ error: chunkError, offset }, 'Failed to fetch remaining records chunk');
+        break;
+      }
+      if (!chunk || chunk.length === 0) break;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      records.push(...(chunk as any));
+      if (chunk.length < chunkSize) break;
+    }
+  }
+  const fetchError = null;
 
   if (fetchError) {
     logger.error({ error: fetchError }, 'Failed to fetch unanchored public records');

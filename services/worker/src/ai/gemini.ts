@@ -29,7 +29,7 @@ import type { EnsembleResult } from './ensembleConfidence.js';
 
 // GAP-5: Pin to specific model versions to prevent silent quality drift.
 // Before upgrading: run eval suite, compare F1, document delta, update pin.
-const DEFAULT_MODEL = 'gemini-2.0-flash-001';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 500;

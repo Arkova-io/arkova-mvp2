@@ -69,6 +69,10 @@ export const CREDENTIAL_TYPE_LABELS = {
   CHARITY: 'Charity',
   FINANCIAL_ADVISOR: 'Financial Advisor',
   BUSINESS_ENTITY: 'Business Entity',
+  RESUME: 'Resume / CV',
+  MEDICAL: 'Medical Record',
+  MILITARY: 'Military Record',
+  IDENTITY: 'Identity Document',
   OTHER: 'Other',
 } as const;
 
@@ -91,6 +95,10 @@ export const CREDENTIAL_TYPE_DESCRIPTIONS = {
   CHARITY: 'Registered charity or nonprofit organization',
   FINANCIAL_ADVISOR: 'Financial advisor registration or license',
   BUSINESS_ENTITY: 'Business registration or entity record',
+  RESUME: 'Resume, CV, or professional profile',
+  MEDICAL: 'Medical record, lab result, or health document',
+  MILITARY: 'Military service record or discharge document',
+  IDENTITY: 'Government-issued ID, passport, or identity verification',
   OTHER: 'Unclassified document',
 } as const;
 

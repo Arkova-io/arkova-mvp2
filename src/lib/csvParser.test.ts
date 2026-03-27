@@ -335,7 +335,7 @@ def456,other.doc`;
       expect(endTime - startTime).toBeLessThan(1000);
     });
 
-    it('should validate credential type values', () => {
+    it('should accept all credential type values (unknown types mapped to OTHER)', () => {
       const cols = [
         { index: 0, name: 'fingerprint', sample: '' },
         { index: 1, name: 'filename', sample: '' },
@@ -365,16 +365,17 @@ def456,other.doc`;
           data: {
             fingerprint: 'b'.repeat(64),
             filename: 'test2.pdf',
-            credential_type: 'INVALID_TYPE',
+            credential_type: 'CASE',
           },
         },
       ];
 
       const result = validateCsvRows(rows, cols, m);
 
-      expect(result.valid).toHaveLength(1);
-      expect(result.invalid).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Invalid credential type');
+      // Both rows are valid — unknown types are accepted, not rejected
+      expect(result.valid).toHaveLength(2);
+      expect(result.invalid).toHaveLength(0);
+      expect(result.errors).toHaveLength(0);
     });
 
     it('should validate metadata as valid JSON object', () => {

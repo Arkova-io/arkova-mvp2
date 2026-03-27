@@ -2862,6 +2862,10 @@ export type Database = {
         | "CHARITY"
         | "FINANCIAL_ADVISOR"
         | "BUSINESS_ENTITY"
+        | "RESUME"
+        | "MEDICAL"
+        | "MILITARY"
+        | "IDENTITY"
       credit_transaction_type:
         | "ALLOCATION"
         | "PURCHASE"

@@ -27,6 +27,10 @@ export const VALID_CREDENTIAL_TYPES = [
   'CHARITY',
   'FINANCIAL_ADVISOR',
   'BUSINESS_ENTITY',
+  'RESUME',
+  'MEDICAL',
+  'MILITARY',
+  'IDENTITY',
   'OTHER',
 ] as const;
 
@@ -287,14 +291,10 @@ function validateFileSizeField(
 }
 
 function validateCredentialTypeField(
-  row: CsvRow, mapping: ColumnMapping,
-  getColumnName: ColumnNameGetter, getValueByIndex: FieldValueGetter
+  _row: CsvRow, _mapping: ColumnMapping,
+  _getColumnName: ColumnNameGetter, _getValueByIndex: FieldValueGetter
 ): ValidationError[] {
-  if (mapping.credentialType === null) return [];
-  const credType = getValueByIndex(row, mapping.credentialType);
-  if (credType && !VALID_CREDENTIAL_TYPES.includes(credType.toUpperCase() as CredentialType)) {
-    return [{ row: row.rowNumber, column: getColumnName(mapping.credentialType), message: `Invalid credential type. Must be one of: ${VALID_CREDENTIAL_TYPES.join(', ')}` }];
-  }
+  // All credential types are accepted — unknown types get mapped to OTHER during record creation
   return [];
 }
 
@@ -460,7 +460,10 @@ export function extractAnchorRecords(
     if (mapping.credentialType !== null) {
       const credType = getValueByIndex(row, mapping.credentialType);
       if (credType) {
-        record.credentialType = credType.toUpperCase() as CredentialType;
+        const upper = credType.toUpperCase();
+        record.credentialType = VALID_CREDENTIAL_TYPES.includes(upper as CredentialType)
+          ? (upper as CredentialType)
+          : 'OTHER';
       }
     }
 
