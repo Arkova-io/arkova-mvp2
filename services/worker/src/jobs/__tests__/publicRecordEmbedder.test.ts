@@ -43,6 +43,7 @@ vi.mock('../../utils/db.js', () => ({
 
 vi.mock('../../ai/factory.js', () => ({
   createAIProvider: () => mockAiProvider,
+  createEmbeddingProvider: () => mockAiProvider,
 }));
 
 function createMockSupabase(records: Array<Record<string, unknown>> = []) {
@@ -116,7 +117,7 @@ describe('publicRecordEmbedder', () => {
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({
         public_record_id: 'rec-1',
-        model_version: 'text-embedding-004',
+        model_version: 'gemini-embedding-001',
       }),
     );
   });

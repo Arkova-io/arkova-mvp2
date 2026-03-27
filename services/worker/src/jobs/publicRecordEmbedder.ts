@@ -10,7 +10,7 @@
  * Constitution 4A: Only metadata is embedded — no raw document content.
  */
 
-import { createAIProvider } from '../ai/factory.js';
+import { createEmbeddingProvider } from '../ai/factory.js';
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -92,7 +92,7 @@ export async function embedPublicRecords(
     return { total: 0, succeeded: 0, failed: 0, errors: [] };
   }
 
-  const aiProvider = createAIProvider();
+  const aiProvider = createEmbeddingProvider();
   const result: BatchEmbedResult = {
     total: records.length,
     succeeded: 0,
@@ -117,7 +117,7 @@ export async function embedPublicRecords(
         .insert({
           public_record_id: record.id,
           embedding: embeddingResult.embedding,
-          model_version: process.env.GEMINI_EMBEDDING_MODEL ?? 'text-embedding-004',
+          model_version: process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-001',
         });
 
       if (insertError) {

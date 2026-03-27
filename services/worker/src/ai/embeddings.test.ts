@@ -118,6 +118,7 @@ describe('embeddings', () => {
 
       expect(mockProvider.generateEmbedding).toHaveBeenCalledWith(
         'DEGREE University of Michigan',
+        undefined,
       );
       expect(result.embedding).toHaveLength(768);
       expect(result.model).toBe('text-embedding-004');

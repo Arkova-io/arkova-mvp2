@@ -9,7 +9,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { createAIProvider } from '../../ai/factory.js';
+import { createEmbeddingProvider } from '../../ai/factory.js';
 import { generateAndStoreEmbedding, batchReEmbed } from '../../ai/embeddings.js';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
@@ -68,7 +68,7 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const provider = createAIProvider();
+    const provider = createEmbeddingProvider();
     const result = await generateAndStoreEmbedding(provider, {
       anchorId: parsed.data.anchorId,
       orgId,
@@ -146,7 +146,7 @@ router.post('/batch', async (req: Request, res: Response) => {
       },
     }));
 
-    const provider = createAIProvider();
+    const provider = createEmbeddingProvider();
     const result = await batchReEmbed(provider, orgId, items, userId);
 
     res.json(result);

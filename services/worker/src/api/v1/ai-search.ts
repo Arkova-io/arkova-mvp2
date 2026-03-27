@@ -12,7 +12,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { createAIProvider } from '../../ai/factory.js';
+import { createEmbeddingProvider } from '../../ai/factory.js';
 import { checkAICredits, deductAICredits, logAIUsageEvent } from '../../ai/cost-tracker.js';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
@@ -74,7 +74,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     // Generate embedding for the search query
     const startMs = Date.now();
-    const provider = createAIProvider();
+    const provider = createEmbeddingProvider();
     const queryEmbedding = await provider.generateEmbedding(q, 'RETRIEVAL_QUERY');
 
     // Search via RPC (new RPC not yet in generated types — uses callRpc helper)

@@ -21,6 +21,11 @@ vi.mock('../../ai/factory.js', () => ({
     name: 'mock',
     generateEmbedding: mockGenerateEmbedding,
   }),
+  createEmbeddingProvider: vi.fn().mockReturnValue({
+    name: 'mock',
+    generateEmbedding: mockGenerateEmbedding,
+  }),
+  getProviderName: vi.fn().mockReturnValue('mock'),
 }));
 
 vi.mock('../../utils/db.js', () => ({

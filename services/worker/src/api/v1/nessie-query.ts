@@ -14,7 +14,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { createAIProvider, getProviderName } from '../../ai/factory.js';
+import { createAIProvider, createEmbeddingProvider, getProviderName } from '../../ai/factory.js';
 import type { TogetherProvider } from '../../ai/together.js';
 import { db } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
@@ -210,9 +210,9 @@ router.get('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Generate query embedding
-    const aiProvider = createAIProvider();
-    const embeddingResult = await aiProvider.generateEmbedding(q, 'RETRIEVAL_QUERY');
+    // Generate query embedding (use embedding-capable provider — Nessie doesn't support embeddings)
+    const embeddingProvider = createEmbeddingProvider();
+    const embeddingResult = await embeddingProvider.generateEmbedding(q, 'RETRIEVAL_QUERY');
     if (!embeddingResult.embedding || embeddingResult.embedding.length === 0) {
       res.status(500).json({ error: 'Failed to generate query embedding' });
       return;
@@ -419,7 +419,7 @@ async function generateVerifiedContext(
       throw new Error('GEMINI_API_KEY required for verified context mode (no RAG-capable provider configured)');
     }
     const gemini = new GenAI(geminiKey);
-    modelName = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+    modelName = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
     const model = gemini.getGenerativeModel({
       model: modelName,
       systemInstruction: NESSIE_RAG_SYSTEM_PROMPT,

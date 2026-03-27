@@ -4,8 +4,9 @@
  * Routes to the correct IAIProvider implementation based on AI_PROVIDER env var.
  *
  * Provider routing:
- *   'gemini'     → GeminiADKProvider (default when GEMINI_API_KEY set)
- *   'together'   → TogetherProvider (Nessie fine-tuned Llama 3.1 8B)
+ *   'gemini'     → GeminiProvider (default when GEMINI_API_KEY set)
+ *   'nessie'     → NessieProvider (fine-tuned Llama 3.1 8B on RunPod vLLM)
+ *   'together'   → TogetherProvider (Together AI hosted inference)
  *   'cloudflare' → CloudflareFallbackProvider (ENABLE_AI_FALLBACK must be true)
  *   'openai'     → Not yet implemented (Phase 1.5+)
  *   'anthropic'  → Not yet implemented (Phase 1.5+)
@@ -20,10 +21,12 @@ import { CloudflareFallbackProvider } from './cloudflare-fallback.js';
 import { ReplicateProvider } from './replicate.js';
 import { GeminiProvider } from './gemini.js';
 import { TogetherProvider } from './together.js';
+import { NessieProvider } from './nessie.js';
 
 // Cached singletons so circuit breaker state persists across requests
 let geminiInstance: GeminiProvider | null = null;
 let togetherInstance: TogetherProvider | null = null;
+let nessieInstance: NessieProvider | null = null;
 
 /**
  * Get the provider name that will be used based on current env.
@@ -73,6 +76,12 @@ export function createAIProvider(): IAIProvider {
       }
       return togetherInstance;
 
+    case 'nessie':
+      if (!nessieInstance) {
+        nessieInstance = new NessieProvider();
+      }
+      return nessieInstance;
+
     case 'replicate': {
       // Production check is in ReplicateProvider constructor (Constitution 1.1)
       return new ReplicateProvider();
@@ -85,12 +94,30 @@ export function createAIProvider(): IAIProvider {
       throw new Error('Anthropic provider not yet implemented (Phase 1.5+)');
 
     default:
-      throw new Error(`Unknown AI provider: "${providerName}". Valid: gemini, together, cloudflare, replicate, openai, anthropic, mock`);
+      throw new Error(`Unknown AI provider: "${providerName}". Valid: gemini, nessie, together, cloudflare, replicate, openai, anthropic, mock`);
   }
+}
+
+/**
+ * Create an AI provider specifically for embedding generation.
+ * Falls back to Gemini when the active provider doesn't support embeddings
+ * (e.g., NessieProvider is extraction-only).
+ */
+export function createEmbeddingProvider(): IAIProvider {
+  const providerName = getProviderName();
+  // Nessie doesn't support embeddings — always use Gemini for embeddings
+  if (providerName === 'nessie') {
+    if (!geminiInstance) {
+      geminiInstance = new GeminiProvider();
+    }
+    return geminiInstance;
+  }
+  return createAIProvider();
 }
 
 /** Reset cached provider instances (for testing only). */
 export function resetProviderCache(): void {
   geminiInstance = null;
   togetherInstance = null;
+  nessieInstance = null;
 }

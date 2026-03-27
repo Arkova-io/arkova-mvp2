@@ -12,10 +12,11 @@ vi.mock('../utils/logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { createAIProvider, getProviderName, resetProviderCache } from './factory.js';
+import { createAIProvider, createEmbeddingProvider, getProviderName, resetProviderCache } from './factory.js';
 import { MockAIProvider } from './mock.js';
 import { CloudflareFallbackProvider } from './cloudflare-fallback.js';
 import { TogetherProvider } from './together.js';
+import { NessieProvider } from './nessie.js';
 
 describe('createAIProvider factory', () => {
   const originalEnv = { ...process.env };
@@ -69,9 +70,52 @@ describe('createAIProvider factory', () => {
     expect(p1).toBe(p2);
   });
 
+  it('returns NessieProvider when AI_PROVIDER=nessie', () => {
+    process.env.AI_PROVIDER = 'nessie';
+    process.env.RUNPOD_API_KEY = 'test-key';
+    process.env.RUNPOD_ENDPOINT_ID = 'test-endpoint';
+    const provider = createAIProvider();
+    expect(provider).toBeInstanceOf(NessieProvider);
+    expect(provider.name).toBe('nessie');
+  });
+
+  it('caches NessieProvider singleton', () => {
+    process.env.AI_PROVIDER = 'nessie';
+    process.env.RUNPOD_API_KEY = 'test-key';
+    process.env.RUNPOD_ENDPOINT_ID = 'test-endpoint';
+    const p1 = createAIProvider();
+    const p2 = createAIProvider();
+    expect(p1).toBe(p2);
+  });
+
   it('throws for unknown provider names', () => {
     process.env.AI_PROVIDER = 'nonexistent';
     expect(() => createAIProvider()).toThrow('Unknown AI provider');
+  });
+});
+
+describe('createEmbeddingProvider', () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    resetProviderCache();
+  });
+
+  it('returns MockAIProvider for default provider', () => {
+    process.env.AI_PROVIDER = 'mock';
+    const provider = createEmbeddingProvider();
+    expect(provider).toBeInstanceOf(MockAIProvider);
+  });
+
+  it('falls back to GeminiProvider when AI_PROVIDER=nessie', () => {
+    process.env.AI_PROVIDER = 'nessie';
+    process.env.RUNPOD_API_KEY = 'test-key';
+    process.env.RUNPOD_ENDPOINT_ID = 'test-endpoint';
+    process.env.GEMINI_API_KEY = 'test-gemini-key';
+    const provider = createEmbeddingProvider();
+    // Should return Gemini, not Nessie (Nessie doesn't support embeddings)
+    expect(provider.name).toBe('gemini');
   });
 });
 

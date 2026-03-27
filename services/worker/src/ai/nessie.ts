@@ -1,20 +1,21 @@
 /**
- * Together AI Provider (PH1-INT-04)
+ * Nessie AI Provider (RunPod vLLM)
  *
- * Implements IAIProvider using Together AI's OpenAI-compatible inference API.
- * Primary use: Nessie fine-tuned model (Llama 3.1 8B QLoRA) for credential
- * metadata extraction and RAG synthesis.
+ * Implements IAIProvider using Nessie v2 (fine-tuned Llama 3.1 8B) hosted on
+ * RunPod Serverless via vLLM with OpenAI-compatible API.
  *
- * Together AI supports:
- *   - Chat completions (OpenAI-compatible: /v1/chat/completions)
- *   - Embeddings (/v1/embeddings)
- *   - Fine-tuned model hosting (custom model IDs)
+ * Endpoint: https://api.runpod.ai/v2/{ENDPOINT_ID}/openai/v1/chat/completions
+ *
+ * Designed for pipeline/institutional document processing where Nessie's
+ * fine-tuned extraction outperforms general-purpose models.
  *
  * Constitution 4A: Only PII-stripped metadata flows to this provider.
  * Constitution 1.6: Document bytes never reach this provider.
  *
  * Retry logic: exponential backoff with 3 attempts + jitter.
  * Circuit breaker: fails open after 5 consecutive errors (60s cooldown).
+ * Cold start handling: RunPod serverless has 0 min workers — first request
+ * after idle may take 30-60s for GPU allocation.
  */
 
 import type {
@@ -22,6 +23,7 @@ import type {
   ExtractionRequest,
   ExtractionResult,
   EmbeddingResult,
+  EmbeddingTaskType,
   ProviderHealth,
 } from './types.js';
 import { ExtractedFieldsSchema } from './schemas.js';
@@ -30,16 +32,13 @@ import { logger } from '../utils/logger.js';
 import { verifyGrounding } from './grounding.js';
 import { runCrossFieldChecks } from './crossFieldFraudChecks.js';
 
-const TOGETHER_API_BASE = 'https://api.together.xyz/v1';
-const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
-const DEFAULT_EMBEDDING_MODEL = 'togethercomputer/m2-bert-80M-8k-retrieval';
 const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 500;
-const REQUEST_TIMEOUT_MS = 30_000;
+const BASE_DELAY_MS = 1000; // Higher base delay for serverless cold starts
+const REQUEST_TIMEOUT_MS = 90_000; // 90s to account for RunPod cold start
 
 // Circuit breaker config
 const CIRCUIT_BREAKER_THRESHOLD = 5;
-const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000;
+const CIRCUIT_BREAKER_COOLDOWN_MS = 120_000; // 2 min — longer cooldown for serverless
 
 interface CircuitState {
   consecutiveFailures: number;
@@ -47,27 +46,30 @@ interface CircuitState {
   isOpen: boolean;
 }
 
-export class TogetherProvider implements IAIProvider {
-  readonly name = 'together';
+export class NessieProvider implements IAIProvider {
+  readonly name = 'nessie';
   private readonly apiKey: string;
-  private readonly modelName: string;
-  private readonly embeddingModelName: string;
+  private readonly endpointId: string;
+  private readonly apiBase: string;
   private circuit: CircuitState = {
     consecutiveFailures: 0,
     lastFailureAt: 0,
     isOpen: false,
   };
 
-  constructor(apiKey?: string, model?: string, embeddingModel?: string) {
-    const key = apiKey ?? process.env.TOGETHER_API_KEY;
+  constructor(apiKey?: string, endpointId?: string) {
+    const key = apiKey ?? process.env.RUNPOD_API_KEY;
     if (!key) {
-      throw new Error('TOGETHER_API_KEY is required for TogetherProvider');
+      throw new Error('RUNPOD_API_KEY is required for NessieProvider');
     }
     this.apiKey = key;
-    // Support custom fine-tuned models via env var
-    this.modelName = model ?? process.env.TOGETHER_MODEL ?? DEFAULT_MODEL;
-    this.embeddingModelName =
-      embeddingModel ?? process.env.TOGETHER_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
+
+    const endpoint = endpointId ?? process.env.RUNPOD_ENDPOINT_ID;
+    if (!endpoint) {
+      throw new Error('RUNPOD_ENDPOINT_ID is required for NessieProvider');
+    }
+    this.endpointId = endpoint;
+    this.apiBase = `https://api.runpod.ai/v2/${this.endpointId}/openai/v1`;
   }
 
   async extractMetadata(request: ExtractionRequest): Promise<ExtractionResult> {
@@ -83,7 +85,7 @@ export class TogetherProvider implements IAIProvider {
       const response = await this.chatCompletion(
         EXTRACTION_SYSTEM_PROMPT,
         prompt,
-        { temperature: 0.1, response_format: { type: 'json_object' as const } },
+        { temperature: 0.1 },
       );
 
       const text = response.choices[0]?.message?.content ?? '';
@@ -93,8 +95,8 @@ export class TogetherProvider implements IAIProvider {
       const validated = ExtractedFieldsSchema.safeParse(rawFields);
       if (!validated.success) {
         logger.warn(
-          { zodError: validated.error.message, model: this.modelName },
-          'Together AI extraction schema validation failed',
+          { zodError: validated.error.message, model: 'nessie-v2' },
+          'Nessie extraction schema validation failed',
         );
         throw new Error('Extraction schema validation failed');
       }
@@ -106,7 +108,7 @@ export class TogetherProvider implements IAIProvider {
       };
     });
 
-    // CRIT-5/GAP-3: Grounding verification
+    // Grounding verification
     const groundingReport = verifyGrounding(
       result.fields as Record<string, unknown>,
       request.strippedText,
@@ -117,7 +119,7 @@ export class TogetherProvider implements IAIProvider {
       Math.max(0, result.confidence + groundingReport.confidenceAdjustment),
     );
 
-    // Cross-field consistency fraud checks (parity with GeminiProvider)
+    // Cross-field consistency fraud checks
     const crossFieldReport = runCrossFieldChecks(result.fields);
     adjustedConfidence = Math.min(
       1,
@@ -130,7 +132,7 @@ export class TogetherProvider implements IAIProvider {
     if (crossFieldReport.warnings.length > 0) {
       logger.info(
         { warnings: crossFieldReport.warnings, signals: crossFieldReport.additionalFraudSignals },
-        'Together AI: Cross-field fraud checks produced warnings',
+        'Nessie: Cross-field fraud checks produced warnings',
       );
     }
 
@@ -145,53 +147,15 @@ export class TogetherProvider implements IAIProvider {
     };
   }
 
-  async generateEmbedding(text: string, _taskType?: import('./types.js').EmbeddingTaskType): Promise<EmbeddingResult> {
-    this.checkCircuit();
-
-    const result = await this.withRetry(async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-      try {
-        const response = await fetch(`${TOGETHER_API_BASE}/embeddings`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: this.embeddingModelName,
-            input: text,
-          }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          logger.error(
-            { status: response.status, errorBody, model: this.embeddingModelName },
-            'Together AI embedding API error',
-          );
-          throw new Error(`Embedding generation failed (status ${response.status})`);
-        }
-
-        const data = (await response.json()) as {
-          data: Array<{ embedding: number[] }>;
-          model: string;
-        };
-        if (!data.data || data.data.length === 0 || !data.data[0].embedding) {
-          throw new Error('Together API returned empty embedding data');
-        }
-        return data.data[0].embedding;
-      } finally {
-        clearTimeout(timeout);
-      }
-    });
-
-    return {
-      embedding: result,
-      model: this.embeddingModelName,
-    };
+  /**
+   * Nessie doesn't have its own embedding model — delegate to Gemini.
+   * This is expected: Nessie is extraction-only, embeddings use Gemini's
+   * dedicated embedding model for better quality.
+   */
+  async generateEmbedding(_text: string, _taskType?: EmbeddingTaskType): Promise<EmbeddingResult> {
+    throw new Error(
+      'NessieProvider does not support embeddings. Use GeminiProvider for embedding generation.',
+    );
   }
 
   async healthCheck(): Promise<ProviderHealth> {
@@ -200,8 +164,8 @@ export class TogetherProvider implements IAIProvider {
     try {
       const response = await this.chatCompletion(
         'You are a health check assistant.',
-        'ping',
-        { temperature: 0, max_tokens: 5 },
+        'Respond with exactly: {"status":"ok"}',
+        { temperature: 0, max_tokens: 20 },
       );
 
       if (response.choices?.[0]?.message) {
@@ -210,7 +174,7 @@ export class TogetherProvider implements IAIProvider {
           healthy: true,
           provider: this.name,
           latencyMs: Date.now() - start,
-          mode: 'together-inference',
+          mode: 'runpod-serverless',
         };
       }
       throw new Error('Unexpected response shape');
@@ -219,14 +183,14 @@ export class TogetherProvider implements IAIProvider {
         healthy: false,
         provider: this.name,
         latencyMs: Date.now() - start,
-        mode: 'together-inference',
+        mode: 'runpod-serverless',
       };
     }
   }
 
   /**
-   * Generate a RAG synthesis response using Together AI's chat completion.
-   * Used by Nessie context mode to replace hardcoded Gemini calls.
+   * Generate a RAG synthesis response using Nessie.
+   * Used by Nessie context mode for verified intelligence queries.
    */
   async generateRAGResponse(
     systemPrompt: string,
@@ -237,7 +201,6 @@ export class TogetherProvider implements IAIProvider {
     const response = await this.withRetry(async () => {
       return this.chatCompletion(systemPrompt, userPrompt, {
         temperature: 0.2,
-        response_format: { type: 'json_object' as const },
       });
     });
 
@@ -255,28 +218,26 @@ export class TogetherProvider implements IAIProvider {
     options: {
       temperature?: number;
       max_tokens?: number;
-      response_format?: { type: 'json_object' | 'text' };
     } = {},
-  ): Promise<TogetherChatResponse> {
+  ): Promise<RunPodChatResponse> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${TOGETHER_API_BASE}/chat/completions`, {
+      const response = await fetch(`${this.apiBase}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: this.modelName,
+          model: 'nessie-v2',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: options.temperature ?? 0.2,
+          temperature: options.temperature ?? 0.1,
           max_tokens: options.max_tokens ?? 4096,
-          ...(options.response_format ? { response_format: options.response_format } : {}),
         }),
         signal: controller.signal,
       });
@@ -284,13 +245,13 @@ export class TogetherProvider implements IAIProvider {
       if (!response.ok) {
         const errorBody = await response.text();
         logger.error(
-          { status: response.status, errorBody, model: this.modelName },
-          'Together AI chat completion error',
+          { status: response.status, errorBody, endpoint: this.endpointId },
+          'Nessie RunPod API error',
         );
-        throw new Error(`Together AI request failed (status ${response.status})`);
+        throw new Error(`Nessie request failed (status ${response.status})`);
       }
 
-      return (await response.json()) as TogetherChatResponse;
+      return (await response.json()) as RunPodChatResponse;
     } finally {
       clearTimeout(timeout);
     }
@@ -306,7 +267,7 @@ export class TogetherProvider implements IAIProvider {
     }
 
     throw new Error(
-      `TogetherProvider circuit breaker open: ${this.circuit.consecutiveFailures} consecutive failures. ` +
+      `NessieProvider circuit breaker open: ${this.circuit.consecutiveFailures} consecutive failures. ` +
         `Retry after ${Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000)}s.`,
     );
   }
@@ -348,6 +309,7 @@ export class TogetherProvider implements IAIProvider {
         }
 
         if (attempt < MAX_RETRIES - 1) {
+          // Longer backoff for serverless cold starts
           const baseDelay = BASE_DELAY_MS * Math.pow(2, attempt);
           const delay = baseDelay * (0.5 + Math.random() * 0.5);
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -360,9 +322,9 @@ export class TogetherProvider implements IAIProvider {
   }
 }
 
-// ─── Type definitions for Together AI API responses ───
+// ─── Type definitions for RunPod vLLM API responses (OpenAI-compatible) ───
 
-interface TogetherChatResponse {
+interface RunPodChatResponse {
   id: string;
   object: string;
   created: number;

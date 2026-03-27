@@ -7,15 +7,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../ai/factory.js', () => ({
-  createAIProvider: vi.fn().mockReturnValue({
+vi.mock('../../ai/factory.js', () => {
+  const mockProvider = {
     name: 'mock',
     generateEmbedding: vi.fn().mockResolvedValue({
       embedding: new Array(768).fill(0.1),
-      model: 'text-embedding-004',
+      model: 'gemini-embedding-001',
     }),
-  }),
-}));
+  };
+  return {
+    createAIProvider: vi.fn().mockReturnValue(mockProvider),
+    createEmbeddingProvider: vi.fn().mockReturnValue(mockProvider),
+  };
+});
 
 vi.mock('../../ai/cost-tracker.js', () => ({
   checkAICredits: vi.fn().mockResolvedValue({

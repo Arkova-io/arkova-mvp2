@@ -46,8 +46,15 @@ async function main() {
     }
     const { GeminiProvider } = await import('../gemini.js');
     provider = new GeminiProvider();
+  } else if (providerArg === 'nessie') {
+    if (!process.env.RUNPOD_API_KEY || !process.env.RUNPOD_ENDPOINT_ID) {
+      console.error('ERROR: RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID required for nessie provider');
+      process.exit(1);
+    }
+    const { NessieProvider } = await import('../nessie.js');
+    provider = new NessieProvider();
   } else {
-    console.error(`ERROR: Unknown provider "${providerArg}". Use "mock" or "gemini".`);
+    console.error(`ERROR: Unknown provider "${providerArg}". Use "mock", "gemini", or "nessie".`);
     process.exit(1);
   }
 
