@@ -16,9 +16,8 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { getInitializedChainClient } from '../chain/client.js';
+import { getChainClientAsync } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
-import type { MerkleProofEntry } from '../utils/merkle.js';
 
 /**
  * Max anchors per batch transaction — configurable via BATCH_ANCHOR_MAX_SIZE env (BTC-001).
@@ -78,7 +77,7 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
   // Phase 3: Publish Merkle root to chain
   let receipt;
   try {
-    const chainClient = getInitializedChainClient();
+    const chainClient = await getChainClientAsync();
     receipt = await chainClient.submitFingerprint({
       fingerprint: tree.root,
       timestamp: new Date().toISOString(),
@@ -100,60 +99,55 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
     return { processed: 0, batchId: null, merkleRoot: tree.root, txId: null };
   }
 
-  // Phase 4: Update each anchor: BROADCASTING → SUBMITTED
+  // Phase 4: Bulk update all claimed anchors BROADCASTING → SUBMITTED in one RPC call
+  // (Individual PostgREST updates timeout under load — use DB-side bulk function)
   const batchId = `batch_${Date.now()}_${claimedAnchors.length}`;
-  let updatedCount = 0;
+  const anchorIds = claimedAnchors.map((a: { id: string }) => a.id);
 
-  for (const anchor of claimedAnchors) {
-    const proof: MerkleProofEntry[] = tree.proofs.get(anchor.fingerprint) ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: updatedCount, error: bulkError } = await (db.rpc as any)('submit_batch_anchors', {
+    p_anchor_ids: anchorIds,
+    p_tx_id: receipt.receiptId,
+    p_block_height: receipt.blockHeight ?? null,
+    p_block_timestamp: receipt.blockTimestamp ?? null,
+    p_merkle_root: tree.root,
+    p_batch_id: batchId,
+  });
 
-    const existingMeta = typeof anchor.metadata === 'object' && anchor.metadata !== null
-      ? anchor.metadata as Record<string, unknown>
-      : {};
+  if (bulkError) {
+    // Fallback: try individual updates if RPC fails
+    logger.warn({ error: bulkError }, 'submit_batch_anchors RPC failed — falling back to individual updates');
+    let fallbackCount = 0;
+    for (const anchor of claimedAnchors) {
+      const { error: updateError } = await db
+        .from('anchors')
+        .update({
+          status: 'SUBMITTED' as const,
+          chain_tx_id: receipt.receiptId,
+          chain_block_height: receipt.blockHeight,
+          chain_timestamp: receipt.blockTimestamp,
+          metadata: JSON.parse(JSON.stringify({
+            ...(typeof anchor.metadata === 'object' && anchor.metadata !== null ? anchor.metadata : {}),
+            merkle_root: tree.root,
+            batch_id: batchId,
+          })),
+        })
+        .eq('id', anchor.id)
+        .eq('status', 'BROADCASTING');
 
-    // Clean up claim metadata and add batch metadata
-    const updatedMeta: Record<string, unknown> = { ...existingMeta };
-    delete updatedMeta._claimed_by;
-    delete updatedMeta._claimed_at;
-    updatedMeta.merkle_proof = proof.map((p) => ({ hash: p.hash, position: p.position }));
-    updatedMeta.merkle_root = tree.root;
-    updatedMeta.batch_id = batchId;
-    if (receipt.rawTxHex) updatedMeta._raw_tx_hex = receipt.rawTxHex;
-    if (receipt.feeSats !== undefined) updatedMeta._fee_sats = receipt.feeSats;
-
-    // RACE-1: Guard with BROADCASTING status
-    const { error: updateError, count: updateCount } = await db
-      .from('anchors')
-      .update({
-        status: 'SUBMITTED' as const,
-        chain_tx_id: receipt.receiptId,
-        chain_block_height: receipt.blockHeight,
-        chain_timestamp: receipt.blockTimestamp,
-        metadata: JSON.parse(JSON.stringify(updatedMeta)),
-      })
-      .eq('id', anchor.id)
-      .eq('status', 'BROADCASTING');
-
-    if (!updateError && updateCount === 0) {
-      logger.warn({ anchorId: anchor.id }, 'Anchor no longer in BROADCASTING state — skipping batch update');
-      continue;
+      if (!updateError) fallbackCount++;
     }
 
-    if (updateError) {
-      logger.error(
-        { anchorId: anchor.id, error: updateError },
-        'Failed to update anchor in batch',
-      );
-      continue;
-    }
-
-    updatedCount++;
+    logger.info({ batchId, count: fallbackCount, total: claimedAnchors.length, merkleRoot: tree.root, txId: receipt.receiptId }, 'Batch anchor processing complete (fallback)');
+    return { processed: fallbackCount, batchId, merkleRoot: tree.root, txId: receipt.receiptId };
   }
+
+  const processed = typeof updatedCount === 'number' ? updatedCount : (claimedAnchors.length);
 
   logger.info(
     {
       batchId,
-      count: updatedCount,
+      count: processed,
       total: claimedAnchors.length,
       merkleRoot: tree.root,
       txId: receipt.receiptId,
@@ -162,7 +156,7 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
   );
 
   return {
-    processed: updatedCount,
+    processed,
     batchId,
     merkleRoot: tree.root,
     txId: receipt.receiptId,
@@ -209,7 +203,7 @@ async function legacyProcessBatchAnchors(): Promise<BatchAnchorResult> {
 
   let receipt;
   try {
-    const chainClient = getInitializedChainClient();
+    const chainClient = await getChainClientAsync();
     receipt = await chainClient.submitFingerprint({
       fingerprint: tree.root,
       timestamp: new Date().toISOString(),
@@ -220,42 +214,63 @@ async function legacyProcessBatchAnchors(): Promise<BatchAnchorResult> {
   }
 
   const batchId = `batch_${Date.now()}_${pendingAnchors.length}`;
-  let updatedCount = 0;
+  const anchorIds = pendingAnchors.map((a) => a.id);
 
-  for (const anchor of pendingAnchors) {
-    const proof: MerkleProofEntry[] = tree.proofs.get(anchor.fingerprint) ?? [];
+  // Bulk update all anchors PENDING → SUBMITTED in one RPC call
+  // (Individual PostgREST updates timeout under load — use DB-side bulk function)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: bulkCount, error: bulkError } = await (db.rpc as any)('submit_batch_anchors', {
+    p_anchor_ids: anchorIds,
+    p_tx_id: receipt.receiptId,
+    p_block_height: receipt.blockHeight ?? null,
+    p_block_timestamp: receipt.blockTimestamp ?? null,
+    p_merkle_root: tree.root,
+    p_batch_id: batchId,
+  });
 
-    const { error: updateError, count: updateCount } = await db
-      .from('anchors')
-      .update({
-        status: 'SUBMITTED' as const,
-        chain_tx_id: receipt.receiptId,
-        chain_block_height: receipt.blockHeight,
-        chain_timestamp: receipt.blockTimestamp,
-        metadata: JSON.parse(JSON.stringify({
-          ...(typeof anchor.metadata === 'object' && anchor.metadata !== null ? anchor.metadata : {}),
-          merkle_proof: proof.map((p) => ({ hash: p.hash, position: p.position })),
-          merkle_root: tree.root,
-          batch_id: batchId,
-          ...(receipt.rawTxHex ? { _raw_tx_hex: receipt.rawTxHex } : {}),
-          ...(receipt.feeSats !== undefined ? { _fee_sats: receipt.feeSats } : {}),
-        })),
-      })
-      .eq('id', anchor.id)
-      .eq('status', 'PENDING');
+  if (bulkError) {
+    // Fallback: try individual updates if RPC not available
+    logger.warn({ error: bulkError }, 'submit_batch_anchors RPC failed in legacy path — falling back to individual updates');
+    let updatedCount = 0;
 
-    if (!updateError && updateCount === 0) {
-      logger.warn({ anchorId: anchor.id }, 'Anchor already claimed — skipping legacy batch update');
-      continue;
+    for (const anchor of pendingAnchors) {
+      const { error: updateError, count: updateCount } = await db
+        .from('anchors')
+        .update({
+          status: 'SUBMITTED' as const,
+          chain_tx_id: receipt.receiptId,
+          chain_block_height: receipt.blockHeight,
+          chain_timestamp: receipt.blockTimestamp,
+          metadata: JSON.parse(JSON.stringify({
+            ...(typeof anchor.metadata === 'object' && anchor.metadata !== null ? anchor.metadata : {}),
+            merkle_root: tree.root,
+            batch_id: batchId,
+          })),
+        })
+        .eq('id', anchor.id)
+        .eq('status', 'PENDING');
+
+      if (!updateError && updateCount === 0) {
+        logger.warn({ anchorId: anchor.id }, 'Anchor already claimed — skipping legacy batch update');
+        continue;
+      }
+      if (updateError) {
+        logger.error({ anchorId: anchor.id, error: updateError }, 'Failed to update anchor in legacy batch');
+        continue;
+      }
+      updatedCount++;
     }
 
-    if (updateError) {
-      logger.error({ anchorId: anchor.id, error: updateError }, 'Failed to update anchor in legacy batch');
-      continue;
-    }
-
-    updatedCount++;
+    logger.info({ batchId, count: updatedCount, total: pendingAnchors.length, merkleRoot: tree.root, txId: receipt.receiptId }, 'Legacy batch anchor processing complete (fallback)');
+    return { processed: updatedCount, batchId, merkleRoot: tree.root, txId: receipt.receiptId };
   }
 
-  return { processed: updatedCount, batchId, merkleRoot: tree.root, txId: receipt.receiptId };
+  const processed = typeof bulkCount === 'number' ? bulkCount : pendingAnchors.length;
+
+  logger.info(
+    { batchId, count: processed, total: pendingAnchors.length, merkleRoot: tree.root, txId: receipt.receiptId },
+    'Legacy batch anchor processing complete',
+  );
+
+  return { processed, batchId, merkleRoot: tree.root, txId: receipt.receiptId };
 }
