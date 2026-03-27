@@ -37,21 +37,11 @@ export function useAnchorStats() {
         return { status, count: count ?? 0 };
       });
 
-      // Fetch distinct tx_ids count and last times
-      const [countsResult, txStatsResult, lastAnchorResult] = await Promise.all([
+      // Use RPC for accurate TX stats (PostgREST caps rows at 1000, breaking client-side distinct counts)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [countsResult, txStatsResult] = await Promise.all([
         Promise.all(countPromises),
-        supabase
-          .from('anchors')
-          .select('chain_tx_id')
-          .not('chain_tx_id', 'is', null)
-          .is('deleted_at', null),
-        supabase
-          .from('anchors')
-          .select('created_at, chain_tx_id')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        (supabase as any).rpc('get_anchor_tx_stats'),
       ]);
 
       if (!isMountedRef.current) return;
@@ -62,29 +52,13 @@ export function useAnchorStats() {
       }
       const totalAnchors = Object.values(statusCounts).reduce((sum, c) => sum + c, 0);
 
-      // Process distinct tx_ids
-      const txIds = new Set<string>();
-      if (txStatsResult.data) {
-        for (const row of txStatsResult.data) {
-          if (row.chain_tx_id) txIds.add(row.chain_tx_id);
-        }
-      }
-      const distinctTxIds = txIds.size;
-      const anchorsWithTx = txStatsResult.data?.length ?? 0;
+      // Process TX stats from RPC (accurate server-side aggregation)
+      const txData = txStatsResult.data ?? {};
+      const distinctTxIds = txData.distinct_tx_count ?? 0;
+      const anchorsWithTx = txData.anchors_with_tx ?? 0;
       const avgAnchorsPerTx = distinctTxIds > 0 ? Math.round(anchorsWithTx / distinctTxIds) : 0;
-
-      // Last anchor time
-      const lastAnchorTime = lastAnchorResult.data?.created_at ?? null;
-
-      // Last TX time (most recent anchor with a tx_id)
-      const { data: lastTxData } = await supabase
-        .from('anchors')
-        .select('updated_at')
-        .not('chain_tx_id', 'is', null)
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const lastAnchorTime = txData.last_anchor_time ?? null;
+      const lastTxTime = txData.last_tx_time ?? null;
 
       if (isMountedRef.current) {
         setStats({
@@ -93,7 +67,7 @@ export function useAnchorStats() {
           distinctTxIds,
           avgAnchorsPerTx,
           lastAnchorTime,
-          lastTxTime: lastTxData?.updated_at ?? null,
+          lastTxTime,
         });
       }
     } catch {
