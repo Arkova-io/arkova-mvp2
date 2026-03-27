@@ -20,7 +20,7 @@
 import { db } from '../utils/db.js';
 import { logger, createRpcLogger } from '../utils/logger.js';
 import { callRpc } from '../utils/rpc.js';
-import { getInitializedChainClient } from '../chain/client.js';
+import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 import { sendEmail, buildRevocationEmail } from '../email/index.js';
@@ -71,7 +71,7 @@ export async function processRevocation(anchorId: string): Promise<boolean> {
     // We reuse the same fingerprint but add REVOKE metadata so the OP_RETURN
     // payload is: ARKV + SHA-256(fingerprint) — same as anchoring.
     // The metadata field distinguishes it as a revocation in our records.
-    const chainClient = getInitializedChainClient();
+    const chainClient = await getChainClientAsync();
     const receipt = await chainClient.submitFingerprint({
       fingerprint: anchorRecord.fingerprint,
       timestamp: new Date().toISOString(),

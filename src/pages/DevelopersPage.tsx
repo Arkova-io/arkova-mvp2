@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Layers, Brain, ArrowRight, Copy, Check, Bot, AlertCircle, Building2, Key, Gauge } from 'lucide-react';
+import { ShieldCheck, Layers, Brain, ArrowRight, Copy, Check, Bot, AlertCircle, Building2, Key, Gauge, CreditCard, Terminal, DollarSign, Code2 } from 'lucide-react';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
 import { ROUTES } from '@/lib/routes';
 import { PUBLIC_API_URL } from '@/lib/workerClient';
@@ -36,13 +36,48 @@ const CURL_RAW = `curl -X POST \\
     "ai_metadata": true
   }'`;
 
+const SDK_EXAMPLES = {
+  curl: `curl -X GET \\
+  ${PUBLIC_API_URL}/api/v1/verify/abc123-def456 \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
+  typescript: `import { ArkovaClient } from '@arkova/sdk';
+
+const client = new ArkovaClient({ apiKey: 'YOUR_API_KEY' });
+const result = await client.verify('abc123-def456');
+console.log(result.status); // 'ACTIVE'`,
+  python: `from arkova import ArkovaClient
+
+client = ArkovaClient(api_key="YOUR_API_KEY")
+result = client.verify("abc123-def456")
+print(result.status)  # "ACTIVE"`,
+};
+
+const PRICING_TABLE = [
+  { endpoint: '/verify/:publicId', method: 'GET', price: '$0.002', desc: 'Verify credential' },
+  { endpoint: '/verify/batch', method: 'POST', price: '$0.002/item', desc: 'Batch verification' },
+  { endpoint: '/verify/entity', method: 'GET', price: '$0.005', desc: 'Entity lookup' },
+  { endpoint: '/compliance/check', method: 'GET', price: '$0.010', desc: 'Compliance check' },
+  { endpoint: '/regulatory/lookup', method: 'GET', price: '$0.002', desc: 'Regulatory lookup' },
+  { endpoint: '/cle/*', method: 'GET/POST', price: '$0.005', desc: 'CLE verification' },
+  { endpoint: '/ai/search', method: 'POST', price: '$0.010', desc: 'AI semantic search' },
+  { endpoint: '/nessie/query', method: 'GET', price: '$0.010', desc: 'Nessie AI query' },
+];
+
 export function DevelopersPage() {
   const [copied, setCopied] = useState(false);
+  const [sdkTab, setSdkTab] = useState<'curl' | 'typescript' | 'python'>('curl');
+  const [sdkCopied, setSdkCopied] = useState(false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(CURL_RAW);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSdkCopy = async () => {
+    await navigator.clipboard.writeText(SDK_EXAMPLES[sdkTab]);
+    setSdkCopied(true);
+    setTimeout(() => setSdkCopied(false), 2000);
   };
 
   return (
@@ -57,6 +92,12 @@ export function DevelopersPage() {
           <span className="text-[#00d4ff] border-b-2 border-[#00d4ff] pb-1 font-bold tracking-tight text-sm">
             Docs
           </span>
+          <Link
+            to={ROUTES.API_SANDBOX}
+            className="text-[#bbc9cf] font-bold tracking-tight text-sm hover:text-[#a8e8ff] transition-colors"
+          >
+            Sandbox
+          </Link>
           <a
             href={API_DOCS_URL}
             target="_blank"
@@ -271,6 +312,156 @@ export function DevelopersPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* x402 Micropayment Flow */}
+        <section className="px-6 py-20 bg-[#0d141b]">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-black tracking-tight mb-4 flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#00d4ff]" />
+              How x402 Payments Work
+            </h2>
+            <p className="text-[#bbc9cf] mb-10 max-w-2xl">
+              Pay-per-request with no subscription. Use USDC on Base L2 for sub-cent micropayments.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {[
+                { step: '1', title: 'Request', desc: 'Make an API request without auth' },
+                { step: '2', title: 'Pricing', desc: 'Receive 402 Payment Required with pricing details' },
+                { step: '3', title: 'Pay', desc: 'Transfer USDC on Base L2 to the provided address' },
+                { step: '4', title: 'Prove', desc: 'Retry request with X-Payment header containing TX proof' },
+                { step: '5', title: 'Done', desc: 'Receive your API response' },
+              ].map((s, i) => (
+                <div key={s.step} className="relative bg-[#192028] p-5 rounded-lg border border-[#3c494e]/15">
+                  {i < 4 && (
+                    <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 text-[#3c494e] z-10">
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div className="w-8 h-8 rounded-full bg-[#2e353d] border border-[#00d4ff]/30 flex items-center justify-center text-[#a8e8ff] font-bold text-sm mb-3">
+                    {s.step}
+                  </div>
+                  <h4 className="font-bold text-sm mb-1">{s.title}</h4>
+                  <p className="text-xs text-[#bbc9cf]">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-4 text-xs text-[#bbc9cf]">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-[#a8e8ff]" />
+                <span>USDC on Base (L2)</span>
+              </div>
+              <span className="text-[#3c494e]">|</span>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-[#a8e8ff]" />
+                <span>Sub-cent transactions</span>
+              </div>
+              <span className="text-[#3c494e]">|</span>
+              <span>No subscription needed</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Endpoint & Pricing Table */}
+        <section className="px-6 py-20 bg-[#151c24]">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-black tracking-tight mb-10 flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#00d4ff]" />
+              Endpoint Pricing
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[#3c494e]/30">
+                    <th className="pb-3 text-[10px] uppercase tracking-[0.2em] text-[#bbc9cf] font-semibold">Endpoint</th>
+                    <th className="pb-3 text-[10px] uppercase tracking-[0.2em] text-[#bbc9cf] font-semibold">Method</th>
+                    <th className="pb-3 text-[10px] uppercase tracking-[0.2em] text-[#bbc9cf] font-semibold">Price</th>
+                    <th className="pb-3 text-[10px] uppercase tracking-[0.2em] text-[#bbc9cf] font-semibold hidden sm:table-cell">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {PRICING_TABLE.map((row) => (
+                    <tr key={row.endpoint} className="border-b border-[#3c494e]/10 hover:bg-[#192028] transition-colors">
+                      <td className="py-3 font-mono text-sm text-[#a8e8ff]">{row.endpoint}</td>
+                      <td className="py-3">
+                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                          row.method === 'GET' ? 'bg-emerald-500/20 text-emerald-400'
+                            : row.method === 'POST' ? 'bg-blue-500/20 text-blue-400'
+                            : 'bg-purple-500/20 text-purple-400'
+                        }`}>
+                          {row.method}
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono text-sm text-[#00d4ff] font-bold">{row.price}</td>
+                      <td className="py-3 text-sm text-[#bbc9cf] hidden sm:table-cell">{row.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* SDK Code Examples */}
+        <section className="px-6 py-20 bg-[#0d141b]">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-black tracking-tight mb-10 flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#00d4ff]" />
+              SDK Examples
+            </h2>
+            <div className="bg-[#080f16] rounded-xl border border-[#3c494e]/15 overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between px-4 py-3 bg-[#2e353d]/50 border-b border-[#3c494e]/10">
+                <div className="flex gap-1">
+                  {(['curl', 'typescript', 'python'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setSdkTab(tab)}
+                      className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
+                        sdkTab === tab
+                          ? 'bg-[#00d4ff]/15 text-[#00d4ff] border border-[#00d4ff]/30'
+                          : 'text-[#bbc9cf] hover:text-[#a8e8ff]'
+                      }`}
+                    >
+                      {tab === 'typescript' ? 'TypeScript' : tab === 'python' ? 'Python' : 'cURL'}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleSdkCopy}
+                  className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-[#bbc9cf] hover:text-[#00d4ff] transition-colors"
+                >
+                  {sdkCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  {sdkCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <pre className="p-6 font-mono text-sm text-[#a8e8ff] overflow-x-auto whitespace-pre leading-relaxed">
+                {SDK_EXAMPLES[sdkTab]}
+              </pre>
+            </div>
+          </div>
+        </section>
+
+        {/* Try the API CTA */}
+        <section className="px-6 py-16 bg-[#151c24]">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#242b32] border border-[#3c494e]/20 mb-6">
+              <Terminal className="h-3 w-3 text-[#00d4ff]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#a8e8ff] font-semibold">
+                Interactive Playground
+              </span>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight mb-4">Try the API</h2>
+            <p className="text-[#bbc9cf] mb-8 max-w-lg mx-auto">
+              Test every endpoint interactively. Configure parameters, send requests, and inspect responses — all from your browser.
+            </p>
+            <Link
+              to={ROUTES.API_SANDBOX}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-[#00d4ff] text-[#003642] rounded-full font-bold uppercase tracking-widest text-sm hover:shadow-[0_0_30px_rgba(0,212,255,0.4)] transition-all"
+            >
+              <Code2 className="h-4 w-4" />
+              Open API Sandbox
+            </Link>
           </div>
         </section>
 

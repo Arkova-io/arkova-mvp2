@@ -60,6 +60,7 @@ vi.mock('../config.js', () => ({
 
 vi.mock('../chain/client.js', () => ({
   getInitializedChainClient: () => ({ submitFingerprint: mockSubmitFingerprint }),
+  getChainClientAsync: () => Promise.resolve({ submitFingerprint: mockSubmitFingerprint }),
 }));
 
 vi.mock('../webhooks/delivery.js', () => ({

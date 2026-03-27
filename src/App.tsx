@@ -75,6 +75,7 @@ const OrganizationsListPage = React.lazy(() => import('@/pages/OrganizationsList
 const OrgProfilePage = React.lazy(() => import('@/pages/OrgProfilePage').then(m => ({ default: m.OrgProfilePage })));
 const PublicAttestationVerifyPage = React.lazy(() => import('@/pages/PublicAttestationVerifyPage').then(m => ({ default: m.PublicAttestationVerifyPage })));
 const StateBarApiPage = React.lazy(() => import('@/pages/StateBarApiPage').then(m => ({ default: m.StateBarApiPage })));
+const ApiSandboxPage = React.lazy(() => import('@/pages/ApiSandboxPage').then(m => ({ default: m.ApiSandboxPage })));
 
 /**
  * Redirect authenticated users away from login/signup.
@@ -145,6 +146,7 @@ export function App() {
           <Route path={ROUTES.ISSUER_REGISTRY} element={<RouteErrorBoundary section="IssuerRegistry"><IssuerRegistryPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.VERIFY_ATTESTATION} element={<RouteErrorBoundary section="AttestationVerify"><PublicAttestationVerifyPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.DEVELOPERS} element={<RouteErrorBoundary section="Developers"><DevelopersPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.API_SANDBOX} element={<RouteErrorBoundary section="API Sandbox"><ApiSandboxPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.CLE_API} element={<RouteErrorBoundary section="CLE API"><StateBarApiPage /></RouteErrorBoundary>} />
 
           {/* OAuth callback — Supabase redirects here after Google sign-in */}

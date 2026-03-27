@@ -114,6 +114,7 @@ vi.mock('../utils/rpc.js', () => ({
 
 vi.mock('../chain/client.js', () => ({
   getInitializedChainClient: mockGetInitializedChainClient,
+  getChainClientAsync: (...args: unknown[]) => Promise.resolve(mockGetInitializedChainClient(...args)),
 }));
 
 vi.mock('../webhooks/delivery.js', () => ({

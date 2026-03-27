@@ -523,8 +523,8 @@ export async function consolidateUtxos(): Promise<ConsolidationResult> {
     }
 
     // Fetch treasury UTXOs
-    const { getInitializedChainClient } = await import('../chain/client.js');
-    const chainClient = getInitializedChainClient();
+    const { getChainClientAsync } = await import('../chain/client.js');
+    const chainClient = await getChainClientAsync();
 
     // We need the UTXO provider directly — use the chain client's internal provider
     // For now, log the opportunity and let ops handle manually

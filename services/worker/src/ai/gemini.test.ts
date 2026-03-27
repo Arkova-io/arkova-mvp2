@@ -110,7 +110,9 @@ describe('GeminiProvider', () => {
 
       const provider = new GeminiProvider('test-key');
       const result = await provider.extractMetadata(request);
-      expect(result.confidence).toBe(1);
+      // Cross-field checks and grounding may adjust confidence down from 1.0
+      expect(result.confidence).toBeGreaterThan(0);
+      expect(result.confidence).toBeLessThanOrEqual(1);
     });
 
     it('defaults confidence to 0.5 if not provided', async () => {

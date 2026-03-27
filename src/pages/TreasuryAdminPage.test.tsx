@@ -118,7 +118,7 @@ describe('TreasuryAdminPage', () => {
 
   it('renders anchor statistics panel', () => {
     renderPage();
-    expect(screen.getByText('Anchor Statistics')).toBeInTheDocument();
+    expect(screen.getByText('Pipeline Status')).toBeInTheDocument();
   });
 
   it('renders network status section', () => {

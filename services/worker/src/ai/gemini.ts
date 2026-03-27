@@ -23,6 +23,9 @@ import { ExtractedFieldsSchema } from './schemas.js';
 import { EXTRACTION_SYSTEM_PROMPT, buildExtractionPrompt } from './prompts/extraction.js';
 import { logger } from '../utils/logger.js';
 import { verifyGrounding } from './grounding.js';
+import { runCrossFieldChecks } from './crossFieldFraudChecks.js';
+import { runEnsembleExtraction } from './ensembleConfidence.js';
+import type { EnsembleResult } from './ensembleConfidence.js';
 
 // GAP-5: Pin to specific model versions to prevent silent quality drift.
 // Before upgrading: run eval suite, compare F1, document delta, update pin.
@@ -114,17 +117,50 @@ export class GeminiProvider implements IAIProvider {
     );
 
     // Apply confidence adjustment for ungrounded fields
-    const adjustedConfidence = Math.min(
+    let adjustedConfidence = Math.min(
       1,
       Math.max(0, result.confidence + groundingReport.confidenceAdjustment),
     );
 
+    // Cross-field consistency fraud checks
+    const crossFieldReport = runCrossFieldChecks(result.fields);
+    adjustedConfidence = Math.min(
+      1,
+      Math.max(0, adjustedConfidence + crossFieldReport.confidenceAdjustment),
+    );
+
+    // Merge cross-field fraud signals into the result
+    const existingSignals = result.fields.fraudSignals ?? [];
+    const mergedSignals = [...new Set([...existingSignals, ...crossFieldReport.additionalFraudSignals])];
+
+    if (crossFieldReport.warnings.length > 0) {
+      logger.info(
+        { warnings: crossFieldReport.warnings, signals: crossFieldReport.additionalFraudSignals },
+        'Cross-field fraud checks produced warnings',
+      );
+    }
+
     return {
-      fields: result.fields,
+      fields: {
+        ...result.fields,
+        ...(mergedSignals.length > 0 ? { fraudSignals: mergedSignals } : {}),
+      },
       confidence: adjustedConfidence,
       provider: this.name,
       tokensUsed: result.tokensUsed,
     };
+  }
+
+  /**
+   * Extract metadata using ensemble confidence scoring.
+   * Runs 3 extractions with different prompt framings and measures agreement.
+   * Produces better-calibrated confidence scores (target r > 0.70).
+   *
+   * Use this for high-stakes verifications where confidence accuracy matters.
+   * Cost: ~3x a single extraction.
+   */
+  async extractWithEnsemble(request: ExtractionRequest): Promise<EnsembleResult> {
+    return runEnsembleExtraction(this, request);
   }
 
   async generateEmbedding(text: string): Promise<EmbeddingResult> {

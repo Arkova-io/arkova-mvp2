@@ -32,6 +32,8 @@ const SOURCE_TO_CREDENTIAL_TYPE: Record<string, string> = {
   'presidential_document': 'REGULATION',
   'accreditation': 'PROFESSIONAL',
   'charity_registration': 'CERTIFICATE',
+  'opinion': 'LEGAL',
+  'court_opinion': 'LEGAL',
 };
 
 interface PublicRecord {
@@ -120,6 +122,32 @@ function buildExtractedFields(record: PublicRecord): Record<string, unknown> {
       else fields.jurisdiction = 'Australia';
       fields.accreditingBody = 'Australian Charities and Not-for-profits Commission';
       break;
+
+    case 'courtlistener':
+      if (meta.court_name) fields.issuerName = meta.court_name;
+      if (meta.case_name) fields.title = meta.case_name;
+      if (meta.date_filed) fields.issuedDate = meta.date_filed;
+      if (meta.court_id) {
+        // Map court_id to jurisdiction — federal courts are US, state courts use court_id prefix
+        const courtId = meta.court_id as string;
+        if (['scotus', 'ca1', 'ca2', 'ca3', 'ca4', 'ca5', 'ca6', 'ca7', 'ca8', 'ca9', 'ca10', 'ca11', 'cadc', 'cafc'].includes(courtId)) {
+          fields.jurisdiction = 'United States (Federal)';
+        } else {
+          fields.jurisdiction = 'United States';
+        }
+      } else if (meta.jurisdiction) {
+        fields.jurisdiction = meta.jurisdiction;
+      }
+      if (meta.nature_of_suit && typeof meta.nature_of_suit === 'string' && meta.nature_of_suit.length > 0) {
+        fields.fieldOfStudy = meta.nature_of_suit;
+      } else {
+        fields.fieldOfStudy = 'Case Law';
+      }
+      if (meta.docket_number) fields.registrationNumber = meta.docket_number;
+      if (meta.citations && Array.isArray(meta.citations) && (meta.citations as string[]).length > 0) {
+        fields.registrationNumber = (meta.citations as string[])[0];
+      }
+      break;
   }
 
   fields.fraudSignals = []; // Pipeline records are clean
@@ -158,6 +186,16 @@ function formatAsConversation(record: PublicRecord): { messages: Array<{ role: s
   if (meta.institution_name) metaLines.push(`Institution: ${meta.institution_name}`);
   if (meta.document_number) metaLines.push(`Document Number: ${meta.document_number}`);
   if (meta.file_description) metaLines.push(`Description: ${meta.file_description}`);
+  // CourtListener fields
+  if (meta.court_name) metaLines.push(`Court: ${meta.court_name}`);
+  if (meta.case_name) metaLines.push(`Case Name: ${meta.case_name}`);
+  if (meta.date_filed) metaLines.push(`Date Filed: ${meta.date_filed}`);
+  if (meta.docket_number) metaLines.push(`Docket Number: ${meta.docket_number}`);
+  if (meta.citations && Array.isArray(meta.citations) && (meta.citations as string[]).length > 0) {
+    metaLines.push(`Citation: ${(meta.citations as string[]).join('; ')}`);
+  }
+  if (meta.nature_of_suit) metaLines.push(`Nature of Suit: ${meta.nature_of_suit}`);
+  if (meta.precedential_status) metaLines.push(`Precedential Status: ${meta.precedential_status}`);
 
   if (metaLines.length > 0) {
     textRepr += '\n\n' + metaLines.join('\n');

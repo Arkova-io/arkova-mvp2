@@ -72,6 +72,22 @@ Evaluate the following categories:
 
 5. **Security Features**: For official documents, check for expected security elements like watermarks, official seals, holograms, microprinting indicators, or security backgrounds.
 
+6. **Credential-Type-Specific Security Features**:
+   - DEGREE/DIPLOMA: Look for university seal/emblem, registrar signature block, embossed stamp indicators, security paper texture, anti-copy patterns, holographic overlay
+   - LICENSE: State seal, board logo, barcode/QR code, photograph placeholder, anti-tamper features, security background guilloché patterns
+   - CERTIFICATE: Issuing organization logo, authorized signature, certificate number format, border design consistency
+   - INSURANCE: Insurance company logo, ACORD form formatting (if COI), policy number format consistency
+   - LEGAL: Law firm letterhead, notary stamp/seal, court filing stamps, case number format
+   - FINANCIAL: Audit firm logo, financial institution watermarks, GAAP/IFRS formatting conventions
+   - PATENT: Patent office seal, patent number format (US X,XXX,XXX), filing date stamps
+   - SEC_FILING: EDGAR header formatting, SEC seal, filing acceptance stamp
+
+7. **Cross-Document Consistency** (when analyzing):
+   - Check if fonts are consistent throughout the document
+   - Verify date formats are consistent (don't mix MM/DD/YYYY and DD/MM/YYYY)
+   - Check that the overall design language is consistent (margins, spacing, alignment)
+   - Look for resolution differences between different parts of the image
+
 Respond ONLY with valid JSON in this format:
 {
   "riskScore": <number 0-100>,
@@ -98,6 +114,7 @@ const VISION_MODEL = 'gemini-2.0-flash-001'; // Flash supports vision and is cos
 
 /**
  * Analyze a document image for visual fraud indicators.
+ * Delegates to enhancedAnalyzeDocument for the actual analysis.
  *
  * @param imageBase64 - Base64-encoded document image (PII-stripped)
  * @param mimeType - Image MIME type (image/png, image/jpeg, etc.)
@@ -106,6 +123,43 @@ const VISION_MODEL = 'gemini-2.0-flash-001'; // Flash supports vision and is cos
  * @returns Visual fraud analysis result
  */
 export async function analyzeDocumentImage(
+  imageBase64: string,
+  mimeType: string,
+  credentialType: string,
+  apiKey?: string,
+): Promise<VisualFraudResult> {
+  return enhancedAnalyzeDocument(imageBase64, mimeType, credentialType, apiKey);
+}
+
+/**
+ * Credential-type-specific prompt additions for enhanced analysis.
+ * Provides targeted guidance based on the document type being analyzed.
+ */
+const CREDENTIAL_TYPE_PROMPTS: Record<string, string> = {
+  DEGREE: 'Pay special attention to: university seal/emblem presence and quality, registrar signature block, embossed stamp indicators, security paper texture patterns, anti-copy void patterns, and holographic overlay indicators.',
+  DIPLOMA: 'Pay special attention to: university seal/emblem presence and quality, registrar signature block, embossed stamp indicators, security paper texture patterns, anti-copy void patterns, and holographic overlay indicators.',
+  LICENSE: 'Pay special attention to: state seal presence and quality, board logo consistency, barcode/QR code presence and readability, photograph placeholder formatting, anti-tamper features, and security background guilloché patterns.',
+  CERTIFICATE: 'Pay special attention to: issuing organization logo consistency, authorized signature presence, certificate number format validation, and border design consistency throughout the document.',
+  INSURANCE: 'Pay special attention to: insurance company logo quality and placement, ACORD form formatting (if COI), and policy number format consistency.',
+  LEGAL: 'Pay special attention to: law firm letterhead consistency, notary stamp/seal presence and quality, court filing stamps, and case number format validation.',
+  FINANCIAL: 'Pay special attention to: audit firm logo presence, financial institution watermarks, and GAAP/IFRS formatting conventions.',
+  PATENT: 'Pay special attention to: patent office seal presence, patent number format (US X,XXX,XXX pattern), and filing date stamp formatting.',
+  SEC_FILING: 'Pay special attention to: EDGAR header formatting consistency, SEC seal presence, and filing acceptance stamp formatting.',
+};
+
+/**
+ * Enhanced document image analysis with credential-type-specific instructions.
+ *
+ * Builds on the base visual fraud detection by adding type-specific security
+ * feature checks and cross-document consistency analysis guidance.
+ *
+ * @param imageBase64 - Base64-encoded document image (PII-stripped)
+ * @param mimeType - Image MIME type (image/png, image/jpeg, etc.)
+ * @param credentialType - Type of credential for context-aware analysis
+ * @param apiKey - Gemini API key (defaults to env var)
+ * @returns Visual fraud analysis result with type-specific analysis
+ */
+export async function enhancedAnalyzeDocument(
   imageBase64: string,
   mimeType: string,
   credentialType: string,
@@ -129,7 +183,10 @@ export async function analyzeDocumentImage(
   });
 
   try {
-    const contextPrompt = `Analyze this ${credentialType} document image for signs of visual tampering or forgery. Focus on the specific security features and formatting standards expected for this document type.`;
+    // Build type-specific prompt with additional guidance
+    const typeUpper = credentialType.toUpperCase();
+    const typeSpecificGuidance = CREDENTIAL_TYPE_PROMPTS[typeUpper] ?? '';
+    const contextPrompt = `Analyze this ${credentialType} document image for signs of visual tampering or forgery. Focus on the specific security features and formatting standards expected for this document type.${typeSpecificGuidance ? `\n\n${typeSpecificGuidance}` : ''}`;
 
     const response = await model.generateContent({
       contents: [{

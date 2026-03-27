@@ -17,7 +17,7 @@
 import { db } from '../utils/db.js';
 import { logger, createRpcLogger } from '../utils/logger.js';
 import { callRpc } from '../utils/rpc.js';
-import { getInitializedChainClient } from '../chain/client.js';
+import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 import { checkPaymentGuard } from '../billing/paymentGuard.js';
@@ -166,7 +166,7 @@ export async function processAnchor(anchor: ClaimedAnchor): Promise<boolean> {
     // Submit fingerprint to chain, with metadata for OP_RETURN embedding (DEMO-01)
     // At this point the anchor is BROADCASTING — if we crash here, recovery cron
     // will reset to PENDING since chain_tx_id is still null.
-    const chainClient = getInitializedChainClient();
+    const chainClient = await getChainClientAsync();
     const metadata = anchor.metadata as Record<string, string> | null;
     const receipt = await chainClient.submitFingerprint({
       fingerprint: anchor.fingerprint,

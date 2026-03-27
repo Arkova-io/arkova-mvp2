@@ -60,6 +60,9 @@ vi.mock('../../chain/client.js', () => ({
   getInitializedChainClient: () => ({
     submitFingerprint: mockSubmitFingerprint,
   }),
+  getChainClientAsync: () => Promise.resolve({
+    submitFingerprint: mockSubmitFingerprint,
+  }),
 }));
 
 function createMockSupabase(records: Array<Record<string, unknown>> = []) {

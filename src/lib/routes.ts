@@ -22,6 +22,7 @@ export const ROUTES = {
   SEARCH: '/search',
   ISSUER_REGISTRY: '/issuer/:orgId',
   DEVELOPERS: '/developers',
+  API_SANDBOX: '/developers/sandbox',
   CLE_API: '/cle',
 
   // OAuth callback (Supabase redirects here after Google OAuth)

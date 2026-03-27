@@ -134,6 +134,7 @@ export class SupabaseChainIndexLookup implements ChainIndexLookup {
 // ─── Singleton ────────────────────────────────────────────────────────
 
 let _chainClient: ChainClient | null = null;
+let _initPromise: Promise<ChainClient> | null = null;
 
 /**
  * Initialize the chain client singleton. Call once at startup.
@@ -143,7 +144,9 @@ let _chainClient: ChainClient | null = null;
  * the async wrapper.
  */
 export async function initChainClient(): Promise<ChainClient> {
-  _chainClient = await createChainClient();
+  _initPromise = createChainClient();
+  _chainClient = await _initPromise;
+  _initPromise = null;
   return _chainClient;
 }
 
@@ -161,6 +164,19 @@ export function getInitializedChainClient(): ChainClient {
     );
   }
   return _chainClient;
+}
+
+/**
+ * Async version of getInitializedChainClient that waits for init to complete.
+ * Use in cron job handlers where a cold-start race is possible.
+ */
+export async function getChainClientAsync(): Promise<ChainClient> {
+  if (_chainClient) return _chainClient;
+  if (_initPromise) {
+    logger.info('Chain client initializing — waiting for startup to complete');
+    return _initPromise;
+  }
+  throw new Error('Chain client not initialized — call initChainClient() at startup');
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────

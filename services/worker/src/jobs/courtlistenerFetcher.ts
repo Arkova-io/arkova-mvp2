@@ -159,6 +159,7 @@ export async function fetchCourtOpinions(
   let totalInserted = 0;
   let totalSkipped = 0;
   let totalErrors = 0;
+  let pagesActuallyProcessed = 0;
   let nextUrl: string | null = null;
 
   // Build initial URL
@@ -187,6 +188,7 @@ export async function fetchCourtOpinions(
       };
       // CourtListener v4 API requires authentication
       const clToken = process.env.COURTLISTENER_API_TOKEN;
+      logger.info({ hasToken: Boolean(clToken), tokenLen: clToken?.length ?? 0 }, 'CourtListener auth check');
       if (clToken) {
         headers.Authorization = `Token ${clToken}`;
       }
@@ -204,10 +206,12 @@ export async function fetchCourtOpinions(
     }
 
     if (!response.ok) {
-      logger.error({ status: response.status, page }, 'CourtListener API error');
+      const body = await response.text().catch(() => '');
+      logger.error({ status: response.status, page, body: body.slice(0, 200) }, 'CourtListener API error');
       totalErrors++;
       break;
     }
+    pagesActuallyProcessed++;
 
     let result: CLSearchResponse;
     try {
@@ -308,5 +312,5 @@ export async function fetchCourtOpinions(
     'CourtListener fetch complete',
   );
 
-  return { inserted: totalInserted, skipped: totalSkipped, errors: totalErrors, pagesProcessed: maxPages };
+  return { inserted: totalInserted, skipped: totalSkipped, errors: totalErrors, pagesProcessed: pagesActuallyProcessed };
 }

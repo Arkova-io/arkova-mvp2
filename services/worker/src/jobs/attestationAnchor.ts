@@ -20,7 +20,7 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { getInitializedChainClient } from '../chain/client.js';
+import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { callRpc } from '../utils/rpc.js';
@@ -89,7 +89,7 @@ export async function processAttestationAnchoring(
   // Submit Merkle root to Bitcoin
   let receipt;
   try {
-    const chainClient = getInitializedChainClient();
+    const chainClient = await getChainClientAsync();
     receipt = await chainClient.submitFingerprint({
       fingerprint: tree.root,
       timestamp: new Date().toISOString(),
