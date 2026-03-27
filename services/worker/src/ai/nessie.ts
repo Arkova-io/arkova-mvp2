@@ -31,6 +31,7 @@ import { EXTRACTION_SYSTEM_PROMPT, buildExtractionPrompt } from './prompts/extra
 import { logger } from '../utils/logger.js';
 import { verifyGrounding } from './grounding.js';
 import { runCrossFieldChecks, sanitizeCLEFields } from './crossFieldFraudChecks.js';
+import { computeAdjustedConfidence } from './confidence-model.js';
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000; // Higher base delay for serverless cold starts
@@ -46,10 +47,13 @@ interface CircuitState {
   isOpen: boolean;
 }
 
+const DEFAULT_NESSIE_MODEL = 'nessie-v2';
+
 export class NessieProvider implements IAIProvider {
   readonly name = 'nessie';
   private readonly apiKey: string;
   private readonly endpointId: string;
+  private readonly modelName: string;
   private readonly apiBase: string;
   private circuit: CircuitState = {
     consecutiveFailures: 0,
@@ -57,7 +61,7 @@ export class NessieProvider implements IAIProvider {
     isOpen: false,
   };
 
-  constructor(apiKey?: string, endpointId?: string) {
+  constructor(apiKey?: string, endpointId?: string, model?: string) {
     const key = apiKey ?? process.env.RUNPOD_API_KEY;
     if (!key) {
       throw new Error('RUNPOD_API_KEY is required for NessieProvider');
@@ -69,6 +73,7 @@ export class NessieProvider implements IAIProvider {
       throw new Error('RUNPOD_ENDPOINT_ID is required for NessieProvider');
     }
     this.endpointId = endpoint;
+    this.modelName = model ?? process.env.NESSIE_MODEL ?? DEFAULT_NESSIE_MODEL;
     this.apiBase = `https://api.runpod.ai/v2/${this.endpointId}/openai/v1`;
   }
 
@@ -95,7 +100,7 @@ export class NessieProvider implements IAIProvider {
       const validated = ExtractedFieldsSchema.safeParse(rawFields);
       if (!validated.success) {
         logger.warn(
-          { zodError: validated.error.message, model: 'nessie-v2' },
+          { zodError: validated.error.message, model: this.modelName },
           'Nessie extraction schema validation failed',
         );
         throw new Error('Extraction schema validation failed');
@@ -143,12 +148,23 @@ export class NessieProvider implements IAIProvider {
       );
     }
 
+    // Apply confidence meta-model: uses extraction features (field count, type,
+    // OCR noise, key fields) to produce a better-calibrated confidence score.
+    const finalFields = {
+      ...result.fields,
+      ...(mergedSignals.length > 0 ? { fraudSignals: mergedSignals } : {}),
+    };
+    const metaModelConfidence = computeAdjustedConfidence(
+      finalFields,
+      adjustedConfidence,
+      request.strippedText,
+    );
+    // Meta-model must never override fraud-signal penalties
+    const finalConfidence = Math.min(metaModelConfidence, adjustedConfidence);
+
     return {
-      fields: {
-        ...result.fields,
-        ...(mergedSignals.length > 0 ? { fraudSignals: mergedSignals } : {}),
-      },
-      confidence: adjustedConfidence,
+      fields: finalFields,
+      confidence: finalConfidence,
       provider: this.name,
       tokensUsed: result.tokensUsed,
     };
@@ -238,7 +254,7 @@ export class NessieProvider implements IAIProvider {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'nessie-v2',
+          model: this.modelName,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
