@@ -381,8 +381,12 @@ ENABLE_AI_FALLBACK=false
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-AI_PROVIDER=mock                    # gemini | cloudflare | replicate | mock
+AI_PROVIDER=mock                    # gemini | nessie | together | cloudflare | replicate | mock
 REPLICATE_API_TOKEN=                # QA only
+
+# Nessie (RunPod vLLM — pipeline extraction)
+RUNPOD_API_KEY=
+RUNPOD_ENDPOINT_ID=                 # e.g., hmayoqhxvy5k5y
 ENABLE_SYNTHETIC_DATA=false
 ```
 
