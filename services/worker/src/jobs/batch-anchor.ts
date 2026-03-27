@@ -16,7 +16,7 @@
 
 import { db } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
-import { getChainClientAsync } from '../chain/client.js';
+import { getChainClient } from '../chain/client.js';
 import { buildMerkleTree } from '../utils/merkle.js';
 
 /**
@@ -77,7 +77,7 @@ export async function processBatchAnchors(): Promise<BatchAnchorResult> {
   // Phase 3: Publish Merkle root to chain
   let receipt;
   try {
-    const chainClient = await getChainClientAsync();
+    const chainClient = getChainClient();
     receipt = await chainClient.submitFingerprint({
       fingerprint: tree.root,
       timestamp: new Date().toISOString(),
@@ -203,7 +203,7 @@ async function legacyProcessBatchAnchors(): Promise<BatchAnchorResult> {
 
   let receipt;
   try {
-    const chainClient = await getChainClientAsync();
+    const chainClient = getChainClient();
     receipt = await chainClient.submitFingerprint({
       fingerprint: tree.root,
       timestamp: new Date().toISOString(),
