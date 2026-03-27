@@ -54,11 +54,15 @@ export function useTreasuryBalance() {
   const fetchAll = useCallback(async () => {
     try {
       // Fetch balance, receipts, BTC price, and fee rates in parallel
+      // 10s timeout to prevent hanging if mempool.space is blocked by browser extensions
+      const fetchWithTimeout = (url: string) =>
+        fetch(url, { signal: AbortSignal.timeout(10_000) });
+
       const [addressRes, txRes, priceRes, feeRes] = await Promise.all([
-        fetch(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}`),
-        fetch(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}/txs`),
-        fetch(`${MEMPOOL_API}/v1/prices`),
-        fetch(`${MEMPOOL_API}/v1/fees/recommended`),
+        fetchWithTimeout(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}`),
+        fetchWithTimeout(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}/txs`),
+        fetchWithTimeout(`${MEMPOOL_API}/v1/prices`),
+        fetchWithTimeout(`${MEMPOOL_API}/v1/fees/recommended`),
       ]);
 
       if (!isMountedRef.current) return;
