@@ -369,7 +369,7 @@ export function ApiSandbox() {
             type="text"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Bearer token (e.g. ark_live_...)"
+            placeholder="API key (e.g. ark_live_...)"
             className="w-full bg-[#080f16] border border-[#3c494e]/30 rounded-lg px-4 py-2.5 font-mono text-sm text-[#dce3ed] placeholder:text-[#3c494e] focus:outline-none focus:border-[#00d4ff]/50 transition-colors"
           />
         ) : (

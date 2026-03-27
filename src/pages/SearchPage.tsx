@@ -277,7 +277,7 @@ export function SearchPage() {
           </h1>
           <p className="text-[#bbc9cf] mt-2 max-w-md mx-auto font-mono text-xs uppercase tracking-widest">
             {standalone
-              ? 'Verify credentials anchored on the Bitcoin blockchain'
+              ? 'Verify credentials with immutable proof of authenticity'
               : 'Search by issuer name, verification ID, or document fingerprint'}
           </p>
         </div>
