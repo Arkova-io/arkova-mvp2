@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 180/192 stories complete (~94%) incl. 13 Beta stories + 6 AI infra stories + 7 UX overhaul stories. **2,433 tests** (1,024 frontend + 1,409 worker, all green). 107 migration files (0001-0107, gaps at 0033+0078, 0068 split). All 107 migrations applied to production. P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval F1=82.1%, calibration, prompt versioning, few-shot, fraud audit, metrics dashboard). GEO: 6 complete, 1 partial, 5 not started. **All 24/24 audit findings resolved.** Bitcoin network: **Signet**. Treasury: `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. **8+ real Signet transactions confirmed**. Frontend on arkova-26.vercel.app. **Pipeline LIVE:** 29,000+ public records, 1,572+ SECURED anchors. 12 Cloud Scheduler jobs. MCP server live at edge.arkova.ai. Branch protection enabled. Worker migrating from GCP Cloud Run to Railway.
+**Overall progress:** 180/192 stories complete (~94%) incl. 13 Beta stories + 6 AI infra stories + 7 UX overhaul stories. **2,746 tests** (1,024 frontend + 1,409 worker, all green). 125 migration files (0001-0125, gaps at 0033+0078, 0068 split). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval F1=82.1%). GEO: 6 complete, 1 partial, 5 not started. **All 24/24 audit findings resolved.** Bitcoin network: **MAINNET** (migrated from signet 2026-03-27). Treasury: `bc1qtm2kk33k6ht4agt48kh7rfkmmhfkapqn4zwerc` (~34k sats). **First mainnet TX confirmed in block 942,403.** Frontend on arkova-26.vercel.app (also app.arkova.ai). **Pipeline LIVE:** 29,000+ public records, 68,202 anchors (95 SUBMITTED on mainnet, rest PENDING). 15+ Cloud Scheduler jobs. MCP server live at edge.arkova.ai. Worker on GCP Cloud Run (1GB, max 3).
 
 ### Open Blockers
 
@@ -21,6 +21,21 @@
 | ~~CRIT-2~~ | ~~Bitcoin chain client~~ | ~~**OPS-ONLY**~~ | ~~CODE COMPLETE~~ | ~~AWS KMS key provisioning, mainnet treasury funding.~~ |
 
 **No active code blockers.** All remaining items are operational (infrastructure provisioning).
+
+### Recent Changes (2026-03-27, Session 17 — MAINNET MIGRATION + First Bitcoin TX)
+
+**Mainnet migration complete. First Bitcoin mainnet transaction confirmed.**
+
+| Change | Detail |
+|--------|--------|
+| Signet → Mainnet migration | All 9,015 BROADCASTING+SECURED signet anchors reset to PENDING with `mainnet_migrated` metadata flag. 68,202 total anchors now PENDING for mainnet re-anchoring. |
+| First mainnet TX | TX `1abeb071...fc97eb` confirmed in block 942,403. 95 anchors batched via Merkle tree with ARKV OP_RETURN prefix. Fee: 157 sats. |
+| Second mainnet TX | TX `b73e8b97...26513c` broadcast to mempool, awaiting confirmation. |
+| Treasury | `bc1qtm2kk33k6ht4agt48kh7rfkmmhfkapqn4zwerc` with ~34k sats. WIF signing via BitcoinChainClient. |
+| protect_anchor_status_transition fix | Added `current_user = 'postgres'` bypass for SECURITY DEFINER functions (migration 0125). |
+| PostgREST stability | Increased authenticator statement_timeout 30s→60s. Installed pg_cron extension. Scheduled hourly VACUUM to prevent autovacuum from blocking PostgREST schema cache. |
+| Batch size | Reduced BATCH_ANCHOR_MAX_SIZE 10000→100 in worker-deploy.yml due to PostgREST proxy timeouts on large batches with 68k dead tuples. |
+| Cloud Scheduler | batch-anchors (*/5) and check-confirmations (*/2) resumed. Other pipeline jobs paused. |
 
 ### Recent Changes (2026-03-24, Session 16 — Production Stability + Migration Sync)
 
