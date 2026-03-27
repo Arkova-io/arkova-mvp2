@@ -437,14 +437,15 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
         // Batch audit event — one summary row per TX instead of per-anchor
         // (8K+ individual audit rows is excessive and slow)
         if (groupConfirmed > 0) {
-          await db.from('audit_events').insert({
+          const { error: auditErr } = await db.from('audit_events').insert({
             event_type: 'anchor.batch_secured',
             event_category: 'ANCHOR',
             actor_id: '00000000-0000-0000-0000-000000000000',
             target_type: 'anchor',
             target_id: txId,
             details: `Batch confirmed ${groupConfirmed} anchors at block ${blockHeight} (tx: ${txId}, ${confirmations} confirmations)`,
-          }).catch(() => {});
+          });
+          if (auditErr) logger.warn({ auditErr, txId }, 'Failed to insert batch audit event');
 
           logger.info(
             { txId, groupSize: groupAnchors.length, confirmed: groupConfirmed, blockHeight, confirmations },
