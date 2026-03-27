@@ -155,8 +155,8 @@ app.get('/.well-known/openapi.json', (_req, res) => {
 });
 
 // Identity & org verification — internal (frontend-facing), not behind feature gate
-app.use('/api/v1/identity', corsMiddleware, requireAuthMw, identityRouter);
-app.use('/api/v1/org', corsMiddleware, requireAuthMw, orgVerificationRouter);
+app.use('/api/v1/identity', corsMiddleware, rateLimiters.api, requireAuthMw, identityRouter);
+app.use('/api/v1/org', corsMiddleware, rateLimiters.api, requireAuthMw, orgVerificationRouter);
 
 // Verification API v1 — gated behind ENABLE_VERIFICATION_API flag
 app.use('/api/v1', apiV1Router);
