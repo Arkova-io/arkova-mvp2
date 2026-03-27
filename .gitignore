@@ -85,6 +85,22 @@ demo-assets/
 docs/bugs/*.png
 docs/bugs/*.pdf
 
+# Eval data (large JSON)
+docs/eval/*.json
+
+# Training data (large JSONL files)
+services/worker/training-data/
+
+# Playwright reports
+playwright-report/
+
+# UAT screenshots
+/uat-*.png
+
+# Test files at root
+/test-*.csv
+/test-*.txt
+
 # Misc
 .cache/
 .parcel-cache/
