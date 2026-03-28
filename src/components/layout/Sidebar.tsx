@@ -34,6 +34,7 @@ import {
   Users,
   FileCheck,
   ToggleRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArkovaLogo } from '@/components/layout/ArkovaLogo';
@@ -58,6 +59,7 @@ const mainNavItems: NavItem[] = [
   { label: NAV_LABELS.DASHBOARD, icon: LayoutDashboard, to: ROUTES.DASHBOARD },
   { label: NAV_LABELS.DOCUMENTS, icon: FileText, to: ROUTES.DOCUMENTS },
   { label: NAV_LABELS.ORGANIZATION, icon: Building2, to: ROUTES.ORGANIZATIONS },
+  { label: NAV_LABELS.COMPLIANCE, icon: ShieldCheck, to: ROUTES.COMPLIANCE_DASHBOARD },
   { label: NAV_LABELS.SEARCH, icon: Search, to: ROUTES.SEARCH },
   { label: 'Developers', icon: Code2, to: ROUTES.DEVELOPERS },
   { label: NAV_LABELS.SETTINGS, icon: Settings, to: ROUTES.SETTINGS },
@@ -175,6 +177,12 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
         || location.pathname.startsWith(ROUTES.RECORDS + '/')
         || location.pathname === ROUTES.MY_CREDENTIALS
         || location.pathname === ROUTES.ATTESTATIONS;
+    }
+    if (item.to === ROUTES.COMPLIANCE_DASHBOARD) {
+      // Compliance tab active for compliance dashboard, review queue, and AI reports
+      return location.pathname === ROUTES.COMPLIANCE_DASHBOARD
+        || location.pathname === ROUTES.REVIEW_QUEUE
+        || location.pathname === ROUTES.AI_REPORTS;
     }
     return location.pathname === item.to || location.pathname.startsWith(item.to + '/');
   };
