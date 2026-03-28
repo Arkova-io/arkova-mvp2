@@ -168,9 +168,9 @@ describe('Prompt Coverage', () => {
     expect(EXTRACTION_SYSTEM_PROMPT).toContain('Birth Certificate');
   });
 
-  it('extraction prompt has at least 60 few-shot examples', () => {
+  it('extraction prompt has at least 110 few-shot examples', () => {
     const exampleMatches = EXTRACTION_SYSTEM_PROMPT.match(/Example \d+/g);
     expect(exampleMatches).toBeTruthy();
-    expect(exampleMatches!.length).toBeGreaterThanOrEqual(60);
+    expect(exampleMatches!.length).toBeGreaterThanOrEqual(110);
   });
 });
