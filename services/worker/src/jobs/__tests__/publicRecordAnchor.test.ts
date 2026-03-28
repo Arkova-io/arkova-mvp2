@@ -22,18 +22,21 @@ const {
 
   const mockSingle = vi.fn();
   const mockLimit = vi.fn();
-  const mockOrder = vi.fn(() => ({ limit: mockLimit }));
+  const mockRange = vi.fn(() => ({ data: [], error: null }));
+  const mockOrder = vi.fn(() => ({ limit: mockLimit, range: mockRange }));
   const selectChain: Record<string, unknown> = {};
   selectChain.eq = vi.fn(() => selectChain);
   selectChain.is = vi.fn(() => selectChain);
+  selectChain.not = vi.fn(() => selectChain);
   selectChain.order = mockOrder;
   selectChain.limit = mockLimit;
+  selectChain.range = mockRange;
   selectChain.single = mockSingle;
   selectChain.select = vi.fn(() => ({ single: mockSingle }));
 
   return {
     mockRpc, mockInsert, mockUpdate, mockSubmitFingerprint,
-    mockSelectChain: { chain: selectChain, limit: mockLimit, order: mockOrder, single: mockSingle },
+    mockSelectChain: { chain: selectChain, limit: mockLimit, order: mockOrder, single: mockSingle, range: mockRange },
     mockLogger,
   };
 });
@@ -66,7 +69,7 @@ vi.mock('../../chain/client.js', () => ({
 }));
 
 function createMockSupabase(records: Array<Record<string, unknown>> = []) {
-  const updateEq = vi.fn().mockResolvedValue({ error: null });
+  const _updateEq = vi.fn().mockResolvedValue({ error: null });
 
   let insertCallCount = 0;
   mockInsert.mockImplementation((anchor: Record<string, unknown>) => ({
@@ -91,6 +94,7 @@ function createMockSupabase(records: Array<Record<string, unknown>> = []) {
   });
 
   mockSelectChain.limit.mockResolvedValue({ data: records, error: null });
+  mockSelectChain.range.mockResolvedValue({ data: records, error: null });
 
   return {
     rpc: mockRpc,
@@ -147,8 +151,6 @@ describe('publicRecordAnchor', () => {
   });
 
   it('processes batch when enough records exist', async () => {
-    mockRpc.mockResolvedValue({ data: true });
-
     const records = Array.from({ length: 20 }, (_, i) => ({
       id: `record-${i}`,
       content_hash: (i.toString(16).padStart(2, '0')).repeat(32),
@@ -159,6 +161,12 @@ describe('publicRecordAnchor', () => {
       record_type: '10-K',
       title: `Test Filing ${i}`,
     }));
+
+    // First RPC call = get_flag (returns true), subsequent = batch_insert_anchors (returns anchor array)
+    const anchorResults = records.map((r, i) => ({ id: `anchor-uuid-${i}`, fingerprint: r.content_hash }));
+    mockRpc
+      .mockResolvedValueOnce({ data: true })  // get_flag
+      .mockResolvedValueOnce({ data: anchorResults });  // batch_insert_anchors
 
     const mockSupa = createMockSupabase(records);
 

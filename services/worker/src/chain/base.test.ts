@@ -86,12 +86,14 @@ function createMockPublicClient(overrides: Record<string, unknown> = {}) {
       transactionHash: TEST_TX_HASH,
     }),
     ...overrides,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
 function createMockWalletClient() {
   return {
     sendTransaction: vi.fn().mockResolvedValue(TEST_TX_HASH),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 

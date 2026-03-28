@@ -30,6 +30,7 @@ import { fetchCourtOpinions, fetchStateCourts } from '../jobs/courtlistenerFetch
 import { processPublicRecordAnchoring } from '../jobs/publicRecordAnchor.js';
 import { embedPublicRecords } from '../jobs/publicRecordEmbedder.js';
 import { processAttestationAnchoring } from '../jobs/attestationAnchor.js';
+import { checkAttestationExpiry } from '../jobs/attestationExpiry.js';
 import { fetchDapipInstitutions } from '../jobs/dapipFetcher.js';
 import { processBatchAnchors } from '../jobs/batch-anchor.js';
 import { fetchAcncCharities } from '../jobs/acncFetcher.js';
@@ -118,6 +119,7 @@ async function verifyCronAuth(req: Request): Promise<boolean> {
 }
 
 /** Middleware that enforces cron authentication */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function cronAuth(req: Request, res: any, next: any): Promise<void> {
   if (!(await verifyCronAuth(req))) {
     res.status(401).json({ error: 'Authentication required' });
@@ -236,7 +238,9 @@ cronRouter.post('/fetch-openalex', async (_req, res) => {
 cronRouter.post('/openalex-bulk', async (req, res) => {
   try {
     const startDate = String(req.query.startDate ?? req.body?.startDate ?? '2000-01-01');
-    const endDate = String(req.query.endDate ?? req.body?.endDate ?? new Date().toISOString().slice(0, 10));
+    // Only pass endDate if explicitly provided — otherwise let auto-resume pick the date
+    const explicitEndDate = req.query.endDate ?? req.body?.endDate;
+    const endDate = explicitEndDate ? String(explicitEndDate) : undefined;
     const minCitations = parseInt(String(req.query.minCitations ?? req.body?.minCitations ?? '0'), 10);
     const maxPages = parseInt(String(req.query.maxPages ?? req.body?.maxPages ?? '500'), 10);
     const resumeCursor = req.body?.resumeCursor;
@@ -252,7 +256,9 @@ cronRouter.post('/openalex-bulk', async (req, res) => {
 cronRouter.post('/fetch-courtlistener', async (req, res) => {
   try {
     const startDate = String(req.query.startDate ?? req.body?.startDate ?? '1950-01-01');
-    const endDate = String(req.query.endDate ?? req.body?.endDate ?? new Date().toISOString().slice(0, 10));
+    // Only pass endDate if explicitly provided — otherwise let auto-resume pick the date
+    const explicitEndDate = req.query.endDate ?? req.body?.endDate;
+    const endDate = explicitEndDate ? String(explicitEndDate) : undefined;
     const maxPages = parseInt(String(req.query.maxPages ?? req.body?.maxPages ?? '500'), 10);
     const courtFilter = req.body?.courtFilter;
     const statusFilter = req.body?.statusFilter ?? 'Published';
@@ -268,9 +274,11 @@ cronRouter.post('/fetch-courtlistener', async (req, res) => {
 cronRouter.post('/fetch-state-courts', async (req, res) => {
   try {
     const stateCode = String(req.query.state ?? req.body?.state ?? 'CA').toUpperCase();
-    const startDate = String(req.query.startDate ?? req.body?.startDate ?? '2000-01-01');
-    const endDate = String(req.query.endDate ?? req.body?.endDate ?? new Date().toISOString().slice(0, 10));
-    const maxPagesPerCourt = parseInt(String(req.query.maxPagesPerCourt ?? req.body?.maxPagesPerCourt ?? '200'), 10);
+    const startDate = String(req.query.startDate ?? req.body?.startDate ?? '1950-01-01');
+    // Only pass endDate if explicitly provided — otherwise let auto-resume pick the date
+    const explicitEndDate = req.query.endDate ?? req.body?.endDate;
+    const endDate = explicitEndDate ? String(explicitEndDate) : undefined;
+    const maxPagesPerCourt = parseInt(String(req.query.maxPagesPerCourt ?? req.body?.maxPagesPerCourt ?? '500'), 10);
 
     const result = await fetchStateCourts(db, stateCode, { startDate, endDate, maxPagesPerCourt });
     res.json(result);
@@ -494,6 +502,17 @@ cronRouter.get('/migration-status', async (_req, res) => {
     res.json(status);
   } catch (error) {
     logger.error({ error }, 'Migration status check failed');
+    res.status(500).json({ error: 'Processing failed' });
+  }
+});
+
+// ─── Attestation Expiry Monitoring (ATT-08) ───
+cronRouter.post('/check-attestation-expiry', async (_req, res) => {
+  try {
+    const result = await checkAttestationExpiry();
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Attestation expiry check failed');
     res.status(500).json({ error: 'Processing failed' });
   }
 });

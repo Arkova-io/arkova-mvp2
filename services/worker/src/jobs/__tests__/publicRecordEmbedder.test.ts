@@ -68,6 +68,7 @@ describe('publicRecordEmbedder', () => {
     mockRpc.mockResolvedValue({ data: false });
 
     const { embedPublicRecords } = await import('../publicRecordEmbedder.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await embedPublicRecords(createMockSupabase() as any);
 
     expect(result.total).toBe(0);
@@ -83,6 +84,7 @@ describe('publicRecordEmbedder', () => {
     const mockSupa = createMockSupabase([]);
 
     const { embedPublicRecords } = await import('../publicRecordEmbedder.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await embedPublicRecords(mockSupa as any);
 
     expect(result.total).toBe(0);
@@ -109,6 +111,7 @@ describe('publicRecordEmbedder', () => {
     });
 
     const { embedPublicRecords } = await import('../publicRecordEmbedder.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await embedPublicRecords(mockSupa as any);
 
     expect(result.total).toBe(1);

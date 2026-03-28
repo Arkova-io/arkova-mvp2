@@ -56,9 +56,15 @@ export const ROUTES = {
   ATTESTATIONS: '/attestations',
   VERIFY_ATTESTATION: '/verify/attestation/:publicId',
 
+  // Credential Portfolios (ATT-05)
+  PORTFOLIO: '/portfolio/:portfolioId',
+
   // AI Intelligence routes (P8 Phase II)
   REVIEW_QUEUE: '/organization/review-queue',
   AI_REPORTS: '/organization/ai-reports',
+
+  // Compliance Intelligence
+  COMPLIANCE_DASHBOARD: '/organization/compliance',
 
   // Admin routes (internal ops)
   ADMIN_OVERVIEW: '/admin/overview',
@@ -71,6 +77,7 @@ export const ROUTES = {
   ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
   ADMIN_ORGANIZATIONS: '/admin/organizations',
   ADMIN_USER_DETAIL: '/admin/users/:id',
+  ADMIN_CONTROLS: '/admin/controls',
 
   // Billing routes
   BILLING: '/billing',

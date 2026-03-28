@@ -95,7 +95,9 @@ describe('GeminiProvider', () => {
       expect(result.fields.credentialType).toBe('DEGREE');
       expect(result.fields.issuerName).toBe('University of Michigan');
       expect(result.fields.fieldOfStudy).toBe('Computer Science');
-      expect(result.confidence).toBe(0.92);
+      // Meta-model adjusts raw confidence based on extraction features
+      expect(result.confidence).toBeGreaterThan(0.85);
+      expect(result.confidence).toBeLessThanOrEqual(1);
       expect(result.provider).toBe('gemini');
       expect(result.tokensUsed).toBe(150);
     });
@@ -125,7 +127,9 @@ describe('GeminiProvider', () => {
 
       const provider = new GeminiProvider('test-key');
       const result = await provider.extractMetadata(request);
-      expect(result.confidence).toBe(0.5);
+      // Meta-model adjusts default 0.5 confidence based on extraction features
+      expect(result.confidence).toBeGreaterThan(0.4);
+      expect(result.confidence).toBeLessThanOrEqual(0.8);
     });
 
     it('uses structured JSON output mode', async () => {
@@ -161,7 +165,9 @@ describe('GeminiProvider', () => {
 
       const provider = new GeminiProvider('test-key');
       const result = await provider.extractMetadata(request);
-      expect(result.confidence).toBe(0.7);
+      // Meta-model adjusts raw 0.7 confidence based on extraction features
+      expect(result.confidence).toBeGreaterThan(0.5);
+      expect(result.confidence).toBeLessThanOrEqual(0.85);
       expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
 

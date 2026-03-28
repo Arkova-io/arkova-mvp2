@@ -76,7 +76,9 @@ describe('x402PaymentGate', () => {
     const { x402PaymentGate } = await import('../x402PaymentGate.js');
     const middleware = x402PaymentGate('/api/v1/verify');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const req = { headers: {}, apiKey: undefined } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 
@@ -91,7 +93,9 @@ describe('x402PaymentGate', () => {
     const { x402PaymentGate } = await import('../x402PaymentGate.js');
     const middleware = x402PaymentGate('/api/v1/verify');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const req = { headers: {}, apiKey: { keyId: 'test-key' } } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 
@@ -105,7 +109,9 @@ describe('x402PaymentGate', () => {
     const { x402PaymentGate } = await import('../x402PaymentGate.js');
     const middleware = x402PaymentGate('/api/v1/verify');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const req = { headers: {}, apiKey: undefined } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 
@@ -139,17 +145,11 @@ describe('x402PaymentGate', () => {
       }),
     ).toString('base64');
 
-    const req = {
-      headers: { 'x-payment': paymentPayload },
-      apiKey: undefined,
-      id: 'req-123',
-    } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req = { headers: { 'x-payment': paymentPayload }, apiKey: undefined, id: 'req-123' } as any;
     const jsonFn = vi.fn();
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: jsonFn,
-      statusCode: 200,
-    } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = { status: vi.fn().mockReturnThis(), json: jsonFn, statusCode: 200 } as any;
     const next = vi.fn();
 
     await middleware(req, res, next);
@@ -178,10 +178,9 @@ describe('x402PaymentGate', () => {
       }),
     ).toString('base64');
 
-    const req = {
-      headers: { 'x-payment': paymentPayload },
-      apiKey: undefined,
-    } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req = { headers: { 'x-payment': paymentPayload }, apiKey: undefined } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 
@@ -206,10 +205,9 @@ describe('x402PaymentGate', () => {
       }),
     ).toString('base64');
 
-    const req = {
-      headers: { 'x-payment': paymentPayload },
-      apiKey: undefined,
-    } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req = { headers: { 'x-payment': paymentPayload }, apiKey: undefined } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 
@@ -231,10 +229,9 @@ describe('x402PaymentGate', () => {
       JSON.stringify({ txHash: '0x' }), // Too short
     ).toString('base64');
 
-    const req = {
-      headers: { 'x-payment': paymentPayload },
-      apiKey: undefined,
-    } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req = { headers: { 'x-payment': paymentPayload }, apiKey: undefined } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
     const next = vi.fn();
 

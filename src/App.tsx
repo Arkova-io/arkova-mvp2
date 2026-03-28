@@ -63,6 +63,7 @@ const MemberDetailPage = React.lazy(() => import('@/pages/MemberDetailPage').the
 const AuthCallbackPage = React.lazy(() => import('@/pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ReviewQueuePage = React.lazy(() => import('@/pages/ReviewQueuePage').then(m => ({ default: m.ReviewQueuePage })));
 const AIReportsPage = React.lazy(() => import('@/pages/AIReportsPage').then(m => ({ default: m.AIReportsPage })));
+const ComplianceDashboardPage = React.lazy(() => import('@/pages/ComplianceDashboardPage').then(m => ({ default: m.ComplianceDashboardPage })));
 const DevelopersPage = React.lazy(() => import('@/pages/DevelopersPage').then(m => ({ default: m.DevelopersPage })));
 const AttestationsPage = React.lazy(() => import('@/pages/AttestationsPage').then(m => ({ default: m.AttestationsPage })));
 const AdminUsersPage = React.lazy(() => import('@/pages/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
@@ -70,11 +71,13 @@ const AdminRecordsPage = React.lazy(() => import('@/pages/AdminRecordsPage').the
 const AdminSubscriptionsPage = React.lazy(() => import('@/pages/AdminSubscriptionsPage').then(m => ({ default: m.AdminSubscriptionsPage })));
 const AdminUserDetailPage = React.lazy(() => import('@/pages/AdminUserDetailPage').then(m => ({ default: m.AdminUserDetailPage })));
 const AdminOrganizationsPage = React.lazy(() => import('@/pages/AdminOrganizationsPage').then(m => ({ default: m.AdminOrganizationsPage })));
+const PlatformControlsPage = React.lazy(() => import('@/pages/PlatformControlsPage').then(m => ({ default: m.PlatformControlsPage })));
 const OrganizationsListPage = React.lazy(() => import('@/pages/OrganizationsListPage').then(m => ({ default: m.OrganizationsListPage })));
 const OrgProfilePage = React.lazy(() => import('@/pages/OrgProfilePage').then(m => ({ default: m.OrgProfilePage })));
 const PublicAttestationVerifyPage = React.lazy(() => import('@/pages/PublicAttestationVerifyPage').then(m => ({ default: m.PublicAttestationVerifyPage })));
 const StateBarApiPage = React.lazy(() => import('@/pages/StateBarApiPage').then(m => ({ default: m.StateBarApiPage })));
 const ApiSandboxPage = React.lazy(() => import('@/pages/ApiSandboxPage').then(m => ({ default: m.ApiSandboxPage })));
+const PublicPortfolioPage = React.lazy(() => import('@/pages/PublicPortfolioPage').then(m => ({ default: m.PublicPortfolioPage })));
 
 /**
  * Redirect authenticated users away from login/signup.
@@ -167,6 +170,7 @@ export function App() {
           <Route path={ROUTES.DEVELOPERS} element={<RouteErrorBoundary section="Developers"><DevelopersPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.API_SANDBOX} element={<RouteErrorBoundary section="API Sandbox"><ApiSandboxPage /></RouteErrorBoundary>} />
           <Route path={ROUTES.CLE_API} element={<RouteErrorBoundary section="CLE API"><StateBarApiPage /></RouteErrorBoundary>} />
+          <Route path={ROUTES.PORTFOLIO} element={<RouteErrorBoundary section="Portfolio"><PublicPortfolioPage /></RouteErrorBoundary>} />
 
           {/* OAuth callback — Supabase redirects here after Google sign-in */}
           <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
@@ -197,6 +201,9 @@ export function App() {
           <Route path={ROUTES.REVIEW_QUEUE} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="ReviewQueue"><ReviewQueuePage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.AI_REPORTS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="AIReports"><AIReportsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
+          {/* Compliance Intelligence */}
+          <Route path={ROUTES.COMPLIANCE_DASHBOARD} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Compliance"><ComplianceDashboardPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+
           {/* Attestations (Phase II) */}
           <Route path={ROUTES.ATTESTATIONS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Attestations"><AttestationsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
@@ -211,6 +218,7 @@ export function App() {
           <Route path={ROUTES.ADMIN_SUBSCRIPTIONS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Admin Subscriptions"><AdminSubscriptionsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.ADMIN_ORGANIZATIONS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Admin Organizations"><AdminOrganizationsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
           <Route path={ROUTES.ADMIN_USER_DETAIL} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Admin User Detail"><AdminUserDetailPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
+          <Route path={ROUTES.ADMIN_CONTROLS} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Platform Controls"><PlatformControlsPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />
 
           {/* Billing routes */}
           <Route path={ROUTES.BILLING} element={<AuthGuard><RouteGuard allow={MAIN_APP_DESTINATIONS}><RouteErrorBoundary section="Billing"><BillingPage /></RouteErrorBoundary></RouteGuard></AuthGuard>} />

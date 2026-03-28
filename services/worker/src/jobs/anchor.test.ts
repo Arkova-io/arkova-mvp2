@@ -22,8 +22,8 @@ const {
   mockLogger,
   anchorsTable,
   setUpdateResult,
-  updateChain,
-  selectChain,
+  _updateChain,
+  _selectChain,
 } = vi.hoisted(() => {
   // Terminal operations — configured per test
   const mockLimit = vi.fn();
@@ -74,8 +74,8 @@ const {
     mockDispatchWebhookEvent,
     mockLogger,
     anchorsTable,
-    updateChain,
-    selectChain,
+    _updateChain: updateChain,
+    _selectChain: selectChain,
     setUpdateResult,
   };
 });
@@ -148,7 +148,7 @@ vi.mock('../utils/db.js', () => ({
   },
 }));
 
-import { db } from '../utils/db.js';
+import { db as _db } from '../utils/db.js';
 
 // ---- System under test ----
 
@@ -220,13 +220,13 @@ describe('processAnchor', () => {
           chain_timestamp: MOCK_RECEIPT.blockTimestamp,
         }),
       );
-      expect(updateChain.eq).toHaveBeenCalledWith('id', 'anchor-001');
+      expect(_updateChain.eq).toHaveBeenCalledWith('id', 'anchor-001');
     });
 
     it('guards SUBMITTED update with BROADCASTING status (RACE-1)', async () => {
       await processAnchor(CLAIMED_ANCHOR);
 
-      expect(updateChain.eq).toHaveBeenCalledWith('status', 'BROADCASTING');
+      expect(_updateChain.eq).toHaveBeenCalledWith('status', 'BROADCASTING');
     });
 
     it('stores _metadata_hash in metadata JSON when receipt includes metadataHash (DEMO-01)', async () => {
@@ -656,7 +656,7 @@ describe('processPendingAnchors', () => {
       error: null,
     });
 
-    const result = await processPendingAnchors();
+    const _result = await processPendingAnchors();
 
     expect(mockLogger.warn).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.any(Object) }),

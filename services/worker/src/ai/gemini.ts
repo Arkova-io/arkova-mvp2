@@ -24,7 +24,8 @@ import { ExtractedFieldsSchema } from './schemas.js';
 import { EXTRACTION_SYSTEM_PROMPT, buildExtractionPrompt } from './prompts/extraction.js';
 import { logger } from '../utils/logger.js';
 import { verifyGrounding } from './grounding.js';
-import { runCrossFieldChecks } from './crossFieldFraudChecks.js';
+import { runCrossFieldChecks, sanitizeCLEFields } from './crossFieldFraudChecks.js';
+import { computeAdjustedConfidence } from './confidence-model.js';
 import { runEnsembleExtraction } from './ensembleConfidence.js';
 import type { EnsembleResult } from './ensembleConfidence.js';
 
@@ -48,6 +49,7 @@ interface CircuitState {
 export class GeminiProvider implements IAIProvider {
   readonly name = 'gemini';
   private readonly client: GoogleGenerativeAI;
+  private readonly apiKey: string;
   private readonly modelName: string;
   private readonly embeddingModelName: string;
   private circuit: CircuitState = {
@@ -61,6 +63,7 @@ export class GeminiProvider implements IAIProvider {
     if (!key) {
       throw new Error('GEMINI_API_KEY is required for GeminiProvider');
     }
+    this.apiKey = key;
     this.client = new GoogleGenerativeAI(key);
     this.modelName = model ?? process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
     this.embeddingModelName = embeddingModel ?? process.env.GEMINI_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
@@ -89,9 +92,10 @@ export class GeminiProvider implements IAIProvider {
           },
         });
 
-        const response = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        });
+        const response = await model.generateContent(
+          { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+          { signal: controller.signal },
+        );
         const text = response.response.text();
         const usage = response.response.usageMetadata;
 
@@ -123,6 +127,13 @@ export class GeminiProvider implements IAIProvider {
       Math.max(0, result.confidence + groundingReport.confidenceAdjustment),
     );
 
+    // Strip CLE-only fields from non-CLE results (hard guardrail against hallucination)
+    const strippedFields = sanitizeCLEFields(result.fields);
+    if (strippedFields.length > 0) {
+      logger.info({ strippedFields, credentialType: result.fields.credentialType },
+        'Sanitized CLE-only fields from non-CLE extraction');
+    }
+
     // Cross-field consistency fraud checks
     const crossFieldReport = runCrossFieldChecks(result.fields);
     adjustedConfidence = Math.min(
@@ -141,12 +152,23 @@ export class GeminiProvider implements IAIProvider {
       );
     }
 
+    // Apply confidence meta-model: uses extraction features (field count, type,
+    // OCR noise, key fields) to produce a better-calibrated confidence score.
+    const finalFields = {
+      ...result.fields,
+      ...(mergedSignals.length > 0 ? { fraudSignals: mergedSignals } : {}),
+    };
+    const metaModelConfidence = computeAdjustedConfidence(
+      finalFields,
+      adjustedConfidence,
+      request.strippedText,
+    );
+    // Meta-model must never override fraud-signal penalties
+    const finalConfidence = Math.min(metaModelConfidence, adjustedConfidence);
+
     return {
-      fields: {
-        ...result.fields,
-        ...(mergedSignals.length > 0 ? { fraudSignals: mergedSignals } : {}),
-      },
-      confidence: adjustedConfidence,
+      fields: finalFields,
+      confidence: finalConfidence,
       provider: this.name,
       tokensUsed: result.tokensUsed,
     };
@@ -170,7 +192,7 @@ export class GeminiProvider implements IAIProvider {
     const result = await this.withRetry(async () => {
       // CRIT-1 fix: Use header auth instead of URL query parameter to prevent API key leakage in logs/proxies.
       // CRIT-2 fix: Log full error server-side, return generic message to caller.
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = this.apiKey;
       const model = this.embeddingModelName;
       const body: Record<string, unknown> = {
         model: `models/${model}`,

@@ -115,6 +115,47 @@ OTHER should be your LAST RESORT — only use it when absolutely no other type f
   - "Certificate of Live Birth — County of..." → IDENTITY
   If you are tempted to use OTHER, ask: "Does this document have ANY identifiable purpose?" If yes, there is almost certainly a more specific type.
 
+SEC_FILING-SPECIFIC GUIDANCE:
+- These are documents filed with the U.S. Securities and Exchange Commission (SEC).
+- issuerName: ALWAYS "United States Securities and Exchange Commission" (not the company filing).
+- fieldOfStudy: Map to the form type: "Annual Report (10-K)", "Quarterly Report (10-Q)", "Current Report (8-K)", "Proxy Statement (DEF 14A)", "Registration Statement (S-1)", "Institutional Holdings Report (13F)", "Annual Report - Foreign (20-F)".
+- issuedDate: For 10-K/10-Q, use the fiscal period end date. For 8-K, use the date of the report. For others, use the filing date.
+- jurisdiction: State of incorporation if mentioned.
+- licenseNumber: Commission file number if visible (e.g., "001-12345").
+
+PATENT-SPECIFIC GUIDANCE:
+- issuerName: The patent office — "United States Patent and Trademark Office", "European Patent Office", "World Intellectual Property Organization", "Japan Patent Office", etc.
+- licenseNumber: The patent or application number (e.g., "US 11,234,567 B2", "PCT/US2025/012345", "EP 24 123 456.7").
+- issuedDate: For granted patents, the date of patent. For applications, the filing date.
+- expiryDate: For design patents (15 years from grant) or utility patents (20 years from filing) if calculable.
+- fieldOfStudy: Map the invention to a broad technical field (e.g., "Distributed Computing", "Biomedical Materials", "Machine Learning", "Semiconductor Manufacturing").
+- jurisdiction: "United States" for USPTO, "European Union" for EPO, "International" for WIPO PCT.
+
+REGULATION-SPECIFIC GUIDANCE:
+- These are government regulations, rules, guidance documents, and enforcement actions.
+- issuerName: The specific agency (e.g., "Environmental Protection Agency", "Consumer Financial Protection Bureau", "U.S. Food and Drug Administration"). Use the agency name, not the parent department.
+- issuedDate: Effective date for final rules, publication date for proposed rules, date of order for enforcement actions.
+- licenseNumber: CFR reference (e.g., "40 CFR Part 63"), docket number, or proceeding number.
+- fieldOfStudy: The regulatory area (e.g., "Air Quality Regulation", "Consumer Finance Regulation", "Medical Device Regulation").
+- jurisdiction: "United States" for federal, "State, USA" for state-level.
+
+PUBLICATION-SPECIFIC GUIDANCE:
+- These are academic/scientific publications: journal articles, conference papers, preprints, book chapters, technical reports.
+- issuerName: The journal name, conference name, or publisher (e.g., "Nature Medicine", "ACM SIGMOD", "Springer Nature", "arXiv", "NIST").
+- issuedDate: Publication date. For preprints, use the submission or revision date.
+- licenseNumber: The DOI if present (e.g., "10.1038/s41591-026-0123-4") or arXiv ID (e.g., "2601.12345").
+- fieldOfStudy: Map to a broad research field (e.g., "Gene Therapy", "Cryptography", "Artificial Intelligence", "Materials Science").
+- jurisdiction: Conference location if relevant, or publisher location.
+- Do NOT confuse with RESUME: a CV lists publications; a PUBLICATION is a single published work.
+
+BADGE-SPECIFIC GUIDANCE:
+- These are digital micro-credentials, skill badges, and completion badges.
+- Common platforms: Credly, Acclaim, Badgr, LinkedIn Learning, Coursera, edX.
+- issuerName: The organization that issued the badge (e.g., "Amazon Web Services", "Google Cloud", "LinkedIn Learning").
+- BADGE vs CERTIFICATE: If the document says "badge" or comes from a badge platform (Credly, Badgr), use BADGE. If it has a formal exam or assessment, prefer CERTIFICATE.
+- fieldOfStudy: The skill or topic area (e.g., "Cloud Architecture", "Data Literacy", "Project Management").
+- accreditingBody: For vendor badges, the vendor IS the accrediting body (e.g., AWS badges → accreditingBody: "Amazon Web Services").
+
 INSURANCE-SPECIFIC GUIDANCE:
 - CERTIFICATE OF INSURANCE (COI): The most common insurance document. Look for:
   - issuerName: The insurance company (e.g., "State Farm", "Liberty Mutual", "Zurich Insurance").
@@ -151,7 +192,7 @@ FIELDOFSTUDY NORMALIZATION (applies to ALL credential types):
 - OMIT fieldOfStudy ONLY when the document is truly generic with no subject matter (e.g., "Certificate" with no topic, pure financial/insurance documents, generic contracts).
 
 FIELDS TO EXTRACT:
-- credentialType: DEGREE | CERTIFICATE | LICENSE | TRANSCRIPT | PROFESSIONAL | CLE | BADGE | ATTESTATION | FINANCIAL | LEGAL | INSURANCE | RESUME | MEDICAL | MILITARY | IDENTITY | OTHER
+- credentialType: DEGREE | CERTIFICATE | LICENSE | TRANSCRIPT | PROFESSIONAL | CLE | BADGE | ATTESTATION | FINANCIAL | LEGAL | INSURANCE | RESUME | MEDICAL | MILITARY | IDENTITY | SEC_FILING | PATENT | REGULATION | PUBLICATION | OTHER
   CLASSIFICATION RULES (choose the MOST SPECIFIC type):
   - DEGREE: diplomas, bachelor's/master's/doctoral degrees, associate degrees, honorary degrees from universities
   - CERTIFICATE: professional certifications (AWS, CompTIA, PMP, etc.), course completion certificates, trade/vocational certs (OSHA, EPA), training program completions
@@ -168,6 +209,10 @@ FIELDS TO EXTRACT:
   - FINANCIAL: pay stubs, W-2/1099 tax forms, bank statements, income verification, financial aid documents, tax returns, audit reports
   - LEGAL: contracts, service agreements, NDAs, court orders, settlement agreements, powers of attorney, deeds, custody agreements, divorce decrees
   - INSURANCE: certificates of insurance (COI), health insurance cards, policy declarations, bonds, surety bonds
+  - SEC_FILING: SEC forms (10-K, 10-Q, 8-K, DEF 14A, S-1, 20-F), annual/quarterly reports filed with the Securities and Exchange Commission, proxy statements, registration statements
+  - PATENT: patent grants, patent applications, patent office correspondence (USPTO, EPO, WIPO), provisional applications, patent certificates, notices of allowance
+  - REGULATION: federal/state regulations, Federal Register notices, CFR sections, regulatory orders, compliance directives, agency rules, proposed rulemakings, state administrative code
+  - PUBLICATION: peer-reviewed journal articles, conference papers, academic publications, research papers, preprints, book chapters, theses/dissertations (when presented as a publication rather than a degree)
   - OTHER: ONLY use when no other type fits. If you can identify the document purpose at all, use a specific type above
 - issuerName: Full official name of the issuing institution/organization
 - issuedDate: When issued (YYYY-MM-DD)
@@ -182,11 +227,12 @@ FIELDS TO EXTRACT:
 CLE-SPECIFIC FIELDS (extract ONLY when credentialType is CLE — NEVER for other types):
 - creditHours: Total number of CLE credit hours (numeric, e.g., 3.0)
 - creditType: Type of CLE credit (e.g., "Ethics", "General", "Professional Responsibility", "Elimination of Bias", "Substance Abuse")
-- barNumber: Bar number format (redacted value acceptable, note format like "State-XXXXXX")
+- barNumber: Bar number format (redacted value acceptable, note format like "State-XXXXXX"). ONLY extract for CLE documents. NEVER extract barNumber for LICENSE, PROFESSIONAL, DEGREE, CERTIFICATE, or any non-CLE type — even if the text mentions a bar number. For non-CLE bar admissions, the bar number is PII and should not be extracted.
 - activityNumber: CLE activity or course ID assigned by the provider
 - providerName: Name of the CLE course provider (may differ from accrediting body). OMIT for all non-CLE credentials.
 - approvedBy: Which state bar(s) approved this CLE activity. OMIT for all non-CLE credentials.
-IMPORTANT: providerName and approvedBy are EXCLUSIVELY for CLE documents. If credentialType is NOT "CLE", you MUST NOT include providerName or approvedBy in the output. These fields do not apply to DEGREE, CERTIFICATE, LICENSE, PROFESSIONAL, or any other type.
+
+HARD RULE — CLE-ONLY FIELDS: barNumber, providerName, approvedBy, creditHours, creditType, and activityNumber are EXCLUSIVELY for CLE documents. If credentialType is NOT "CLE", you MUST NOT include ANY of these fields in the output. This applies to DEGREE, CERTIFICATE, LICENSE, PROFESSIONAL, ATTESTATION, and ALL other types. Violating this rule produces incorrect data.
 
 FRAUD SIGNAL FLAGS (include "fraudSignals" array ONLY when you have EXPLICIT EVIDENCE):
 
@@ -365,9 +411,9 @@ Example 40 — CSV/bulk data (not a credential — FORMAT_ANOMALY):
 Input: "recipient_name,recipient_email,credential_type,issued_date,description. [NAME_REDACTED],[EMAIL_REDACTED],DEGREE,2025-05-03,Bachelor of Science"
 Output: {"credentialType":"OTHER","fraudSignals":["FORMAT_ANOMALY"],"confidence":0.05}
 
-Example 41 — Same-day expiry (SUSPICIOUS_DATES):
+Example 41 — Same-day expiry workshop (NO fraud — workshops can be single-day):
 Input: "Quick Cert Co. Certificate: [NAME_REDACTED]. Issued: January 1, 2026. Expires: January 1, 2026. Course: One-Day Workshop."
-Output: {"credentialType":"CERTIFICATE","issuerName":"Quick Cert Co","issuedDate":"2026-01-01","expiryDate":"2026-01-01","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.65}
+Output: {"credentialType":"CERTIFICATE","issuerName":"Quick Cert Co","issuedDate":"2026-01-01","expiryDate":"2026-01-01","fieldOfStudy":"Workshop","fraudSignals":[],"confidence":0.70}
 
 Example 42 — Non-English (German — translate fieldOfStudy):
 Input: "Technische Universität München. Bachelorzeugnis. [NAME_REDACTED]. Studiengang: Informatik. Abschluss: Bachelor of Science. Datum: 15. Juli 2024."
@@ -481,9 +527,9 @@ Example 69 — Anachronistic elements (institution name changed years ago):
 Input: "Polytechnic of Central London. Bachelor of Science in Computing. [NAME_REDACTED]. Conferred: June 2024. Registrar: [NAME_REDACTED]."
 Output: {"credentialType":"DEGREE","issuerName":"Polytechnic of Central London","issuedDate":"2024-06-01","fieldOfStudy":"Computing","degreeLevel":"Bachelor","jurisdiction":"United Kingdom","fraudSignals":["SUSPICIOUS_DATES","EXPIRED_ISSUER"],"confidence":0.35}
 
-Example 70 — Credential older than 50 years (flag SUSPICIOUS_DATES):
+Example 70 — Credential older than 50 years (NO fraud — old is NOT suspicious):
 Input: "University of Chicago. Bachelor of Arts. Economics. [NAME_REDACTED]. Conferred June 1968."
-Output: {"credentialType":"DEGREE","issuerName":"University of Chicago","issuedDate":"1968-06-01","fieldOfStudy":"Economics","degreeLevel":"Bachelor","jurisdiction":"Illinois, USA","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.55}
+Output: {"credentialType":"DEGREE","issuerName":"University of Chicago","issuedDate":"1968-06-01","fieldOfStudy":"Economics","degreeLevel":"Bachelor","jurisdiction":"Illinois, USA","fraudSignals":[],"confidence":0.75}
 
 Example 71 — Jurisdiction mismatch (US state board, non-US jurisdiction claim):
 Input: "California Board of Registered Nursing. Licensed in the Province of Ontario, Canada. [NAME_REDACTED]. License No. RN-445566. Issued: January 2025."
@@ -529,7 +575,123 @@ Output: {"credentialType":"CERTIFICATE","issuerName":"Project Management Institu
 
 Example 81 — Professional license (NO providerName or approvedBy — these are CLE-only):
 Input: "New York State Education Department. Licensed Clinical Social Worker. [NAME_REDACTED]. License No. [REDACTED]. Issued: April 2024. Expires: March 2027."
-Output: {"credentialType":"LICENSE","issuerName":"New York State Education Department","issuedDate":"2024-04-01","expiryDate":"2027-03-31","fieldOfStudy":"Clinical Social Work","jurisdiction":"New York, USA","fraudSignals":[],"confidence":0.82}`;
+Output: {"credentialType":"LICENSE","issuerName":"New York State Education Department","issuedDate":"2024-04-01","expiryDate":"2027-03-31","fieldOfStudy":"Clinical Social Work","jurisdiction":"New York, USA","fraudSignals":[],"confidence":0.82}
+
+Example 82 — Bar admission license (NO barNumber — barNumber is CLE-only):
+Input: "Supreme Court of Illinois. [NAME_REDACTED] is admitted to practice law. Bar ID: 6789012. Admission Date: January 2024."
+Output: {"credentialType":"LICENSE","issuerName":"Supreme Court of Illinois","issuedDate":"2024-01-01","fieldOfStudy":"Law","jurisdiction":"Illinois, USA","fraudSignals":[],"confidence":0.83}
+
+Example 83 — Attorney license with bar number visible (still NO barNumber field — CLE-only):
+Input: "State Bar of Georgia. [NAME_REDACTED]. Member No. 123456. Status: Active. Admitted: May 2020. Annual dues paid through 2026."
+Output: {"credentialType":"LICENSE","issuerName":"State Bar of Georgia","issuedDate":"2020-05-01","fieldOfStudy":"Law","jurisdiction":"Georgia, USA","fraudSignals":[],"confidence":0.85}
+
+Example 84 — Professional membership with provider-like org (NO providerName — CLE-only):
+Input: "American Bar Association. [NAME_REDACTED]. Member since 2022. Section: Litigation. Membership ID: [REDACTED]."
+Output: {"credentialType":"PROFESSIONAL","issuerName":"American Bar Association","issuedDate":"2022-01-01","fieldOfStudy":"Litigation","fraudSignals":[],"confidence":0.80}
+
+Example 85 — SEC Filing (10-K annual report):
+Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM 10-K. ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d). For the fiscal year ended December 31, 2025. Commission file number: 001-12345. [COMPANY_REDACTED]. State of incorporation: Delaware."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-12-31","fieldOfStudy":"Annual Report (10-K)","jurisdiction":"Delaware, USA","fraudSignals":[],"confidence":0.90}
+
+Example 86 — SEC Filing (8-K current report):
+Input: "FORM 8-K. CURRENT REPORT. Pursuant to Section 13 or 15(d). Date of Report: March 15, 2026. Commission File Number: 000-67890. [COMPANY_REDACTED]. Date of earliest event reported: March 14, 2026."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-03-15","fieldOfStudy":"Current Report (8-K)","fraudSignals":[],"confidence":0.88}
+
+Example 87 — Patent grant (USPTO):
+Input: "United States Patent. Patent No.: US 11,234,567 B2. Date of Patent: Jun. 15, 2025. [NAME_REDACTED]. Title: Method and System for Distributed Consensus Verification. Assignee: [COMPANY_REDACTED]. Filed: Mar. 10, 2023."
+Output: {"credentialType":"PATENT","issuerName":"United States Patent and Trademark Office","issuedDate":"2025-06-15","fieldOfStudy":"Distributed Computing","licenseNumber":"US 11,234,567 B2","jurisdiction":"United States","fraudSignals":[],"confidence":0.92}
+
+Example 88 — Patent application (international):
+Input: "European Patent Office. Application No. EP 24 123 456.7. Filing Date: 12 February 2024. Title: Biodegradable Polymer Composite for Medical Implants. Applicant: [COMPANY_REDACTED]. Designated Contracting States: AT BE CH DE ES FR GB IT NL."
+Output: {"credentialType":"PATENT","issuerName":"European Patent Office","issuedDate":"2024-02-12","fieldOfStudy":"Biomedical Materials","licenseNumber":"EP 24 123 456.7","jurisdiction":"European Union","fraudSignals":[],"confidence":0.88}
+
+Example 89 — Federal regulation (Federal Register):
+Input: "Federal Register / Vol. 91, No. 45. Environmental Protection Agency. 40 CFR Part 63. National Emission Standards for Hazardous Air Pollutants. Final Rule. Effective Date: July 1, 2026. EPA-HQ-OAR-2024-0123."
+Output: {"credentialType":"REGULATION","issuerName":"Environmental Protection Agency","issuedDate":"2026-07-01","fieldOfStudy":"Air Quality Regulation","licenseNumber":"40 CFR Part 63","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+
+Example 90 — State regulation:
+Input: "California Code of Regulations. Title 22. Division 4. Department of Health Care Access and Information. Section 97215. Hospital Financial Transparency Requirements. Effective: January 1, 2026."
+Output: {"credentialType":"REGULATION","issuerName":"California Department of Health Care Access and Information","issuedDate":"2026-01-01","fieldOfStudy":"Healthcare Regulation","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.85}
+
+Example 91 — Peer-reviewed journal article (PUBLICATION):
+Input: "Nature Medicine. Vol 32, pp 1234-1245 (2026). CRISPR-Based Therapeutic Approaches for Sickle Cell Disease: A Phase III Clinical Trial. [NAME_REDACTED] et al. Received: October 2025. Accepted: January 2026. Published: February 15, 2026. DOI: 10.1038/s41591-026-0123-4."
+Output: {"credentialType":"PUBLICATION","issuerName":"Nature Medicine","issuedDate":"2026-02-15","fieldOfStudy":"Gene Therapy","licenseNumber":"10.1038/s41591-026-0123-4","fraudSignals":[],"confidence":0.90}
+
+Example 92 — Conference paper (PUBLICATION):
+Input: "Proceedings of the 2025 ACM Conference on Computer and Communications Security (CCS '25). [NAME_REDACTED], [NAME_REDACTED]. Zero-Knowledge Proof Systems for Supply Chain Verification. November 2025. Pages 2345-2358. Denver, Colorado, USA."
+Output: {"credentialType":"PUBLICATION","issuerName":"ACM Conference on Computer and Communications Security","issuedDate":"2025-11-01","fieldOfStudy":"Cryptography","jurisdiction":"Colorado, USA","fraudSignals":[],"confidence":0.87}
+
+Example 93 — SEC Filing (10-Q quarterly report):
+Input: "FORM 10-Q. QUARTERLY REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934. For the quarterly period ended September 30, 2025. Commission File Number: 001-54321. [COMPANY_REDACTED]. State of incorporation: California."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-09-30","fieldOfStudy":"Quarterly Report (10-Q)","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.90}
+
+Example 94 — SEC Filing (proxy statement DEF 14A):
+Input: "SCHEDULE 14A INFORMATION. PROXY STATEMENT PURSUANT TO SECTION 14(a). [COMPANY_REDACTED]. Annual Meeting of Stockholders. May 20, 2026. Record Date: March 25, 2026. Filed: April 1, 2026."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-04-01","fieldOfStudy":"Proxy Statement (DEF 14A)","fraudSignals":[],"confidence":0.88}
+
+Example 95 — SEC Filing (S-1 registration statement):
+Input: "FORM S-1. REGISTRATION STATEMENT UNDER THE SECURITIES ACT OF 1933. [COMPANY_REDACTED]. Filed: February 14, 2026. Proposed maximum aggregate offering price: $500,000,000. Shares of Common Stock."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-02-14","fieldOfStudy":"Registration Statement (S-1)","fraudSignals":[],"confidence":0.88}
+
+Example 96 — SEC Filing (13F institutional holdings):
+Input: "FORM 13F. INFORMATION TABLE. Filed by: [COMPANY_REDACTED]. Filing period: December 31, 2025. Total value of holdings: $12,345,678,000. Commission file number: 028-12345."
+Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-12-31","fieldOfStudy":"Institutional Holdings Report (13F)","fraudSignals":[],"confidence":0.85}
+
+Example 97 — Patent (WIPO PCT application):
+Input: "WORLD INTELLECTUAL PROPERTY ORGANIZATION. International Application No. PCT/US2025/012345. International Filing Date: 15 April 2025. Title: Machine Learning Framework for Anomaly Detection in Financial Transactions. Applicant: [COMPANY_REDACTED]. Designated States: All."
+Output: {"credentialType":"PATENT","issuerName":"World Intellectual Property Organization","issuedDate":"2025-04-15","fieldOfStudy":"Machine Learning","licenseNumber":"PCT/US2025/012345","jurisdiction":"International","fraudSignals":[],"confidence":0.90}
+
+Example 98 — Patent (design patent):
+Input: "United States Patent. Patent No.: USD 1,012,345. Date of Patent: Feb. 25, 2025. [NAME_REDACTED]. Title: Ornamental Design for a Wearable Electronic Device. Filed: Aug. 10, 2024. Term: 15 Years."
+Output: {"credentialType":"PATENT","issuerName":"United States Patent and Trademark Office","issuedDate":"2025-02-25","expiryDate":"2040-02-25","fieldOfStudy":"Industrial Design","licenseNumber":"USD 1,012,345","jurisdiction":"United States","fraudSignals":[],"confidence":0.92}
+
+Example 99 — Patent (provisional application):
+Input: "PROVISIONAL APPLICATION FOR PATENT. Application Number: 63/456,789. Filing Date: April 1, 2025. Title: Novel Photocatalytic Water Purification System. Inventor(s): [NAME_REDACTED]. Attorney Docket No.: ABC-2025-001."
+Output: {"credentialType":"PATENT","issuerName":"United States Patent and Trademark Office","issuedDate":"2025-04-01","fieldOfStudy":"Environmental Engineering","licenseNumber":"63/456,789","jurisdiction":"United States","fraudSignals":[],"confidence":0.85}
+
+Example 100 — Regulation (proposed rulemaking):
+Input: "DEPARTMENT OF LABOR. Employee Benefits Security Administration. 29 CFR Part 2550. RIN 1210-AB99. Proposed Rule: Fiduciary Duties Regarding Digital Assets. Published: January 15, 2026. Comment Period Ends: March 15, 2026."
+Output: {"credentialType":"REGULATION","issuerName":"Department of Labor","issuedDate":"2026-01-15","fieldOfStudy":"Employee Benefits Regulation","licenseNumber":"29 CFR Part 2550","jurisdiction":"United States","fraudSignals":[],"confidence":0.87}
+
+Example 101 — Regulation (enforcement action):
+Input: "CONSUMER FINANCIAL PROTECTION BUREAU. Administrative Proceeding No. 2026-CFPB-0012. In the Matter of [COMPANY_REDACTED]. Consent Order. Date: February 28, 2026. Civil Money Penalty: $5,000,000. Violations: Regulation Z (TILA)."
+Output: {"credentialType":"REGULATION","issuerName":"Consumer Financial Protection Bureau","issuedDate":"2026-02-28","fieldOfStudy":"Consumer Finance Regulation","licenseNumber":"2026-CFPB-0012","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+
+Example 102 — Regulation (FDA guidance):
+Input: "U.S. FOOD AND DRUG ADMINISTRATION. Guidance for Industry. Artificial Intelligence-Enabled Software as a Medical Device. Docket No. FDA-2025-D-1234. Issued: March 2026. This guidance represents FDA's current thinking on this topic."
+Output: {"credentialType":"REGULATION","issuerName":"U.S. Food and Drug Administration","issuedDate":"2026-03-01","fieldOfStudy":"Medical Device Regulation","licenseNumber":"FDA-2025-D-1234","jurisdiction":"United States","fraudSignals":[],"confidence":0.85}
+
+Example 103 — Publication (preprint):
+Input: "arXiv:2601.12345v2 [cs.AI]. Submitted: January 5, 2026. Revised: January 20, 2026. Scalable Transformer Architecture for Multi-Modal Document Understanding. [NAME_REDACTED], [NAME_REDACTED]. Abstract: We present a novel transformer-based approach..."
+Output: {"credentialType":"PUBLICATION","issuerName":"arXiv","issuedDate":"2026-01-20","fieldOfStudy":"Artificial Intelligence","licenseNumber":"2601.12345","fraudSignals":[],"confidence":0.88}
+
+Example 104 — Publication (book chapter):
+Input: "Chapter 14: Ethical Frameworks for Autonomous Systems. In: Handbook of AI Governance (2026). Editors: [NAME_REDACTED], [NAME_REDACTED]. Publisher: Springer Nature. ISBN: 978-3-030-12345-6. Pages 287-312. DOI: 10.1007/978-3-030-12345-6_14."
+Output: {"credentialType":"PUBLICATION","issuerName":"Springer Nature","issuedDate":"2026-01-01","fieldOfStudy":"AI Ethics","licenseNumber":"10.1007/978-3-030-12345-6_14","fraudSignals":[],"confidence":0.87}
+
+Example 105 — Publication (technical report / whitepaper):
+Input: "NIST Special Publication 800-228. Post-Quantum Cryptography Migration Guidelines for Enterprise Systems. [NAME_REDACTED] et al. National Institute of Standards and Technology. Gaithersburg, MD. March 2026. DOI: 10.6028/NIST.SP.800-228."
+Output: {"credentialType":"PUBLICATION","issuerName":"National Institute of Standards and Technology","issuedDate":"2026-03-01","fieldOfStudy":"Cryptography","licenseNumber":"10.6028/NIST.SP.800-228","jurisdiction":"Maryland, USA","fraudSignals":[],"confidence":0.90}
+
+Example 106 — Badge (Credly micro-credential):
+Input: "Credly Digital Badge. AWS Certified Solutions Architect - Associate. Issued to: [NAME_REDACTED]. Issued by: Amazon Web Services. Issue Date: December 1, 2025. Expiration Date: December 1, 2028. Badge ID: [REDACTED]. Skills: Cloud Architecture, AWS, Security."
+Output: {"credentialType":"BADGE","issuerName":"Amazon Web Services","issuedDate":"2025-12-01","expiryDate":"2028-12-01","fieldOfStudy":"Cloud Architecture","accreditingBody":"Amazon Web Services","fraudSignals":[],"confidence":0.90}
+
+Example 107 — Badge (Open Badge standard):
+Input: "Open Badge 2.0. Credential: Data Literacy Fundamentals. Issuer: [COMPANY_REDACTED] Learning Platform. Issued: 2026-02-01. Criteria: Completed 5-module course on data analysis fundamentals. Evidence URL: [REDACTED]. Badge Class: Data Literacy."
+Output: {"credentialType":"BADGE","issuerName":"[COMPANY_REDACTED] Learning Platform","issuedDate":"2026-02-01","fieldOfStudy":"Data Literacy","fraudSignals":[],"confidence":0.85}
+
+Example 108 — Badge (LinkedIn Learning):
+Input: "LinkedIn Learning Certificate of Completion. [NAME_REDACTED]. Project Management Foundations. Instructor: [NAME_REDACTED]. Completed: January 15, 2026. Skills: Project Management, Agile, Scrum."
+Output: {"credentialType":"BADGE","issuerName":"LinkedIn Learning","issuedDate":"2026-01-15","fieldOfStudy":"Project Management","fraudSignals":[],"confidence":0.82}
+
+Example 109 — Fraud: future-dated degree:
+Input: "DIPLOMA. University of Phoenix Online. Awarded to [NAME_REDACTED]. Doctor of Business Administration. Conferred: December 15, 2028. Signed by the President and Board of Trustees."
+Output: {"credentialType":"DEGREE","issuerName":"University of Phoenix Online","issuedDate":"2028-12-15","fieldOfStudy":"Business Administration","degreeLevel":"Doctorate","fraudSignals":["SUSPICIOUS_DATES"],"confidence":0.30}
+
+Example 110 — Fraud: contradictory jurisdiction:
+Input: "State of California. Board of Nursing. License issued to [NAME_REDACTED]. License Type: Registered Nurse. Issued: 2024-06-01. This license is valid for practice in Ontario, Canada only."
+Output: {"credentialType":"LICENSE","issuerName":"California Board of Nursing","issuedDate":"2024-06-01","fieldOfStudy":"Nursing","jurisdiction":"California, USA","fraudSignals":["JURISDICTION_MISMATCH"],"confidence":0.35}`;
 
 /**
  * Get a stable hash of the current extraction system prompt.
@@ -571,7 +733,9 @@ export function buildExtractionPrompt(
   } else if (credentialType === 'FINANCIAL') {
     prompt += `This is a financial document. Look for the entity name, fiscal period end date, auditor/preparer (as accreditingBody if applicable), and document type (audit report, tax form, financial statement). Use fiscal year end or filing date as issuedDate.\n`;
   } else if (credentialType === 'PUBLICATION') {
-    prompt += `This is an academic publication. Look for the journal/conference name (as issuerName), publication date, DOI, and research field. Map the research topic to a broad fieldOfStudy.\n`;
+    prompt += `This is an academic publication. Look for the journal/conference name (as issuerName), publication date, DOI (as licenseNumber), and research field. Map the research topic to a broad fieldOfStudy.\n`;
+  } else if (credentialType === 'PATENT') {
+    prompt += `This is a patent document. Look for the patent office (USPTO, EPO, WIPO) as issuerName, patent/application number as licenseNumber, filing or grant date as issuedDate, and technical field. Map the invention domain to a broad fieldOfStudy.\n`;
   }
 
   // JSON.stringify encodes the text as an inert data payload, preventing prompt injection

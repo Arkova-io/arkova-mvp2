@@ -58,17 +58,23 @@ export function useTreasuryBalance() {
       const fetchWithTimeout = (url: string) =>
         fetch(url, { signal: AbortSignal.timeout(10_000) });
 
-      const [addressRes, txRes, priceRes, feeRes] = await Promise.all([
+      // Use allSettled so one failing call doesn't break all cards
+      const [addressResult, txResult, priceResult, feeResult] = await Promise.allSettled([
         fetchWithTimeout(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}`),
         fetchWithTimeout(`${MEMPOOL_API}/address/${TREASURY_ADDRESS}/txs`),
         fetchWithTimeout(`${MEMPOOL_API}/v1/prices`),
         fetchWithTimeout(`${MEMPOOL_API}/v1/fees/recommended`),
       ]);
 
+      const addressRes = addressResult.status === 'fulfilled' ? addressResult.value : null;
+      const txRes = txResult.status === 'fulfilled' ? txResult.value : null;
+      const priceRes = priceResult.status === 'fulfilled' ? priceResult.value : null;
+      const feeRes = feeResult.status === 'fulfilled' ? feeResult.value : null;
+
       if (!isMountedRef.current) return;
 
       // Parse address balance
-      if (addressRes.ok) {
+      if (addressRes?.ok) {
         const data = await addressRes.json() as {
           chain_stats: { funded_txo_sum: number; spent_txo_sum: number };
           mempool_stats: { funded_txo_sum: number; spent_txo_sum: number };
@@ -78,7 +84,7 @@ export function useTreasuryBalance() {
 
         // Parse BTC price
         let btcPrice: number | null = null;
-        if (priceRes.ok) {
+        if (priceRes?.ok) {
           const priceData = await priceRes.json() as { USD: number };
           btcPrice = priceData.USD;
         }
@@ -93,7 +99,7 @@ export function useTreasuryBalance() {
       }
 
       // Parse receipts
-      if (txRes.ok) {
+      if (txRes?.ok) {
         const txData = await txRes.json() as Array<{
           txid: string;
           fee: number;
@@ -124,7 +130,7 @@ export function useTreasuryBalance() {
       }
 
       // Parse fee rates
-      if (feeRes.ok) {
+      if (feeRes?.ok) {
         const fees = await feeRes.json() as {
           fastestFee: number;
           halfHourFee: number;

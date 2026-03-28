@@ -355,7 +355,7 @@ export function DevelopersPage() {
               <span className="text-[#3c494e]">|</span>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-[#a8e8ff]" />
-                <span>Sub-cent transactions</span>
+                <span>Sub-cent per verification</span>
               </div>
               <span className="text-[#3c494e]">|</span>
               <span>No subscription needed</span>

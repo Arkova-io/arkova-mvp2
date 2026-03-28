@@ -38,7 +38,7 @@ export class RedisRateLimitStore implements IRateLimitStore {
     this.redis = redisClient;
   }
 
-  get(key: string): RateLimitEntry | undefined {
+  get(_key: string): RateLimitEntry | undefined {
     // Synchronous interface — for Redis, we use getAsync internally
     // The rate limiter middleware should be updated to await if using Redis
     // For now, return undefined to allow the request (fail-open)
@@ -62,6 +62,7 @@ export class RedisRateLimitStore implements IRateLimitStore {
     });
   }
 
+  // eslint-disable-next-line require-yield
   *entries(): IterableIterator<[string, RateLimitEntry]> {
     // Not used for cleanup in Redis (TTL handles expiry)
     return;

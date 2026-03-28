@@ -163,6 +163,9 @@ vi.mock('./utils/rateLimit.js', () => {
     rateLimiters: {
       stripeWebhook: passthrough,
       checkout: passthrough,
+      api: passthrough,
+      anonymous: passthrough,
+      batch: passthrough,
     },
     stopRateLimitCleanup: vi.fn(),
     getRateLimitStoreSize: vi.fn().mockReturnValue(0),
@@ -530,7 +533,8 @@ describe('worker server', () => {
       expect(res.status).toBe(204);
       expect(res.headers['Access-Control-Allow-Origin']).toBe('http://localhost:5173');
       expect(res.headers['Access-Control-Allow-Methods']).toBe('POST, GET, DELETE, OPTIONS');
-      expect(res.headers['Access-Control-Allow-Headers']).toBe('Content-Type, Authorization');
+      expect(res.headers['Access-Control-Allow-Headers']).toContain('Content-Type');
+      expect(res.headers['Access-Control-Allow-Headers']).toContain('Authorization');
     });
 
     it('does not set CORS headers for disallowed origin', async () => {
@@ -669,6 +673,7 @@ describe('worker server', () => {
       });
 
       expect(res.status).toBe(409);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((res.body as any).error.message).toContain('already has an active subscription');
     });
 

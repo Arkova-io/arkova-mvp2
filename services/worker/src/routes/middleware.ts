@@ -77,6 +77,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
   // Attach to request for downstream use
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (req as any).userId = userId;
   next();
 }

@@ -253,7 +253,8 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 | UAT + UF | 27/27 | 0 | 0 | 100% |
 | GEO & SEO | 6/12 | 1 | 5 | 50% |
 | Beta (BETA-01–13) | 13/13 | 0 | 0 | 100% |
-| **Total** | **180/192** | **3/192** | **9/192** | **~94%** |
+| ATS & Background Checks | 0/8 | 0 | 8 | 0% |
+| **Total** | **180/200** | **3/200** | **17/200** | **~90%** |
 
 ### Incomplete Stories
 
@@ -284,6 +285,10 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 
 **GEO & SEO (5 not started, 1 partial):**
 - See `docs/stories/15_geo_seo.md` and `docs/BACKLOG.md` for details
+
+**ATS & Background Checks (8 not started):**
+- ATT-01 through ATT-08. Employment/education verification workflows, batch API, ATS webhooks, credential portfolios.
+- See `docs/stories/18_ats_background_checks.md` and `docs/BACKLOG.md` for details
 
 ### Remaining Production Blockers
 
@@ -379,10 +384,14 @@ SENTRY_SAMPLE_RATE=0.1
 # AI
 ENABLE_AI_FALLBACK=false
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.0-flash
-GEMINI_EMBEDDING_MODEL=text-embedding-004
-AI_PROVIDER=mock                    # gemini | cloudflare | replicate | mock
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+AI_PROVIDER=mock                    # gemini | nessie | together | cloudflare | replicate | mock
 REPLICATE_API_TOKEN=                # QA only
+
+# Nessie (RunPod vLLM — pipeline extraction)
+RUNPOD_API_KEY=
+RUNPOD_ENDPOINT_ID=                 # e.g., hmayoqhxvy5k5y
 ENABLE_SYNTHETIC_DATA=false
 ```
 

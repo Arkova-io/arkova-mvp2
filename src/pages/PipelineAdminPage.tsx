@@ -167,32 +167,21 @@ export function PipelineAdminPage() {
         }
       }
 
-      // Anchor counts by credential_type and status
+      // Anchor counts by credential_type and status (isolated — failure here won't kill the page)
       const byCredentialType: Record<string, { total: number; secured: number; submitted: number; pending: number; broadcasting: number }> = {};
-      const { data: ctRows } = await dbAny.rpc('get_anchor_type_counts').catch(() => ({ data: null }));
-      if (ctRows && Array.isArray(ctRows)) {
-        for (const row of ctRows as Array<{ credential_type: string | null; status: string; count: number }>) {
-          const ct = row.credential_type ?? 'UNKNOWN';
-          if (!byCredentialType[ct]) byCredentialType[ct] = { total: 0, secured: 0, submitted: 0, pending: 0, broadcasting: 0 };
-          byCredentialType[ct].total += Number(row.count);
-          const s = row.status?.toLowerCase() as 'secured' | 'submitted' | 'pending' | 'broadcasting';
-          if (s in byCredentialType[ct]) byCredentialType[ct][s] += Number(row.count);
-        }
-      } else {
-        // Fallback: direct query (may be slow on large tables)
-        const { data: anchorRows } = await dbAny
-          .from('anchors')
-          .select('credential_type, status')
-          .limit(100000);
-        if (anchorRows && Array.isArray(anchorRows)) {
-          for (const row of anchorRows as Array<{ credential_type: string | null; status: string }>) {
+      try {
+        const { data: ctRows } = await dbAny.rpc('get_anchor_type_counts');
+        if (ctRows && Array.isArray(ctRows)) {
+          for (const row of ctRows as Array<{ credential_type: string | null; status: string; count: number }>) {
             const ct = row.credential_type ?? 'UNKNOWN';
             if (!byCredentialType[ct]) byCredentialType[ct] = { total: 0, secured: 0, submitted: 0, pending: 0, broadcasting: 0 };
-            byCredentialType[ct].total += 1;
+            byCredentialType[ct].total += Number(row.count);
             const s = row.status?.toLowerCase() as 'secured' | 'submitted' | 'pending' | 'broadcasting';
-            if (s in byCredentialType[ct]) byCredentialType[ct][s] += 1;
+            if (s in byCredentialType[ct]) byCredentialType[ct][s] += Number(row.count);
           }
         }
+      } catch {
+        // Type counts are non-critical — don't let this fail the whole page
       }
 
       setStats({
@@ -310,13 +299,21 @@ export function PipelineAdminPage() {
   useEffect(() => {
     if (!isAdmin) return;
     (async () => {
-      const { data } = await dbAny
-        .from('public_records')
-        .select('record_type')
-        .limit(1000);
-      if (data) {
-        const types = [...new Set((data as Array<{ record_type: string }>).map((r) => r.record_type))].sort();
+      // Use RPC or distinct query to get record types without fetching 1000 rows
+      const { data } = await dbAny.rpc('get_distinct_record_types').catch(() => ({ data: null }));
+      if (data && Array.isArray(data)) {
+        const types = (data as Array<{ record_type: string }>).map((r) => r.record_type).sort();
         setAvailableTypes(types);
+      } else {
+        // Fallback: fetch minimal data to extract types
+        const { data: fallbackData } = await dbAny
+          .from('public_records')
+          .select('record_type')
+          .limit(1000);
+        if (fallbackData) {
+          const types = [...new Set((fallbackData as Array<{ record_type: string }>).map((r) => r.record_type))].sort();
+          setAvailableTypes(types);
+        }
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps

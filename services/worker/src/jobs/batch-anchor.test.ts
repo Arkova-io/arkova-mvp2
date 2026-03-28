@@ -15,7 +15,7 @@ const {
   mockAnchorsUpdate,
   mockLogger,
   setUpdateResult,
-  setUpdateResultQueue,
+  _setUpdateResultQueue,
 } = vi.hoisted(() => {
   const mockSubmitFingerprint = vi.fn();
 
@@ -51,7 +51,7 @@ const {
     mockAnchorsUpdate,
     mockLogger,
     setUpdateResult,
-    setUpdateResultQueue,
+    _setUpdateResultQueue: setUpdateResultQueue,
   };
 });
 
@@ -171,10 +171,9 @@ describe('processBatchAnchors', () => {
   // ---- Single anchor batch ----
 
   it('processes single anchor via batch (INEFF-2: MIN_BATCH_SIZE = 1)', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A], error: null }) // claim
+      .mockResolvedValueOnce({ data: 1, error: null }); // submit_batch_anchors
 
     const result = await processBatchAnchors();
 
@@ -185,10 +184,9 @@ describe('processBatchAnchors', () => {
   // ---- Successful batch processing ----
 
   it('processes batch of 3 anchors: builds tree, publishes root, updates all', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B, ANCHOR_C],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B, ANCHOR_C], error: null }) // claim
+      .mockResolvedValueOnce({ data: 3, error: null }); // submit_batch_anchors
 
     const result = await processBatchAnchors();
 
@@ -199,10 +197,9 @@ describe('processBatchAnchors', () => {
   });
 
   it('submits the Merkle root (not individual fingerprints) to chain', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }) // claim
+      .mockResolvedValueOnce({ data: 2, error: null }); // submit_batch_anchors
 
     await processBatchAnchors();
 
@@ -216,69 +213,59 @@ describe('processBatchAnchors', () => {
     expect(submittedFp).toHaveLength(64); // SHA-256 hex
   });
 
-  it('updates each anchor with chain receipt data', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+  it('calls submit_batch_anchors RPC with correct params', async () => {
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }) // claim
+      .mockResolvedValueOnce({ data: 2, error: null }); // submit_batch_anchors
 
     await processBatchAnchors();
 
-    // Two updates (one per anchor)
-    expect(mockAnchorsUpdate).toHaveBeenCalledTimes(2);
+    // Second RPC call should be submit_batch_anchors
+    expect(mockDbRpc).toHaveBeenCalledWith('submit_batch_anchors', expect.objectContaining({
+      p_anchor_ids: ['anchor-a', 'anchor-b'],
+      p_tx_id: MOCK_RECEIPT.receiptId,
+      p_block_height: MOCK_RECEIPT.blockHeight,
+      p_block_timestamp: MOCK_RECEIPT.blockTimestamp,
+      p_merkle_root: expect.any(String),
+      p_batch_id: expect.stringMatching(/^batch_/),
+    }));
+  });
 
-    // Each update includes chain info
-    expect(mockAnchorsUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'SUBMITTED',
-        chain_tx_id: MOCK_RECEIPT.receiptId,
-        chain_block_height: MOCK_RECEIPT.blockHeight,
-        chain_timestamp: MOCK_RECEIPT.blockTimestamp,
-      }),
+  it('stores Merkle root in submit_batch_anchors RPC call', async () => {
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }) // claim
+      .mockResolvedValueOnce({ data: 2, error: null }); // submit_batch_anchors
+
+    await processBatchAnchors();
+
+    // The RPC call should include the Merkle root
+    const submitCall = mockDbRpc.mock.calls.find(
+      (call: unknown[]) => call[0] === 'submit_batch_anchors',
     );
+    expect(submitCall).toBeDefined();
+    expect(submitCall![1].p_merkle_root).toBeTruthy();
+    expect(submitCall![1].p_merkle_root).toHaveLength(64);
   });
 
-  it('stores Merkle proof in metadata for each anchor', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+  it('marks all anchors as SUBMITTED via bulk RPC after successful publish', async () => {
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B, ANCHOR_C], error: null }) // claim
+      .mockResolvedValueOnce({ data: 3, error: null }); // submit_batch_anchors
 
-    await processBatchAnchors();
+    const result = await processBatchAnchors();
 
-    // Each anchor's metadata should contain its Merkle proof
-    for (const call of mockAnchorsUpdate.mock.calls as unknown[][]) {
-      const updatePayload = call[0] as Record<string, Record<string, unknown>>;
-      expect(updatePayload.metadata).toBeDefined();
-      expect(updatePayload.metadata.merkle_proof).toBeDefined();
-      expect(updatePayload.metadata.merkle_root).toBeTruthy();
-      expect(updatePayload.metadata.batch_id).toMatch(/^batch_/);
-    }
-  });
-
-  it('marks all anchors as SUBMITTED after successful publish', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B, ANCHOR_C],
-      error: null,
-    });
-
-    await processBatchAnchors();
-
-    for (const call of mockAnchorsUpdate.mock.calls as unknown[][]) {
-      expect((call[0] as Record<string, unknown>).status).toBe('SUBMITTED');
-    }
-
-    // RACE-1: Verify all anchors were updated (via mockAnchorsUpdate calls)
-    expect(mockAnchorsUpdate).toHaveBeenCalledTimes(3);
+    // All 3 anchors should be processed via bulk RPC
+    expect(result.processed).toBe(3);
+    expect(mockDbRpc).toHaveBeenCalledWith('submit_batch_anchors', expect.objectContaining({
+      p_anchor_ids: ['anchor-a', 'anchor-b', 'anchor-c'],
+    }));
   });
 
   // ---- Chain publish failure ----
 
   it('returns 0 processed when chain submission fails', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }); // claim
     mockSubmitFingerprint.mockRejectedValue(new Error('chain unavailable'));
 
     const result = await processBatchAnchors();
@@ -290,10 +277,8 @@ describe('processBatchAnchors', () => {
   });
 
   it('does not update anchors to SUBMITTED when chain submission fails', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }); // claim
     mockSubmitFingerprint.mockRejectedValue(new Error('timeout'));
 
     await processBatchAnchors();
@@ -307,36 +292,30 @@ describe('processBatchAnchors', () => {
 
   // ---- Partial DB update failure ----
 
-  it('continues updating remaining anchors when one update fails', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B, ANCHOR_C],
-      error: null,
-    });
+  it('falls back to individual updates when submit_batch_anchors RPC fails', async () => {
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B, ANCHOR_C], error: null }) // claim
+      .mockResolvedValueOnce({ data: null, error: { message: 'function not found' } }); // submit_batch_anchors fails
 
-    // First update fails, second and third succeed
-    setUpdateResultQueue([
-      { error: { message: 'constraint violation' } },
-      { error: null, count: 1 },
-      { error: null, count: 1 },
-    ]);
+    // Individual updates succeed (fallback path)
+    setUpdateResult({ error: null, count: 1 });
 
     const result = await processBatchAnchors();
 
-    expect(result.processed).toBe(2);
+    expect(result.processed).toBe(3);
     expect(mockAnchorsUpdate).toHaveBeenCalledTimes(3);
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ anchorId: 'anchor-a' }),
-      'Failed to update anchor in batch',
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Object) }),
+      expect.stringContaining('submit_batch_anchors RPC failed'),
     );
   });
 
   // ---- Batch ID generation ----
 
   it('generates batch ID with timestamp and count', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }) // claim
+      .mockResolvedValueOnce({ data: 2, error: null }); // submit_batch_anchors
 
     const result = await processBatchAnchors();
 
@@ -356,10 +335,9 @@ describe('processBatchAnchors', () => {
   // ---- Logging ----
 
   it('logs completion info with batch details', async () => {
-    mockDbRpc.mockResolvedValue({
-      data: [ANCHOR_A, ANCHOR_B],
-      error: null,
-    });
+    mockDbRpc
+      .mockResolvedValueOnce({ data: [ANCHOR_A, ANCHOR_B], error: null }) // claim
+      .mockResolvedValueOnce({ data: 2, error: null }); // submit_batch_anchors
 
     await processBatchAnchors();
 

@@ -161,7 +161,7 @@ async function fetchTxStatus(txid: string): Promise<MempoolTxResponse | null> {
  *
  * @returns true if anchor was promoted to SECURED
  */
-async function checkAnchorConfirmation(anchor: {
+async function _checkAnchorConfirmation(anchor: {
   id: string;
   chain_tx_id: string;
   user_id: string;
@@ -321,40 +321,34 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
   }
   confirmationCheckRunning = true;
 
-  // Fetch SUBMITTED anchors — get enough to fill MAX_TX_CHECKS_PER_RUN unique tx_ids
-  // We fetch more anchors than tx limit since many share a tx_id (Merkle batching)
-  const { data: anchors, error } = await db
+  // PERF: Fetch distinct tx_ids first (tiny result), then fetch anchors per-tx on confirm.
+  // Old approach fetched 50K anchors into memory just to find 100 unique tx_ids.
+  const { data: txRows, error: txError } = await db
     .from('anchors')
-    .select('id, chain_tx_id, user_id, org_id, fingerprint, public_id')
+    .select('chain_tx_id')
     .eq('status', 'SUBMITTED')
     .not('chain_tx_id', 'is', null)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
-    .limit(50000);
+    .limit(5000);
 
-  if (error) {
-    logger.error({ error }, 'Failed to fetch SUBMITTED anchors');
+  if (txError) {
+    logger.error({ error: txError }, 'Failed to fetch SUBMITTED anchor tx_ids');
     confirmationCheckRunning = false;
     return { checked: 0, confirmed: 0 };
   }
 
-  if (!anchors || anchors.length === 0) {
+  if (!txRows || txRows.length === 0) {
     logger.debug('No SUBMITTED anchors to check');
     confirmationCheckRunning = false;
     return { checked: 0, confirmed: 0 };
   }
 
-  // Group anchors by chain_tx_id
-  const txGroups = new Map<string, typeof anchors>();
-  for (const anchor of anchors) {
-    if (!anchor.chain_tx_id) continue;
-    const group = txGroups.get(anchor.chain_tx_id) || [];
-    group.push(anchor);
-    txGroups.set(anchor.chain_tx_id, group);
-  }
+  // Deduplicate tx_ids and take only MAX_TX_CHECKS_PER_RUN
+  const txIds = [...new Set(txRows.map((r) => r.chain_tx_id).filter((id): id is string => id != null))]
+    .slice(0, MAX_TX_CHECKS_PER_RUN);
 
-  // Take only MAX_TX_CHECKS_PER_RUN unique tx_ids
-  const txIds = Array.from(txGroups.keys()).slice(0, MAX_TX_CHECKS_PER_RUN);
+  // Anchors are updated in bulk by chain_tx_id — no in-memory grouping needed
 
   // CRIT-1: Fetch current chain tip height for confirmation counting
   let currentTipHeight = 0;
@@ -372,7 +366,7 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
 
   const minConf = getMinConfirmations();
   logger.info(
-    { uniqueTxIds: txIds.length, totalAnchors: anchors.length, totalUniqueTx: txGroups.size, currentTipHeight, minConfirmations: minConf },
+    { uniqueTxIds: txIds.length, currentTipHeight, minConfirmations: minConf },
     'Checking SUBMITTED anchors grouped by tx_id',
   );
 
@@ -391,7 +385,7 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
           return 0;
         }
 
-        const groupAnchors = txGroups.get(txId) || [];
+        // Anchors loaded on-demand via bulk update; no in-memory group needed
         const blockHeight = txData.status.block_height ?? 0;
         const blockTimestamp = txData.status.block_time
           ? new Date(txData.status.block_time * 1000).toISOString()
@@ -406,55 +400,49 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
 
         if (confirmations < minConfirmations) {
           logger.debug(
-            { txId, confirmations, required: minConfirmations, groupSize: groupAnchors.length },
+            { txId, confirmations, required: minConfirmations },
             `TX confirmed but waiting for ${minConfirmations} confirmations (${confirmations}/${minConfirmations})`,
           );
           return 0;
         }
 
         // PERF-2: Bulk promote ALL anchors sharing this tx_id
-        const anchorIds = groupAnchors.map((a) => a.id);
-        const BULK_BATCH = 10000;
+        // Uses chain_tx_id filter instead of .in('id', [...]) to avoid
+        // PostgREST URL parameter limits (8K+ UUIDs = ~312KB query string
+        // which silently fails or gets truncated by proxies/load balancers).
         let groupConfirmed = 0;
 
-        for (let j = 0; j < anchorIds.length; j += BULK_BATCH) {
-          const idBatch = anchorIds.slice(j, j + BULK_BATCH);
-          const { error: bulkErr, count } = await db
-            .from('anchors')
-            .update({
-              status: 'SECURED',
-              chain_block_height: blockHeight,
-              chain_timestamp: blockTimestamp,
-            })
-            .in('id', idBatch)
-            .eq('status', 'SUBMITTED');
+        const { error: bulkErr, count } = await db
+          .from('anchors')
+          .update({
+            status: 'SECURED',
+            chain_block_height: blockHeight,
+            chain_timestamp: blockTimestamp,
+          })
+          .eq('chain_tx_id', txId)
+          .eq('status', 'SUBMITTED');
 
-          if (bulkErr) {
-            logger.error({ txId, batchStart: j, error: bulkErr }, 'Bulk SECURED update failed');
-          } else {
-            groupConfirmed += count ?? idBatch.length;
-          }
+        if (bulkErr) {
+          logger.error({ txId, error: bulkErr }, 'Bulk SECURED update failed');
+        } else {
+          groupConfirmed = count ?? 0;
         }
 
-        // Batch audit events (one insert with array)
+        // Batch audit event — one summary row per TX instead of per-anchor
+        // (8K+ individual audit rows is excessive and slow)
         if (groupConfirmed > 0) {
-          const auditRows = groupAnchors.slice(0, groupConfirmed).map((a) => ({
-            event_type: 'anchor.secured',
+          const { error: auditErr } = await db.from('audit_events').insert({
+            event_type: 'anchor.batch_secured',
             event_category: 'ANCHOR',
-            actor_id: a.user_id,
+            actor_id: '00000000-0000-0000-0000-000000000000',
             target_type: 'anchor',
-            target_id: a.id,
-            org_id: a.org_id,
-            details: `Confirmed at block ${blockHeight} (tx: ${txId})`,
-          }));
-          // Insert audit events in batches of 500
-          for (let j = 0; j < auditRows.length; j += 500) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (db.from('audit_events').insert(auditRows.slice(j, j + 500)) as any).catch(() => {});
-          }
+            target_id: txId,
+            details: `Batch confirmed ${groupConfirmed} anchors at block ${blockHeight} (tx: ${txId}, ${confirmations} confirmations)`,
+          });
+          if (auditErr) logger.warn({ auditErr, txId }, 'Failed to insert batch audit event');
 
           logger.info(
-            { txId, groupSize: groupAnchors.length, confirmed: groupConfirmed, blockHeight, confirmations },
+            { txId, confirmed: groupConfirmed, blockHeight, confirmations },
             'Bulk confirmed anchor group (shared tx)',
           );
         }
@@ -474,7 +462,7 @@ export async function checkSubmittedConfirmations(): Promise<{ checked: number; 
   confirmationCheckRunning = false;
 
   logger.info(
-    { txChecked: checked, anchorsConfirmed: confirmed, totalSubmitted: anchors.length },
+    { txChecked: checked, anchorsConfirmed: confirmed, totalSubmitted: txRows.length },
     'Confirmation check complete',
   );
   return { checked, confirmed };

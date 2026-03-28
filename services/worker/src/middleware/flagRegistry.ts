@@ -21,7 +21,7 @@ interface FlagState {
   lastChecked: number;
 }
 
-const FLAG_CACHE_TTL_MS = 60_000; // 60 seconds
+const _FLAG_CACHE_TTL_MS = 60_000; // 60 seconds
 
 // All known flags and their sources
 const ENV_FLAGS = [
@@ -74,6 +74,7 @@ class FeatureFlagRegistry {
           this.flags.set(key, { value: envFallback, source: 'env', lastChecked: Date.now() });
         }
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dbFlagMap = new Map((data ?? []).map((r: any) => [r.flag_key, r.enabled === true]));
         for (const key of DB_FLAGS) {
           // If flag not in DB, fall back to env var

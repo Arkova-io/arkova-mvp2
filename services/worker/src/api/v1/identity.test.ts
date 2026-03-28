@@ -27,14 +27,14 @@ vi.mock('../../stripe/client.js', () => ({
   },
 }));
 
-// Mock supabase admin
+// Mock DB (identity.ts imports db from ../../utils/db.js)
 const mockSelect = vi.fn();
 const mockUpdate = vi.fn();
 const mockEq = vi.fn();
 const mockSingle = vi.fn();
 
-vi.mock('../../supabase.js', () => ({
-  supabaseAdmin: {
+vi.mock('../../utils/db.js', () => ({
+  db: {
     from: vi.fn(() => ({
       select: mockSelect.mockReturnValue({
         eq: mockEq.mockReturnValue({

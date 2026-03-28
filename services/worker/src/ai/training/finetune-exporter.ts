@@ -20,7 +20,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { logger } from '../../utils/logger.js';
 import { EXTRACTION_SYSTEM_PROMPT } from '../prompts/extraction.js';
-import type { ModelTarget, TrainingExample } from '../modelTargets.js';
+import type { ModelTarget } from '../modelTargets.js';
 import { getExportConfigs } from '../modelTargets.js';
 
 /** Minimum text length for a training example to be useful */

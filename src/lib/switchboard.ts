@@ -25,6 +25,12 @@ export const FLAGS = {
   ENABLE_SEMANTIC_SEARCH: true,
   ENABLE_AI_FRAUD: true,
   ENABLE_AI_REPORTS: true,
+  ENABLE_ATTESTATION_ANCHORING: true,
+  ENABLE_PUBLIC_RECORDS_INGESTION: true,
+  ENABLE_PUBLIC_RECORD_ANCHORING: true,
+  ENABLE_PUBLIC_RECORD_EMBEDDINGS: true,
+  ENABLE_VERIFICATION_API: true,
+  ENABLE_X402_PAYMENTS: true,
 } as const;
 
 export type FlagId = keyof typeof FLAGS;
@@ -36,10 +42,26 @@ export type FlagId = keyof typeof FLAGS;
 // Track which flags have already logged an error to avoid console spam
 const _flagErrorLogged = new Set<string>();
 
+// In-memory flag cache with TTL to avoid RPC on every call
+const FLAG_CACHE_TTL_MS = 30_000; // 30 seconds
+const _flagCache = new Map<string, { value: boolean; expires: number }>();
+
+/** @internal Test-only helper to reset cache between tests */
+export function _clearCacheForTest(): void {
+  _flagCache.clear();
+  _flagErrorLogged.clear();
+}
+
 /**
- * Get a flag value from the server
+ * Get a flag value from the server (cached for 30s to avoid RPC per call)
  */
 export async function getFlag(flagId: FlagId): Promise<boolean> {
+  // Check cache first
+  const cached = _flagCache.get(flagId);
+  if (cached && Date.now() < cached.expires) {
+    return cached.value;
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.rpc as any)('get_flag', {
@@ -52,14 +74,20 @@ export async function getFlag(flagId: FlagId): Promise<boolean> {
         _flagErrorLogged.add(flagId);
         console.warn(`Switchboard: flag ${flagId} unavailable, using default (${FLAGS[flagId]})`);
       }
-      return FLAGS[flagId]; // Return default on error
+      const defaultVal = FLAGS[flagId];
+      _flagCache.set(flagId, { value: defaultVal, expires: Date.now() + FLAG_CACHE_TTL_MS });
+      return defaultVal;
     }
 
     // Clear error state on success (flag became available)
     _flagErrorLogged.delete(flagId);
-    return data as boolean;
+    const val = data as boolean;
+    _flagCache.set(flagId, { value: val, expires: Date.now() + FLAG_CACHE_TTL_MS });
+    return val;
   } catch {
-    return FLAGS[flagId]; // Return default on error
+    const defaultVal = FLAGS[flagId];
+    _flagCache.set(flagId, { value: defaultVal, expires: Date.now() + FLAG_CACHE_TTL_MS });
+    return defaultVal;
   }
 }
 
@@ -71,42 +99,18 @@ export async function getAllFlags(): Promise<Record<FlagId, boolean>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('switchboard_flags')
-    .select('id, value');
+    .select('flag_key, enabled');
 
   if (error) {
     console.error('Failed to fetch flags:', error);
-    // Create mutable copy
-    return {
-      ENABLE_PROD_NETWORK_ANCHORING: FLAGS.ENABLE_PROD_NETWORK_ANCHORING,
-      ENABLE_OUTBOUND_WEBHOOKS: FLAGS.ENABLE_OUTBOUND_WEBHOOKS,
-      ENABLE_NEW_CHECKOUTS: FLAGS.ENABLE_NEW_CHECKOUTS,
-      ENABLE_REPORTS: FLAGS.ENABLE_REPORTS,
-      MAINTENANCE_MODE: FLAGS.MAINTENANCE_MODE,
-      ENABLE_BATCH_ANCHORING: FLAGS.ENABLE_BATCH_ANCHORING,
-      ENABLE_AI_EXTRACTION: FLAGS.ENABLE_AI_EXTRACTION,
-      ENABLE_SEMANTIC_SEARCH: FLAGS.ENABLE_SEMANTIC_SEARCH,
-      ENABLE_AI_FRAUD: FLAGS.ENABLE_AI_FRAUD,
-      ENABLE_AI_REPORTS: FLAGS.ENABLE_AI_REPORTS,
-    };
+    return { ...FLAGS } as Record<FlagId, boolean>;
   }
 
-  // Create mutable result object
-  const flags: Record<FlagId, boolean> = {
-    ENABLE_PROD_NETWORK_ANCHORING: FLAGS.ENABLE_PROD_NETWORK_ANCHORING,
-    ENABLE_OUTBOUND_WEBHOOKS: FLAGS.ENABLE_OUTBOUND_WEBHOOKS,
-    ENABLE_NEW_CHECKOUTS: FLAGS.ENABLE_NEW_CHECKOUTS,
-    ENABLE_REPORTS: FLAGS.ENABLE_REPORTS,
-    MAINTENANCE_MODE: FLAGS.MAINTENANCE_MODE,
-    ENABLE_BATCH_ANCHORING: FLAGS.ENABLE_BATCH_ANCHORING,
-    ENABLE_AI_EXTRACTION: FLAGS.ENABLE_AI_EXTRACTION,
-    ENABLE_SEMANTIC_SEARCH: FLAGS.ENABLE_SEMANTIC_SEARCH,
-    ENABLE_AI_FRAUD: FLAGS.ENABLE_AI_FRAUD,
-    ENABLE_AI_REPORTS: FLAGS.ENABLE_AI_REPORTS,
-  };
+  const flags: Record<FlagId, boolean> = { ...FLAGS };
 
-  for (const row of (data || []) as Array<{ id: string; value: boolean }>) {
-    if (row.id in flags) {
-      flags[row.id as FlagId] = row.value;
+  for (const row of (data || []) as Array<{ flag_key: string; enabled: boolean }>) {
+    if (row.flag_key in flags) {
+      flags[row.flag_key as FlagId] = row.enabled;
     }
   }
 
@@ -204,11 +208,13 @@ export function subscribeFlagChanges(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'switchboard_flags' },
       (payload) => {
-        const newRow = payload.new as { id?: string; value?: boolean } | undefined;
-        if (!newRow?.id || typeof newRow.value !== 'boolean') return;
+        const newRow = payload.new as { flag_key?: string; enabled?: boolean } | undefined;
+        if (!newRow?.flag_key || typeof newRow.enabled !== 'boolean') return;
         // Only process known flags
-        if (!(newRow.id in FLAGS)) return;
-        onFlagChange(newRow.id as FlagId, newRow.value);
+        if (!(newRow.flag_key in FLAGS)) return;
+        // Invalidate cache on realtime update
+        _flagCache.set(newRow.flag_key, { value: newRow.enabled, expires: Date.now() + FLAG_CACHE_TTL_MS });
+        onFlagChange(newRow.flag_key as FlagId, newRow.enabled);
       },
     )
     .subscribe();

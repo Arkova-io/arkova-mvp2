@@ -20,7 +20,7 @@
 import { db } from '../utils/db.js';
 import { logger, createRpcLogger } from '../utils/logger.js';
 import { callRpc } from '../utils/rpc.js';
-import { getInitializedChainClient, getChainClientAsync } from '../chain/client.js';
+import { getChainClientAsync } from '../chain/client.js';
 import { getNetworkDisplayName, config } from '../config.js';
 import { dispatchWebhookEvent } from '../webhooks/delivery.js';
 import { sendEmail, buildRevocationEmail } from '../email/index.js';
