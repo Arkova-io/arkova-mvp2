@@ -1,5 +1,5 @@
 # Arkova Unified Backlog — Single Source of Truth
-_Last updated: 2026-03-23 (Session 13: 29K+ public records, 1,572+ SECURED anchors, 2,236 tests, 109 migrations, AI eval F1=82.1%, Phase 1.5 15/16 complete) | Re-prioritized each session per CLAUDE.md rules_
+_Last updated: 2026-03-28 (320K+ public records, 166K+ SECURED anchors on mainnet, 2,825 tests, 139 migrations, AI eval F1=82.1%, golden dataset 1,330 entries, 130 few-shot examples, Phase 1.5 15/16 complete) | Re-prioritized each session per CLAUDE.md rules_
 
 > **Rule:** All backlog items — stories, bugs, security findings, operational tasks, GEO items — exist in this single document. Prioritized and re-prioritized each session.
 
@@ -55,8 +55,8 @@ _Last updated: 2026-03-23 (Session 13: 29K+ public records, 1,572+ SECURED ancho
 | 10 | ~~OPS-02~~ | ~~Run `scripts/strip-demo-seeds.sql` on production~~ | **DONE** — Session 6: `admin@umich-demo.arkova.io` deleted, 0 demo users remain |
 | 11 | OPS-03 | Set Sentry DSN env vars (Vercel + Cloud Run) | PENDING |
 | 12 | OPS-04 | Sentry source map upload plugin | PENDING |
-| 13 | OPS-05 | AWS KMS key provisioning (mainnet signing) | PENDING |
-| 14 | OPS-06 | Mainnet treasury funding | PENDING |
+| 13 | ~~OPS-05~~ | ~~AWS KMS key provisioning (mainnet signing)~~ | **DONE** — GCP KMS configured, 116 mainnet TXs |
+| 14 | ~~OPS-06~~ | ~~Mainnet treasury funding~~ | **DONE** — Treasury funded, 166K+ SECURED anchors |
 | 15 | OPS-07 | Key rotation (Stripe + Supabase service role) | PENDING |
 | 16 | ~~OPS-08~~ | ~~Fix BITCOIN_TREASURY_WIF in Secret Manager~~ | **FIXED** — Secret Manager version 3 set to correct WIF. Revision `arkova-worker-00024-f9p` deployed, treasury address confirmed `tb1ql90xtpfzpyc03d2dghggqfdksfxe6ucjufah0r`. PENDING anchor processed to SUBMITTED (TX `a5f6d9d9...`). |
 
@@ -353,10 +353,10 @@ _From E2E journey validation across 7 user flows. Report: `docs/bugs/e2e_journey
 
 | ID | Story | Priority | Status | Detail |
 |----|-------|----------|--------|--------|
-| AI-EVAL-01 | Golden dataset + scoring engine | P0 | **COMPLETE** | 210 entries, F1/precision/recall per field, eval runner, 42 tests |
-| AI-EVAL-02 | Live Gemini eval baseline | P0 | **COMPLETE** | F1=82.1%, confidence r=0.426, ECE=13.5%. Best: CLE 94.3%, Worst: LICENSE 59.4% |
+| AI-EVAL-01 | Golden dataset + scoring engine | P0 | **COMPLETE** | 1,330 entries (8 phases), F1/precision/recall per field, eval runner, 447 tests |
+| AI-EVAL-02 | Live Gemini eval baseline | P0 | **COMPLETE** | F1=82.1%, confidence r=0.426, ECE=13.5%. Best: CLE 94.3%, Worst: SEC_FILING 36.8% |
 | AI-PROMPT-01 | Prompt version tracking | P1 | **COMPLETE** | Prompt hash stored with every extraction event (migration 0092) |
-| AI-PROMPT-02 | Few-shot expansion | P1 | **COMPLETE** | 11→25 examples, targeting LICENSE and TRANSCRIPT weaknesses |
+| AI-PROMPT-02 | Few-shot expansion | P1 | **COMPLETE** | 11→130 examples, covering all 21 credential types + OCR-corrupted documents |
 | AI-FRAUD-01 | Fraud audit framework | P1 | **COMPLETE** | CLI framework, 0 flagged items in prod (integrity scoring not yet active) |
 | AI-OBS-01 | Admin AI metrics dashboard | P1 | **COMPLETE** | /admin/ai-metrics: usage, feedback, provider stats, eval baseline |
 

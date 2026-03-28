@@ -79,10 +79,10 @@ export function BillingPage() {
   return (
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-[24px] font-bold tracking-tight">
           {BILLING_PAGE_LABELS.PAGE_TITLE}
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-[13px] text-muted-foreground mt-1">
           {BILLING_PAGE_LABELS.PAGE_SUBTITLE}
         </p>
       </div>

@@ -8,7 +8,6 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  HelpCircle,
   Shield,
   FileText,
   Eye,
@@ -70,11 +69,10 @@ export function HelpPage() {
       onSignOut={handleSignOut}
     >
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-          <HelpCircle className="h-6 w-6 text-primary" />
+        <h1 className="text-[24px] font-bold tracking-tight">
           {NAV_LABELS.HELP}
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-[13px] text-muted-foreground mt-1">
           Frequently asked questions and support
         </p>
       </div>

@@ -156,11 +156,11 @@ export function DashboardPage() {
     >
       {/* Welcome section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tighter">
+        <h1 className="text-[24px] font-bold tracking-tight text-foreground">
           Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}
         </h1>
-        <p className="text-muted-foreground mt-1 font-mono text-[10px] uppercase tracking-widest">
-          Manage and verify your secured documents
+        <p className="text-[13px] text-muted-foreground mt-1">
+          Here's what's happening with your credentials
         </p>
       </div>
 
@@ -235,10 +235,10 @@ export function DashboardPage() {
       )}
 
       {/* Records section */}
-      <Card>
+      <Card className="border-white/[0.06] bg-white/[0.015]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-lg font-semibold">My Records</CardTitle>
-          <Button onClick={() => setSecureDialogOpen(true)}>
+          <CardTitle className="text-[17px] font-semibold">My Records</CardTitle>
+          <Button onClick={() => setSecureDialogOpen(true)} className="bg-[#00d4ff] text-[#0a0f14] hover:bg-[#00a3cc] font-medium text-[13px]">
             <Plus className="mr-2 h-4 w-4" />
             {SECURE_DIALOG_LABELS.TITLE}
           </Button>

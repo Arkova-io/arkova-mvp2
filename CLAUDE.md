@@ -1,7 +1,7 @@
 # ARKOVA — Claude Code Engineering Directive
 
-> **Version:** 2026-03-26 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
-> **Stats:** 118 migrations | 2,746 tests | 192 stories (180 complete, 94%) | 24/24 audit findings resolved | AI eval F1=82.1% | 29K+ public records | 1,572+ SECURED anchors
+> **Version:** 2026-03-28 | **Repo:** ArkovaCarson | **Deploy:** arkova-26.vercel.app
+> **Stats:** 139 migrations | 2,825 tests | 200 stories (180 complete, 90%) | 24/24 audit findings resolved | AI eval F1=82.1% | 320K+ public records | 166K+ SECURED anchors (mainnet)
 
 Read this file before every task. Rules here override all other documents.
 
@@ -224,7 +224,7 @@ Update `docs/confluence/` if schema/security/API changed. Update story docs + `a
 
 **Never modify an existing migration.** Write a compensating migration.
 
-**Current:** 121 files (0001-0121, 0033+0078 skipped, 0068 split into 0068a/0068b). Committed: 0001-0117, 0120. Untracked: 0118, 0119, 0121. All migrations 0001-0107 applied to production; 0108-0117+0120 merged to main, pending production deploy.
+**Current:** 139 files (0001-0135, 0033+0078 skipped, 0068 split into 0068a/0068b). All migrations applied to production through 0135.
 
 **IMPORTANT — Post-db-reset step:** After `supabase db reset`, migration 0068a's `ALTER TYPE anchor_status ADD VALUE 'SUBMITTED'` silently fails inside the transaction. You must manually run:
 ```bash
@@ -272,11 +272,11 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 - PH1-PAY-02: Self-hosted x402 facilitator — flag enabled, needs USDC address + facilitator deploy
 - ~~PH1-SDK-02: Python SDK~~ — **COMPLETE** (sdks/python/arkova/client.py)
 
-**AI Infrastructure (Session 12 — ALL COMPLETE):**
-- AI-EVAL-01: Golden dataset + scoring engine (210 entries, 42 tests)
+**AI Infrastructure (Session 12+ — ALL COMPLETE):**
+- AI-EVAL-01: Golden dataset + scoring engine (1,330 entries across 8 phases, 447 tests)
 - AI-EVAL-02: Live Gemini eval baseline (F1=82.1%, confidence r=0.426)
 - AI-PROMPT-01: Prompt version tracking (migration 0092)
-- AI-PROMPT-02: Few-shot expansion (11→25 examples)
+- AI-PROMPT-02: Few-shot expansion (11→130 examples, covering all 21 credential types + OCR)
 - AI-FRAUD-01: Fraud audit CLI framework
 - AI-OBS-01: Admin AI metrics dashboard (/admin/ai-metrics)
 
@@ -295,9 +295,9 @@ docker exec -i $(docker ps --filter "name=supabase_db" -q | head -1) psql -U pos
 | Task | Detail |
 |------|--------|
 | ~~AWS KMS signing~~ | ~~Key provisioning for mainnet~~ — **DONE** (AWS + GCP KMS providers complete, 69 tests, GCP KMS configured in Cloud Run) |
-| Mainnet treasury funding | Fund production treasury wallet. Derive address from GCP KMS key, send BTC. |
-| Flip to mainnet | Change `BITCOIN_NETWORK=signet` → `mainnet` in worker-deploy.yml once treasury funded. |
-| Deploy migrations 0108-0117 | 10 migrations merged to main but not yet applied to production Supabase. |
+| ~~Mainnet treasury funding~~ | ~~Fund production treasury wallet~~ — **DONE** (treasury funded, 116 mainnet TXs confirmed) |
+| ~~Flip to mainnet~~ | ~~Change to mainnet~~ — **DONE** (BITCOIN_NETWORK=mainnet, 166K+ SECURED anchors) |
+| ~~Deploy migrations~~ | ~~Apply to production~~ — **DONE** (all migrations through 0135 applied) |
 
 ### Pre-Launch Tasks
 
@@ -397,5 +397,5 @@ ENABLE_SYNTHETIC_DATA=false
 
 ---
 
-_Directive version: 2026-03-26 | 118 migrations | 2,746 tests | 192 stories (180 complete, 94%) | 24/24 audit findings resolved_
+_Directive version: 2026-03-28 | 139 migrations | 2,825 tests | 200 stories (180 complete, 90%) | 24/24 audit findings resolved | Golden dataset: 1,330 entries | 130 few-shot examples_
 _Reference docs: `docs/reference/` (FILE_MAP, BRAND, TESTING, STORY_ARCHIVE)_

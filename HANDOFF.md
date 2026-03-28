@@ -12,7 +12,7 @@
 
 **Goal:** Production launch of Phase 1 credentialing MVP + AI infrastructure foundation
 **Methodology:** TDD (Red-Green-Refactor) + Architecture-first (sequential-thinking) + Security self-review + Playwright UI verification
-**Overall progress:** 180/192 stories complete (~94%) incl. 13 Beta stories + 6 AI infra stories + 7 UX overhaul stories. **2,746 tests** (1,024 frontend + 1,409 worker, all green). 125 migration files (0001-0125, gaps at 0033+0078, 0068 split). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval F1=82.1%). GEO: 6 complete, 1 partial, 5 not started. **All 24/24 audit findings resolved.** Bitcoin network: **MAINNET** (migrated from signet 2026-03-27). Treasury: `bc1qtm2kk33k6ht4agt48kh7rfkmmhfkapqn4zwerc` (~34k sats). **First mainnet TX confirmed in block 942,403.** Frontend on arkova-26.vercel.app (also app.arkova.ai). **Pipeline LIVE:** 29,000+ public records, 68,202 anchors (95 SUBMITTED on mainnet, rest PENDING). 15+ Cloud Scheduler jobs. MCP server live at edge.arkova.ai. Worker on GCP Cloud Run (1GB, max 3).
+**Overall progress:** 180/200 stories complete (~90%) incl. 13 Beta stories + 6 AI infra stories + 7 UX overhaul stories. **2,825 tests** (1,101 frontend + 1,724 worker, all green). 139 migration files (0001-0135, gaps at 0033+0078, 0068 split). P4.5 COMPLETE (13/13). P8: 19/19 (100%). Phase 1.5: 15/16 COMPLETE. AI infra: 6/6 COMPLETE (eval F1=82.1%, golden dataset 1,330 entries, 130 few-shot examples). GEO: 6 complete, 1 partial, 5 not started. **All 24/24 audit findings resolved.** Bitcoin network: **MAINNET** (116 TXs, 166K+ SECURED). Treasury funded. Frontend on arkova-26.vercel.app (also app.arkova.ai). **Pipeline LIVE:** 320K+ public records, 195K+ anchors (166K SECURED, 28K SUBMITTED on mainnet). 12 Cloud Scheduler jobs. MCP server live at edge.arkova.ai. Worker on GCP Cloud Run (1GB, max 3).
 
 ### Open Blockers
 
@@ -21,6 +21,21 @@
 | ~~CRIT-2~~ | ~~Bitcoin chain client~~ | ~~**OPS-ONLY**~~ | ~~CODE COMPLETE~~ | ~~AWS KMS key provisioning, mainnet treasury funding.~~ |
 
 **No active code blockers.** All remaining items are operational (infrastructure provisioning).
+
+### Recent Changes (2026-03-28, Session 18 — AI Extraction Accuracy + Golden Dataset Phase 8)
+
+**Major AI extraction improvements targeting Bootstrap Strategy priorities.**
+
+| Change | Detail |
+|--------|--------|
+| SEC_FILING issuerName fix | Extraction prompt was setting issuerName to "SEC" instead of the filing company. Fixed prompt guidance + all 6 SEC_FILING few-shot examples. Root cause of 36.8% F1 for SEC_FILING type. |
+| EDGAR-specific guidance | Comprehensive guidance for 12+ SEC form types (10-K, 10-Q, 8-K, DEF 14A, S-1, 13F, 20-F, Form 4, SC 13D, Form ADV, 10-KSB, Form 144). |
+| Case law guidance | Full court hierarchy added: SCOTUS, Circuit Courts, District Courts, Bankruptcy, State Supreme/Appellate, Municipal, Administrative (NLRB, FTC, SEC ALJ, Tax Court). |
+| ATTESTATION guidance | 7 subtypes: employment verification, education verification, affidavits, character references, good standing, income verification, enrollment verification. |
+| OCR/image handling | New prompt section for handling OCR-corrupted documents: character substitutions, broken/merged words, noise patterns. |
+| 20 new few-shot examples | Examples 111-130 covering SCOTUS opinion, circuit/district court, employment verification, sworn affidavit, Form 4, SC 13D, bankruptcy court, OCR-corrupted docs, foreign filings, notarized references. Total: 130 examples. |
+| Golden dataset Phase 8 | 150 new entries: 40 SEC_FILING/EDGAR, 40 LEGAL/case law, 30 ATTESTATION, 20 OCR-corrupted, 10 REGULATION, 10 PATENT. Total dataset: 1,330 entries. |
+| Doc updates | CLAUDE.md, BACKLOG.md, HANDOFF.md updated with current stats (139 migrations, 2,825 tests, 166K+ SECURED anchors). |
 
 ### Recent Changes (2026-03-27, Session 17 — MAINNET MIGRATION + First Bitcoin TX)
 
@@ -81,21 +96,21 @@
 | Database types | Regenerated database.types.ts for all new columns/enums. |
 | Sprint plan | docs/SPRINT_2026-03-25.md with 5-day plan covering AI tuning, GEO, infra debt, bugs. |
 
-### ⚠️ DEPLOY STATUS: Worker migrating from GCP Cloud Run to Railway. Railway configured with root directory, env vars, and railway.json. Awaiting healthy deploy confirmation.
+### DEPLOY STATUS: Worker on GCP Cloud Run (1GB, max 3 instances). Bitcoin MAINNET. All migrations applied through 0135.
 
 ---
 
-## CARSON'S 5 NORTH STAR PRIORITIES (2026-03-24)
+## CARSON'S 5 NORTH STAR PRIORITIES (updated 2026-03-28)
 
-1. **Anchoring cron 24/7** — Worker must be deployed and running continuously. Cron must process PENDING→SUBMITTED→SECURED without interruption. Current blocker: deploy workflow needs GCP secrets aligned.
+1. ~~**Anchoring cron 24/7**~~ — **DONE.** Cloud Run worker running, 12 Cloud Scheduler jobs, 116 mainnet TXs, 166K+ SECURED.
 
-2. **Base mainnet** — Get on Base L2 and start testing queries. Need to add Base chain client alongside Bitcoin.
+2. **Base mainnet** — Base chain client code complete. Needs flip to Base mainnet (currently Sepolia).
 
-3. **Bitcoin mainnet window** — Switch to mainnet temporarily, anchor a large batch of real documents (train Nessie, test API), then return to signet. Requires: AWS KMS key provisioning, mainnet treasury funding.
+3. ~~**Bitcoin mainnet**~~ — **DONE.** 116 TXs, 166K+ SECURED anchors on mainnet. GCP KMS signing operational.
 
-4. **Golden dataset expansion** — Currently 750 entries. Target: 2,000+. Expand categories to cover all credential types including new ones (ATTESTATION, FINANCIAL, LEGAL, INSURANCE, BADGE).
+4. ~~**Golden dataset expansion**~~ — **DONE.** 1,330 entries across 8 phases (was 750). All 21 credential types covered.
 
-5. **Gemini performance** — Improve extraction accuracy across all tasks. Current: ~92% macro F1. CERTIFICATE (~80%) and OTHER (~78%) need most work. Continue prompt tuning, few-shot expansion, confidence model refinement.
+5. **Gemini performance** — Macro F1=78.1%, Weighted F1=86.5%. SEC_FILING (36.8%), PUBLICATION (51.4%), OTHER (53.9%) still weak. Prompt updated with 130 few-shot examples. Needs re-eval to measure improvement.
 
 ---
 

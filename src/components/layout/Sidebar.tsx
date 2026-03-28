@@ -187,14 +187,14 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
   const sidebarContent = (
     <aside
       className={cn(
-        'flex h-full flex-col bg-[#0d141b] border-r border-white/5 transition-all duration-300',
+        'flex h-full flex-col bg-[#080d12] border-r border-white/[0.06] transition-all duration-300',
         collapsed ? 'w-16' : 'w-64',
         className
       )}
     >
       {/* Logo + close button (mobile) */}
       <div className={cn(
-        'flex h-16 items-center border-b border-white/5 px-4',
+        'flex h-16 items-center border-b border-white/[0.06] px-4',
         collapsed ? 'justify-center' : 'justify-between'
       )}>
         <Link
@@ -228,7 +228,7 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
 
       {/* Org context (UF-09) */}
       {orgName && !collapsed && (
-        <div className="px-4 py-2 border-b border-white/5">
+        <div className="px-4 py-2 border-b border-white/[0.06]">
           <p className="font-mono text-[10px] font-medium uppercase tracking-widest text-[#859398]">
             {NAV_POLISH_LABELS.MANAGING_ORG}
           </p>
@@ -267,7 +267,7 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
                   )}
                 </button>
               ) : (
-                <div className="my-2 border-t border-white/5" />
+                <div className="my-2 border-t border-white/[0.06]" />
               )}
               {(adminExpanded || isAdminActive || collapsed) && adminNavItems.map((item) => (
                 <SidebarNavLink
@@ -283,7 +283,7 @@ export function Sidebar({ className, mobileOpen, onMobileClose, orgName, userEma
       </div>
 
       {/* Theme Toggle + Collapse */}
-      <div className="border-t border-white/5 p-3 space-y-1">
+      <div className="border-t border-white/[0.06] p-3 space-y-1">
         <ThemeToggle collapsed={collapsed} />
         {/* Collapse button — desktop only (mobile uses overlay) */}
         <div className="hidden md:block">
@@ -349,10 +349,10 @@ function SidebarNavLink({ item, collapsed, active }: Readonly<SidebarNavLinkProp
     <Link
       to={item.to}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+        'flex items-center gap-3 rounded-sm px-3 py-2 text-[13.5px] font-medium transition-all',
         active
-          ? 'border-l-4 border-[#00d4ff] bg-[#192028] text-[#00d4ff] rounded-l-none'
-          : 'border-l-4 border-transparent text-[#bbc9cf] hover:bg-[#192028]/50 hover:text-[#dce3ed]',
+          ? 'border-l-2 border-[#00d4ff] bg-[#00d4ff]/[0.06] text-[#00d4ff] rounded-l-none'
+          : 'border-l-2 border-transparent text-white/45 hover:bg-white/[0.03] hover:text-white/80',
         collapsed && 'justify-center px-2 border-l-0'
       )}
     >

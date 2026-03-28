@@ -1948,8 +1948,9 @@ import { GOLDEN_DATASET_PHASE4 } from './golden-dataset-phase4.js';
 import { GOLDEN_DATASET_PHASE5 } from './golden-dataset-phase5.js';
 import { GOLDEN_DATASET_PHASE6 } from './golden-dataset-phase6.js';
 import { GOLDEN_DATASET_PHASE7 } from './golden-dataset-phase7.js';
+import { GOLDEN_DATASET_PHASE8 } from './golden-dataset-phase8.js';
 
-/** Full golden dataset: core (100) + extended (110) + phase2 (100) + phase3 (190) + phase4 (250) + phase5 (200) + phase6 (80) + phase7 (150) = 1180 entries */
+/** Full golden dataset: core (100) + extended (110) + phase2 (100) + phase3 (190) + phase4 (250) + phase5 (200) + phase6 (80) + phase7 (150) + phase8 (150) = 1330 entries */
 export const FULL_GOLDEN_DATASET: GoldenDatasetEntry[] = [
   ...GOLDEN_DATASET,
   ...GOLDEN_DATASET_EXTENDED,
@@ -1959,6 +1960,7 @@ export const FULL_GOLDEN_DATASET: GoldenDatasetEntry[] = [
   ...GOLDEN_DATASET_PHASE5,
   ...GOLDEN_DATASET_PHASE6,
   ...GOLDEN_DATASET_PHASE7,
+  ...GOLDEN_DATASET_PHASE8,
 ];
 
 /** Helper: get entries filtered by credential type */

@@ -271,7 +271,7 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
 
   return (
     <div
-      className="rounded-xl border border-[#3c494e]/30 bg-[#192028] overflow-hidden cursor-pointer hover:border-[#3c494e]/60 transition-all duration-200 my-3"
+      className="rounded-sm border border-white/[0.06] bg-white/[0.015] overflow-hidden cursor-pointer hover:border-[#00d4ff]/20 hover:bg-white/[0.025] transition-all duration-200 my-2"
       onClick={onView}
       role="button"
       tabIndex={0}
@@ -378,7 +378,7 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
       </div>
 
       {/* Anchor Record grid */}
-      <div className="px-5 pb-3 border-t border-[#3c494e]/15 pt-3">
+      <div className="px-5 pb-3 border-t border-white/[0.04] pt-3">
         <p className="text-[10px] uppercase tracking-wider text-[#859398] font-semibold mb-2">Anchor Record</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
           {/* Status */}
@@ -445,7 +445,7 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
 
       {/* Metadata — key-value pairs */}
       {displayMeta.length > 0 && (
-        <div className="px-5 pb-4 border-t border-[#3c494e]/15 pt-3">
+        <div className="px-5 pb-4 border-t border-white/[0.04] pt-3">
           <p className="text-[10px] uppercase tracking-wider text-[#859398] font-semibold mb-2">Metadata</p>
           <div className="space-y-1">
             {displayMeta.map(([key, value]) => (
@@ -465,7 +465,7 @@ function RecordRow({ record, onView, onDownload, onRevoke }: Readonly<RecordRowP
 
 function RecordSkeleton() {
   return (
-    <div className="rounded-xl border border-[#3c494e]/30 bg-[#192028] p-5 my-3 space-y-3">
+    <div className="rounded-sm border border-white/[0.06] bg-white/[0.015] p-5 my-2 space-y-3">
       <Skeleton className="h-4 w-64 bg-[#242b32]" />
       <Skeleton className="h-3 w-48 bg-[#242b32]" />
       <div className="grid grid-cols-2 gap-3 pt-2">

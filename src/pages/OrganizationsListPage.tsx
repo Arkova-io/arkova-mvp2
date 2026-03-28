@@ -50,8 +50,8 @@ export function OrganizationsListPage() {
     <AppShell user={user} profile={profile} profileLoading={profileLoading} onSignOut={handleSignOut}>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Organizations</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className="text-[24px] font-bold tracking-tight">Organizations</h1>
+          <p className="text-[13px] text-muted-foreground mt-1">
             {orgs.length > 0 ? `You belong to ${orgs.length} organization${orgs.length > 1 ? 's' : ''}` : 'Manage your organization memberships'}
           </p>
         </div>

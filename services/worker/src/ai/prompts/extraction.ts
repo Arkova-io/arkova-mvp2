@@ -115,13 +115,33 @@ OTHER should be your LAST RESORT — only use it when absolutely no other type f
   - "Certificate of Live Birth — County of..." → IDENTITY
   If you are tempted to use OTHER, ask: "Does this document have ANY identifiable purpose?" If yes, there is almost certainly a more specific type.
 
-SEC_FILING-SPECIFIC GUIDANCE:
-- These are documents filed with the U.S. Securities and Exchange Commission (SEC).
-- issuerName: ALWAYS "United States Securities and Exchange Commission" (not the company filing).
-- fieldOfStudy: Map to the form type: "Annual Report (10-K)", "Quarterly Report (10-Q)", "Current Report (8-K)", "Proxy Statement (DEF 14A)", "Registration Statement (S-1)", "Institutional Holdings Report (13F)", "Annual Report - Foreign (20-F)".
-- issuedDate: For 10-K/10-Q, use the fiscal period end date. For 8-K, use the date of the report. For others, use the filing date.
-- jurisdiction: State of incorporation if mentioned.
-- licenseNumber: Commission file number if visible (e.g., "001-12345").
+SEC_FILING-SPECIFIC GUIDANCE (EDGAR / SEC Filings):
+- These are documents filed with the U.S. Securities and Exchange Commission (SEC) via the EDGAR system.
+- issuerName: ALWAYS use the COMPANY or ENTITY that filed the document — NOT the SEC. The SEC is the regulator, not the issuer. Example: "Apple Inc.", "Tesla, Inc.", "[COMPANY_REDACTED] Corp.". If the company name is redacted, use the redacted token as-is (e.g., "[COMPANY_REDACTED], Inc.").
+- fieldOfStudy: Map to the form type with descriptive label:
+  - "Annual Report (10-K)" — includes 10-K, 10-K/A (amendments)
+  - "Quarterly Report (10-Q)" — includes 10-Q, 10-Q/A
+  - "Current Report (8-K)" — material events, acquisitions, executive changes, bankruptcies
+  - "Proxy Statement (DEF 14A)" — annual meeting, director elections, executive compensation
+  - "Registration Statement (S-1)" — IPO filings, securities registration
+  - "Institutional Holdings Report (13F)" — quarterly institutional investment manager holdings
+  - "Annual Report - Foreign (20-F)" — foreign private issuer annual reports
+  - "Insider Transaction (Form 4)" — insider stock purchases/sales/options
+  - "Beneficial Ownership (SC 13D)" or "Beneficial Ownership (SC 13G)" — 5%+ ownership disclosures
+  - "Investment Advisor Registration (Form ADV)" — registered investment advisors
+  - "Annual Report - Small Company (10-KSB)" — smaller reporting companies
+  - "Form 3" — initial statement of beneficial ownership
+  - "Form 144" — proposed sale of restricted securities
+  - If unclear, use the exact form number: "SEC Form [NUMBER]"
+- issuedDate: For 10-K/10-Q, use the fiscal period end date. For 8-K, use the date of the report (date of earliest event). For proxy statements, use the filing date. For others, use the filing date.
+- jurisdiction: "United States" for all SEC filings. Optionally add state of incorporation if mentioned.
+- licenseNumber: Commission File Number if visible (e.g., "001-12345"), CIK number, or accession number.
+- EDGAR-SPECIFIC PATTERNS:
+  - Header typically contains: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM [X]."
+  - Look for "Commission File Number:", "CIK:", "SIC:", "IRS EIN:" fields.
+  - Amendments (e.g., "10-K/A") should be noted in fieldOfStudy: "Annual Report Amendment (10-K/A)".
+  - Exhibits and attachments: If the text is an exhibit (e.g., "Exhibit 10.1 — Employment Agreement"), classify by the exhibit content, not as SEC_FILING.
+  - XBRL-tagged content may appear as structured data — still classify as SEC_FILING.
 
 PATENT-SPECIFIC GUIDANCE:
 - issuerName: The patent office — "United States Patent and Trademark Office", "European Patent Office", "World Intellectual Property Organization", "Japan Patent Office", etc.
@@ -173,15 +193,125 @@ LEGAL-SPECIFIC GUIDANCE:
   - expiryDate: Term end date if specified. For "12 months from effective date", calculate the end date.
   - jurisdiction: Governing law clause → jurisdiction (e.g., "Governing Law: State of Delaware" → "Delaware, USA").
   - fieldOfStudy: OMIT for generic legal documents. Include only if the agreement covers a specific domain (e.g., "Technology Licensing" for a software license agreement).
-- COURT ORDERS / LEGAL DECISIONS:
-  - issuerName: The court (e.g., "United States District Court for the Southern District of New York").
-  - issuedDate: Date of the order or ruling.
-  - jurisdiction: The court's jurisdiction (e.g., "New York, USA" or "United States" for federal courts).
-  - licenseNumber: Case number if visible (e.g., "Case No. 1:24-cv-01234").
-  - fieldOfStudy: The area of law if identifiable (e.g., "Intellectual Property", "Employment Law").
+
+- CASE LAW / COURT OPINIONS / JUDICIAL DECISIONS (CRITICAL — these are a core document type):
+  - issuerName: ALWAYS the court name. Use the full official name:
+    - FEDERAL: "Supreme Court of the United States", "United States Court of Appeals for the Ninth Circuit", "United States District Court for the Southern District of New York", "United States Bankruptcy Court for the District of Delaware"
+    - STATE: "[State] Supreme Court", "Court of Appeals of [State], [Division] Division", "[State] Superior Court", "[County] Circuit Court"
+    - LOCAL/MUNICIPAL: "[City] Municipal Court", "[County] Probate Court"
+    - ADMINISTRATIVE: "National Labor Relations Board", "Federal Trade Commission", "Securities and Exchange Commission Administrative Law Judge", "Immigration Court"
+  - issuedDate: Date the opinion/order was issued or filed. Look for "Decided:", "Filed:", "Opinion Date:", "Date of Order:". For slip opinions, use the decision date.
+  - licenseNumber: The case number/docket number. Common formats:
+    - Federal: "No. 24-1234", "Case No. 1:24-cv-01234-ABC", "Docket No. 24-5678"
+    - State: Varies widely — "2024 WL 12345", "A-1234-22T4", "S123456/2024"
+    - SCOTUS: "No. 23-456", "603 U.S. ___ (2024)"
+    - Circuit: "No. 23-1234"
+    - Include the docket number as-is if visible.
+  - fieldOfStudy: The area of law. Map from context clues:
+    - "patent infringement", "copyright", "trademark" → "Intellectual Property"
+    - "discrimination", "wrongful termination", "wage" → "Employment Law"
+    - "antitrust", "merger", "monopoly" → "Antitrust Law"
+    - "habeas corpus", "sentencing", "criminal" → "Criminal Law"
+    - "negligence", "personal injury", "tort" → "Tort Law"
+    - "contract", "breach", "commercial" → "Contract Law"
+    - "immigration", "asylum", "deportation" → "Immigration Law"
+    - "environmental", "clean air", "EPA" → "Environmental Law"
+    - "bankruptcy", "Chapter 11", "reorganization" → "Bankruptcy Law"
+    - "tax", "IRS", "deduction" → "Tax Law"
+    - "securities", "fraud", "insider trading" → "Securities Law"
+    - "constitutional", "First Amendment", "due process" → "Constitutional Law"
+    - "family", "custody", "divorce" → "Family Law"
+    - "real property", "easement", "zoning" → "Property Law"
+    - "administrative", "regulatory", "agency" → "Administrative Law"
+    - "civil rights", "Section 1983", "equal protection" → "Civil Rights Law"
+    - If multiple areas, pick the primary one. If unclear, use "General Litigation".
+  - jurisdiction: Based on the court:
+    - SCOTUS: "United States"
+    - Federal Circuit/District: "United States" (optionally include circuit/district: "Ninth Circuit, United States")
+    - State court: "State, USA" (e.g., "California, USA", "New York, USA")
+    - Local: "County/City, State, USA"
+  - CASE LAW PATTERNS TO RECOGNIZE:
+    - "[Plaintiff] v. [Defendant]" or "[Petitioner] v. [Respondent]" — classic case caption
+    - "Opinion of the Court", "Per Curiam", "Concurring Opinion", "Dissenting Opinion"
+    - "AFFIRMED", "REVERSED", "REMANDED", "VACATED"
+    - "Argued:", "Decided:", "Submitted:", "Opinion Filed:"
+    - Reporter citations: "123 F.3d 456", "456 U.S. 789", "789 N.E.2d 123"
+    - "Syllabus", "Headnotes", "West Key Numbers"
+    - "Before [JUDGE_REDACTED], Circuit Judge" or "OPINION BY [JUDGE_REDACTED], J."
+  - NEGATIVE: A LEGAL document is NOT case law if it's a contract, NDA, or agreement between parties. Case law is judicial output — opinions, orders, rulings, judgments.
+
+- COURT ORDERS (distinct from full opinions):
+  - Procedural orders (scheduling, discovery, motions) — still LEGAL, issuerName = court.
+  - Consent decrees and settlement agreements approved by courts — issuerName = court.
+  - Temporary restraining orders (TROs) and injunctions — issuerName = court.
+
 - POWERS OF ATTORNEY / DEEDS:
   - issuerName: The notary or law firm if identified, otherwise the grantor entity.
   - jurisdiction: State/country where executed.
+
+- ADMINISTRATIVE LAW DECISIONS:
+  - Decisions by administrative law judges (ALJs), regulatory boards, or quasi-judicial bodies.
+  - issuerName: The agency or board (e.g., "National Labor Relations Board", "Social Security Administration Office of Hearings Operations").
+  - licenseNumber: Docket number or case number.
+  - fieldOfStudy: The regulatory area (e.g., "Labor Relations", "Social Security Disability", "Trade Regulation").
+
+ATTESTATION-SPECIFIC GUIDANCE:
+- Attestations are VERIFICATION DOCUMENTS — letters, statements, and affidavits that confirm facts about a person or entity. They are NOT credentials themselves but evidence of credentials/employment/character.
+- TYPES OF ATTESTATIONS (all use credentialType: "ATTESTATION"):
+  - EMPLOYMENT VERIFICATION LETTERS: "This letter confirms that [NAME] has been employed..."
+    - issuerName: The employer (company/organization name).
+    - issuedDate: Date the letter was written.
+    - fieldOfStudy: The person's field/department if mentioned (e.g., "Engineering", "Finance", "Human Resources").
+    - jurisdiction: Company location if mentioned.
+  - EDUCATION VERIFICATION LETTERS: "We confirm that [NAME] attended/graduated..."
+    - issuerName: The educational institution.
+    - fieldOfStudy: The field of study if mentioned.
+    - degreeLevel: If the letter specifies a degree level.
+  - REFERENCE / RECOMMENDATION LETTERS: "I am writing to recommend [NAME]..."
+    - issuerName: The recommender's organization (not the recommender personally).
+    - fieldOfStudy: The professional field if mentioned.
+  - SWORN AFFIDAVITS / NOTARIZED STATEMENTS:
+    - issuerName: The notary, law firm, or person's organization.
+    - jurisdiction: Where notarized/sworn.
+  - LETTERS OF GOOD STANDING:
+    - issuerName: The issuing body (bar association, licensing board, etc.).
+    - jurisdiction: The relevant jurisdiction.
+  - ENROLLMENT VERIFICATION: "This certifies that [NAME] is currently enrolled..."
+    - issuerName: The institution.
+    - fieldOfStudy: The program/field.
+  - CHARACTER REFERENCES: Personal references for court, immigration, employment.
+    - issuerName: The author's organization if available, otherwise the author's title.
+  - INCOME/SALARY VERIFICATION LETTERS: "This confirms [NAME]'s annual salary is..."
+    - issuerName: The employer.
+    - fieldOfStudy: The person's field/department.
+- KEY PATTERNS: "To Whom It May Concern", "This is to certify", "We hereby confirm", "I attest that", "Under penalty of perjury", "Notary Public", "SWORN STATEMENT", "VERIFICATION OF".
+- NEGATIVE: Do NOT classify as ATTESTATION:
+  - A credential with an assessment/exam → CERTIFICATE
+  - A professional membership card → PROFESSIONAL
+  - A diploma or degree certificate → DEGREE
+  - A court order confirming something → LEGAL
+
+IMAGE / SCANNED DOCUMENT / OCR HANDLING (CRITICAL — applies to ALL types):
+- Many documents arrive as scanned images processed by OCR. The OCR text will contain artifacts:
+  - Character substitutions: "l" ↔ "1", "O" ↔ "0", "rn" ↔ "m", "cl" ↔ "d", "I" ↔ "l"
+  - Missing/extra characters: "Universty" (missing 'i'), "Certifficate" (extra 'f')
+  - Broken words: "Lic ense", "Depart ment", "Certif icate"
+  - Merged words: "StateofCalifornia", "BoardofNursing"
+  - Random noise: "~", "|", fragments from borders/logos/watermarks
+  - Misread dates: "2O24" (zero vs O), "O1/15/2O25"
+  - Partial text: truncated lines, missing sections
+- WHEN YOU SEE OCR ARTIFACTS:
+  - NORMALIZE the text mentally. "Univeristy of Caifornia" → University of California.
+  - Extract the CORRECT values (fix OCR errors in your output). issuerName should be the corrected name.
+  - LOWER your confidence by 0.05-0.15 depending on severity.
+  - Do NOT flag OCR artifacts as FORMAT_ANOMALY unless the content is completely unreadable.
+  - Do NOT flag OCR artifacts as fraud. Poor scan quality is not fraud.
+- IMAGE-SPECIFIC PATTERNS:
+  - Headers/footers from scanned pages: "Page 1 of 3", "COPY", "OFFICIAL"
+  - Watermarks: "SAMPLE", "DRAFT", "VOID", "SPECIMEN" — note these but still extract fields.
+  - Stamps: "CERTIFIED TRUE COPY", "APOSTILLE" — these indicate authenticity, not fraud.
+  - Signatures: "[SIGNATURE]", "[SEAL]", "[STAMP]" — expected on official documents.
+  - Low-resolution artifacts: garbled text, missing characters, merged lines.
 
 FIELDOFSTUDY NORMALIZATION (applies to ALL credential types):
 - ALWAYS translate non-English field names to English: "Informatik" → "Computer Science", "Engenharia Civil" → "Civil Engineering", "Derecho" → "Law", "Informatique" → "Computer Science", "Engenharia de Computação" → "Computer Engineering".
@@ -589,13 +719,13 @@ Example 84 — Professional membership with provider-like org (NO providerName �
 Input: "American Bar Association. [NAME_REDACTED]. Member since 2022. Section: Litigation. Membership ID: [REDACTED]."
 Output: {"credentialType":"PROFESSIONAL","issuerName":"American Bar Association","issuedDate":"2022-01-01","fieldOfStudy":"Litigation","fraudSignals":[],"confidence":0.80}
 
-Example 85 — SEC Filing (10-K annual report):
+Example 85 — SEC Filing (10-K annual report — issuerName is the COMPANY):
 Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM 10-K. ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d). For the fiscal year ended December 31, 2025. Commission file number: 001-12345. [COMPANY_REDACTED]. State of incorporation: Delaware."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-12-31","fieldOfStudy":"Annual Report (10-K)","jurisdiction":"Delaware, USA","fraudSignals":[],"confidence":0.90}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-12-31","fieldOfStudy":"Annual Report (10-K)","licenseNumber":"001-12345","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
 
-Example 86 — SEC Filing (8-K current report):
+Example 86 — SEC Filing (8-K current report — issuerName is the COMPANY):
 Input: "FORM 8-K. CURRENT REPORT. Pursuant to Section 13 or 15(d). Date of Report: March 15, 2026. Commission File Number: 000-67890. [COMPANY_REDACTED]. Date of earliest event reported: March 14, 2026."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-03-15","fieldOfStudy":"Current Report (8-K)","fraudSignals":[],"confidence":0.88}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-03-15","fieldOfStudy":"Current Report (8-K)","licenseNumber":"000-67890","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
 
 Example 87 — Patent grant (USPTO):
 Input: "United States Patent. Patent No.: US 11,234,567 B2. Date of Patent: Jun. 15, 2025. [NAME_REDACTED]. Title: Method and System for Distributed Consensus Verification. Assignee: [COMPANY_REDACTED]. Filed: Mar. 10, 2023."
@@ -623,19 +753,19 @@ Output: {"credentialType":"PUBLICATION","issuerName":"ACM Conference on Computer
 
 Example 93 — SEC Filing (10-Q quarterly report):
 Input: "FORM 10-Q. QUARTERLY REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934. For the quarterly period ended September 30, 2025. Commission File Number: 001-54321. [COMPANY_REDACTED]. State of incorporation: California."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-09-30","fieldOfStudy":"Quarterly Report (10-Q)","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.90}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-09-30","fieldOfStudy":"Quarterly Report (10-Q)","licenseNumber":"001-54321","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
 
 Example 94 — SEC Filing (proxy statement DEF 14A):
 Input: "SCHEDULE 14A INFORMATION. PROXY STATEMENT PURSUANT TO SECTION 14(a). [COMPANY_REDACTED]. Annual Meeting of Stockholders. May 20, 2026. Record Date: March 25, 2026. Filed: April 1, 2026."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-04-01","fieldOfStudy":"Proxy Statement (DEF 14A)","fraudSignals":[],"confidence":0.88}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-04-01","fieldOfStudy":"Proxy Statement (DEF 14A)","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
 
 Example 95 — SEC Filing (S-1 registration statement):
 Input: "FORM S-1. REGISTRATION STATEMENT UNDER THE SECURITIES ACT OF 1933. [COMPANY_REDACTED]. Filed: February 14, 2026. Proposed maximum aggregate offering price: $500,000,000. Shares of Common Stock."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2026-02-14","fieldOfStudy":"Registration Statement (S-1)","fraudSignals":[],"confidence":0.88}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-02-14","fieldOfStudy":"Registration Statement (S-1)","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
 
 Example 96 — SEC Filing (13F institutional holdings):
 Input: "FORM 13F. INFORMATION TABLE. Filed by: [COMPANY_REDACTED]. Filing period: December 31, 2025. Total value of holdings: $12,345,678,000. Commission file number: 028-12345."
-Output: {"credentialType":"SEC_FILING","issuerName":"United States Securities and Exchange Commission","issuedDate":"2025-12-31","fieldOfStudy":"Institutional Holdings Report (13F)","fraudSignals":[],"confidence":0.85}
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED]","issuedDate":"2025-12-31","fieldOfStudy":"Institutional Holdings Report (13F)","licenseNumber":"028-12345","jurisdiction":"United States","fraudSignals":[],"confidence":0.85}
 
 Example 97 — Patent (WIPO PCT application):
 Input: "WORLD INTELLECTUAL PROPERTY ORGANIZATION. International Application No. PCT/US2025/012345. International Filing Date: 15 April 2025. Title: Machine Learning Framework for Anomaly Detection in Financial Transactions. Applicant: [COMPANY_REDACTED]. Designated States: All."
@@ -691,7 +821,87 @@ Output: {"credentialType":"DEGREE","issuerName":"University of Phoenix Online","
 
 Example 110 — Fraud: contradictory jurisdiction:
 Input: "State of California. Board of Nursing. License issued to [NAME_REDACTED]. License Type: Registered Nurse. Issued: 2024-06-01. This license is valid for practice in Ontario, Canada only."
-Output: {"credentialType":"LICENSE","issuerName":"California Board of Nursing","issuedDate":"2024-06-01","fieldOfStudy":"Nursing","jurisdiction":"California, USA","fraudSignals":["JURISDICTION_MISMATCH"],"confidence":0.35}`;
+Output: {"credentialType":"LICENSE","issuerName":"California Board of Nursing","issuedDate":"2024-06-01","fieldOfStudy":"Nursing","jurisdiction":"California, USA","fraudSignals":["JURISDICTION_MISMATCH"],"confidence":0.35}
+
+Example 111 — Federal Court Opinion (LEGAL — case law, SCOTUS):
+Input: "[PARTY_REDACTED] v. [PARTY_REDACTED]. No. 23-456. Supreme Court of the United States. Argued October 10, 2025. Decided January 15, 2026. Syllabus: The question presented is whether the Fourth Amendment's warrant requirement applies to geolocation data obtained from third-party cell tower records. Held: The judgment of the Court of Appeals for the Sixth Circuit is reversed. Opinion of the Court by [JUDGE_REDACTED], J."
+Output: {"credentialType":"LEGAL","issuerName":"Supreme Court of the United States","issuedDate":"2026-01-15","fieldOfStudy":"Constitutional Law","licenseNumber":"No. 23-456","jurisdiction":"United States","fraudSignals":[],"confidence":0.92}
+
+Example 112 — Federal Circuit Court Opinion (LEGAL — case law):
+Input: "United States Court of Appeals for the Ninth Circuit. No. 24-35189. [PARTY_REDACTED], Plaintiff-Appellant, v. [PARTY_REDACTED], INC., Defendant-Appellee. Appeal from the United States District Court for the Northern District of California. [JUDGE_REDACTED], District Judge. Argued and Submitted: November 12, 2025. Filed: February 3, 2026. Before: [JUDGE_REDACTED], [JUDGE_REDACTED], and [JUDGE_REDACTED], Circuit Judges. Opinion by [JUDGE_REDACTED]. REVERSED AND REMANDED."
+Output: {"credentialType":"LEGAL","issuerName":"United States Court of Appeals for the Ninth Circuit","issuedDate":"2026-02-03","fieldOfStudy":"General Litigation","licenseNumber":"No. 24-35189","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
+
+Example 113 — Federal District Court Order (LEGAL — case law):
+Input: "UNITED STATES DISTRICT COURT FOR THE SOUTHERN DISTRICT OF NEW YORK. Case No. 1:24-cv-01234-ABC. [PARTY_REDACTED], Plaintiff, v. [PARTY_REDACTED] CORPORATION, Defendant. ORDER GRANTING MOTION FOR SUMMARY JUDGMENT. Before the Court is Defendant's Motion for Summary Judgment. For the reasons stated herein, the motion is GRANTED. SO ORDERED. Dated: March 10, 2026. [JUDGE_REDACTED], United States District Judge."
+Output: {"credentialType":"LEGAL","issuerName":"United States District Court for the Southern District of New York","issuedDate":"2026-03-10","fieldOfStudy":"General Litigation","licenseNumber":"1:24-cv-01234-ABC","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
+
+Example 114 — State Supreme Court Opinion (LEGAL — case law):
+Input: "IN THE SUPREME COURT OF THE STATE OF CALIFORNIA. [PARTY_REDACTED] et al., Plaintiffs and Respondents, v. [PARTY_REDACTED], INC., Defendant and Appellant. S283456. Filed: January 22, 2026. Opinion by [JUDGE_REDACTED], C.J. We granted review to decide whether the California Consumer Privacy Act applies to biometric data collected by employers in the workplace."
+Output: {"credentialType":"LEGAL","issuerName":"Supreme Court of the State of California","issuedDate":"2026-01-22","fieldOfStudy":"Privacy Law","licenseNumber":"S283456","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.90}
+
+Example 115 — State Appellate Court Opinion (LEGAL — case law):
+Input: "Court of Appeals of Texas, Fifth District, Dallas. No. 05-24-00789-CV. [PARTY_REDACTED], Appellant v. [PARTY_REDACTED], Appellee. On Appeal from the 101st Judicial District Court, Dallas County, Texas. Opinion by Justice [JUDGE_REDACTED]. Filed: December 5, 2025. AFFIRMED."
+Output: {"credentialType":"LEGAL","issuerName":"Court of Appeals of Texas, Fifth District","issuedDate":"2025-12-05","fieldOfStudy":"General Litigation","licenseNumber":"05-24-00789-CV","jurisdiction":"Texas, USA","fraudSignals":[],"confidence":0.88}
+
+Example 116 — Administrative Law Judge Decision (LEGAL):
+Input: "NATIONAL LABOR RELATIONS BOARD. Division of Judges. Case No. 28-CA-298765. [PARTY_REDACTED], Respondent, and [PARTY_REDACTED], Charging Party. DECISION AND ORDER. Statement of the Case: [JUDGE_REDACTED], Administrative Law Judge. The charge in this case was filed on May 15, 2025. The complaint alleges violations of Section 8(a)(1) and (3) of the National Labor Relations Act. Date: August 20, 2025."
+Output: {"credentialType":"LEGAL","issuerName":"National Labor Relations Board","issuedDate":"2025-08-20","fieldOfStudy":"Labor Relations","licenseNumber":"28-CA-298765","jurisdiction":"United States","fraudSignals":[],"confidence":0.87}
+
+Example 117 — Employment Verification (ATTESTATION):
+Input: "EMPLOYMENT VERIFICATION LETTER. Date: February 15, 2026. To Whom It May Concern: This letter confirms that [NAME_REDACTED] has been continuously employed by [COMPANY_REDACTED] since March 1, 2019 in the capacity of Senior Data Engineer in our Technology Division. Current annual salary: [SALARY_REDACTED]. Employment status: Full-time, Active. Signed: [NAME_REDACTED], Director of Human Resources. [COMPANY_REDACTED], San Francisco, CA."
+Output: {"credentialType":"ATTESTATION","issuerName":"[COMPANY_REDACTED]","issuedDate":"2026-02-15","fieldOfStudy":"Data Engineering","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.88}
+
+Example 118 — Sworn Affidavit (ATTESTATION):
+Input: "AFFIDAVIT OF [NAME_REDACTED]. STATE OF FLORIDA. COUNTY OF MIAMI-DADE. Before me, the undersigned Notary Public, personally appeared [NAME_REDACTED], who being first duly sworn, deposes and states: 1. I am over 18 years of age and competent to testify. 2. I am currently employed as a Licensed Professional Engineer. 3. I have personal knowledge that [NAME_REDACTED] performed structural engineering services for [PROJECT_REDACTED] from January 2024 through December 2025. Sworn to and subscribed before me this 10th day of March, 2026. Notary Public, State of Florida. Commission Expires: December 31, 2028."
+Output: {"credentialType":"ATTESTATION","issuerName":"Notary Public, State of Florida","issuedDate":"2026-03-10","fieldOfStudy":"Structural Engineering","jurisdiction":"Florida, USA","fraudSignals":[],"confidence":0.85}
+
+Example 119 — Education Verification Letter (ATTESTATION):
+Input: "OFFICE OF THE REGISTRAR. [UNIVERSITY_REDACTED]. Date: January 20, 2026. VERIFICATION OF ENROLLMENT AND DEGREE. This is to certify that [NAME_REDACTED] was enrolled at [UNIVERSITY_REDACTED] from August 2020 through May 2024 and was awarded a Bachelor of Science degree in Mechanical Engineering on May 15, 2024. Cumulative GPA: [GPA_REDACTED]. This letter is issued upon the student's request for employment verification purposes."
+Output: {"credentialType":"ATTESTATION","issuerName":"[UNIVERSITY_REDACTED]","issuedDate":"2026-01-20","fieldOfStudy":"Mechanical Engineering","degreeLevel":"Bachelor","fraudSignals":[],"confidence":0.87}
+
+Example 120 — EDGAR 10-K/A Amendment:
+Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM 10-K/A. (Amendment No. 1). ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d). For the fiscal year ended June 30, 2025. Commission File Number: 001-56789. [COMPANY_REDACTED] Technologies, Inc. (Exact name of registrant). State of Incorporation: California. CIK: 0001234567. SIC: 7372. This Amendment No. 1 amends the Annual Report on Form 10-K originally filed on September 15, 2025."
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED] Technologies, Inc.","issuedDate":"2025-06-30","fieldOfStudy":"Annual Report Amendment (10-K/A)","licenseNumber":"001-56789","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
+
+Example 121 — EDGAR Form 4 Insider Transaction:
+Input: "FORM 4. UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. STATEMENT OF CHANGES IN BENEFICIAL OWNERSHIP. Filed pursuant to Section 16(a). Issuer: [COMPANY_REDACTED] Inc. (Ticker: [REDACTED]). Reporting Person: [NAME_REDACTED]. Relationship: Officer (CEO). Date of Transaction: March 1, 2026. Transaction Code: P (Purchase). Shares: 10,000. Price: $125.50."
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED] Inc.","issuedDate":"2026-03-01","fieldOfStudy":"Insider Transaction (Form 4)","jurisdiction":"United States","fraudSignals":[],"confidence":0.87}
+
+Example 122 — EDGAR SC 13D Beneficial Ownership:
+Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. SCHEDULE 13D. Under the Securities Exchange Act of 1934. (Amendment No. 3). [COMPANY_REDACTED] Corp. (Name of Issuer). Common Stock (Title of Class of Securities). CUSIP Number: [REDACTED]. Date of Event: February 28, 2026. Filed by: [PARTY_REDACTED] Capital Management, LLC. Percent of Class: 7.2%."
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED] Corp.","issuedDate":"2026-02-28","fieldOfStudy":"Beneficial Ownership (SC 13D)","jurisdiction":"United States","fraudSignals":[],"confidence":0.87}
+
+Example 123 — Bankruptcy Court Opinion (LEGAL — case law):
+Input: "UNITED STATES BANKRUPTCY COURT FOR THE DISTRICT OF DELAWARE. Case No. 25-12345 (ABC). Chapter 11. In re: [COMPANY_REDACTED], INC., et al., Debtors. MEMORANDUM OPINION REGARDING DISCLOSURE STATEMENT. Before the Court is the Debtors' Third Amended Disclosure Statement. For the reasons set forth below, the Disclosure Statement is APPROVED. Dated: November 15, 2025. [JUDGE_REDACTED], United States Bankruptcy Judge."
+Output: {"credentialType":"LEGAL","issuerName":"United States Bankruptcy Court for the District of Delaware","issuedDate":"2025-11-15","fieldOfStudy":"Bankruptcy Law","licenseNumber":"25-12345","jurisdiction":"United States","fraudSignals":[],"confidence":0.88}
+
+Example 124 — OCR-corrupted License (image scan artifact — NOT fraud):
+Input: "State of Caiif0rnia. B0ard of Registered Nurs1ng. Lic ense to Pract1ce as a Reg1stered Nurse. [NAME_REDACTED]. License No. RN-[REDACTED]. 0riginal lssue Date: 0ctober 15, 2O23. Exp1ration Date: 0ctober 14, 2O25. Status: ACT1VE."
+Output: {"credentialType":"LICENSE","issuerName":"California Board of Registered Nursing","issuedDate":"2023-10-15","expiryDate":"2025-10-14","fieldOfStudy":"Nursing","jurisdiction":"California, USA","fraudSignals":[],"confidence":0.72}
+
+Example 125 — OCR-corrupted Degree (heavy artifacts — still extract, low confidence):
+Input: "UN1VERS1TY 0F PENN5YLVAN1A. The Trustees of the Universi ty of Pennsylvan ia have conferred upon [NAME_REDACTED] the degree of Master of Bus iness Admin istration. Confer red on the Fifteenth Day of May, Tw0 Thousand Twenty-F0ur. Philade1phia, Pennsy1vania."
+Output: {"credentialType":"DEGREE","issuerName":"University of Pennsylvania","issuedDate":"2024-05-15","fieldOfStudy":"Business Administration","degreeLevel":"Master","jurisdiction":"Pennsylvania, USA","fraudSignals":[],"confidence":0.65}
+
+Example 126 — Letter of Good Standing (ATTESTATION):
+Input: "STATE BAR OF TEXAS. CERTIFICATE OF GOOD STANDING. This is to certify that [NAME_REDACTED], State Bar No. [REDACTED], is a member in good standing of the State Bar of Texas. This member was admitted to the State Bar of Texas on June 15, 2018 and is currently ACTIVE and eligible to practice law. Issued: March 1, 2026. Executive Director, State Bar of Texas."
+Output: {"credentialType":"ATTESTATION","issuerName":"State Bar of Texas","issuedDate":"2026-03-01","fieldOfStudy":"Law","jurisdiction":"Texas, USA","fraudSignals":[],"confidence":0.87}
+
+Example 127 — Municipal Court Order (LEGAL — local case law):
+Input: "CITY OF CHICAGO MUNICIPAL COURT. DEPARTMENT OF ADMINISTRATIVE HEARINGS. Case No. MUN-2025-45678. In the Matter of: [PARTY_REDACTED]. ADMINISTRATIVE ORDER. The Department finds that the Respondent is in violation of Municipal Code Section 4-60-022 (liquor license operation). ORDERED: The liquor license is suspended for 30 days effective April 1, 2026. Date: March 15, 2026. [JUDGE_REDACTED], Administrative Law Officer."
+Output: {"credentialType":"LEGAL","issuerName":"City of Chicago Municipal Court","issuedDate":"2026-03-15","fieldOfStudy":"Administrative Law","licenseNumber":"MUN-2025-45678","jurisdiction":"Illinois, USA","fraudSignals":[],"confidence":0.85}
+
+Example 128 — EDGAR 20-F Foreign Private Issuer:
+Input: "UNITED STATES SECURITIES AND EXCHANGE COMMISSION. Washington, D.C. 20549. FORM 20-F. ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934. For the fiscal year ended March 31, 2026. Commission File Number: 001-99887. [COMPANY_REDACTED] Limited. (Exact name of Registrant). Jurisdiction of Incorporation: Japan. IRS Employer Identification Number: N/A. Address: [ADDRESS_REDACTED], Tokyo, Japan."
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED] Limited","issuedDate":"2026-03-31","fieldOfStudy":"Annual Report - Foreign (20-F)","licenseNumber":"001-99887","jurisdiction":"United States","fraudSignals":[],"confidence":0.90}
+
+Example 129 — OCR-corrupted SEC Filing (scanned EDGAR document):
+Input: "UN1TED STATES SECUR1TIES AND EXCHANGE COMM1SS1ON. Wash1ngton, D.C. 2O549. F0RM 1O-K. ANNUAL REP0RT. For the fisca1 year ended Decernber 31, 2O25. Cornrnission File Nurnber: OO1-34567. [C0MPANY_REDACTED] Corp. State of 1ncorporation: De1aware."
+Output: {"credentialType":"SEC_FILING","issuerName":"[COMPANY_REDACTED] Corp.","issuedDate":"2025-12-31","fieldOfStudy":"Annual Report (10-K)","licenseNumber":"001-34567","jurisdiction":"United States","fraudSignals":[],"confidence":0.70}
+
+Example 130 — Notarized Character Reference (ATTESTATION):
+Input: "CHARACTER REFERENCE LETTER. Date: February 1, 2026. To the Honorable Judge of Immigration Court: I, [NAME_REDACTED], have known [NAME_REDACTED] for fifteen years as a neighbor, friend, and community member. [NAME_REDACTED] is a person of excellent moral character who has been an active volunteer at [ORGANIZATION_REDACTED]. This statement is made voluntarily and truthfully. Notarized by [NAME_REDACTED], Notary Public, State of New Jersey. Commission No. [REDACTED]."
+Output: {"credentialType":"ATTESTATION","issuerName":"[ORGANIZATION_REDACTED]","issuedDate":"2026-02-01","jurisdiction":"New Jersey, USA","fraudSignals":[],"confidence":0.80}`;
 
 /**
  * Get a stable hash of the current extraction system prompt.
@@ -727,7 +937,7 @@ export function buildExtractionPrompt(
   if (credentialType === 'CLE') {
     prompt += `This is a CLE (Continuing Legal Education) document. Extract CLE-specific fields: creditHours, creditType, barNumber format, activityNumber, providerName, approvedBy.\n`;
   } else if (credentialType === 'SEC_FILING') {
-    prompt += `This is an SEC filing document. Look for form type (10-K, 10-Q, 8-K, DEF 14A, S-1), commission file number, fiscal period, and filing date. The issuerName should be "United States Securities and Exchange Commission". Use the filing date or period end date as issuedDate.\n`;
+    prompt += `This is an SEC filing document (EDGAR). Look for form type (10-K, 10-Q, 8-K, DEF 14A, S-1, 13F, 20-F, Form 4), commission file number (as licenseNumber), fiscal period, and filing date. The issuerName should be the COMPANY/ENTITY that filed — NOT the SEC. Use the filing date or period end date as issuedDate.\n`;
   } else if (credentialType === 'REGULATION') {
     prompt += `This is a regulatory document. Look for the issuing agency (not the parent department), effective dates, CFR references, and jurisdiction. Federal Register notices, state regulatory orders, and compliance directives all qualify.\n`;
   } else if (credentialType === 'FINANCIAL') {

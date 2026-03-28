@@ -14,6 +14,7 @@ import {
 import { GOLDEN_DATASET_PHASE5 } from './golden-dataset-phase5.js';
 import { GOLDEN_DATASET_PHASE6 } from './golden-dataset-phase6.js';
 import { GOLDEN_DATASET_PHASE7 } from './golden-dataset-phase7.js';
+import { GOLDEN_DATASET_PHASE8 } from './golden-dataset-phase8.js';
 import { EXTRACTION_SYSTEM_PROMPT } from '../prompts/extraction.js';
 
 /** Credential types that Gemini classifies (user-uploaded documents) */
@@ -30,8 +31,8 @@ const ALL_CREDENTIAL_TYPES = [
 ] as const;
 
 describe('Golden Dataset Integrity', () => {
-  it('has at least 1150 total entries', () => {
-    expect(FULL_GOLDEN_DATASET.length).toBeGreaterThanOrEqual(1150);
+  it('has at least 1300 total entries', () => {
+    expect(FULL_GOLDEN_DATASET.length).toBeGreaterThanOrEqual(1300);
   });
 
   it('phase5 adds 200 entries', () => {
@@ -44,6 +45,10 @@ describe('Golden Dataset Integrity', () => {
 
   it('phase7 adds 150 entries (low-F1 credential types)', () => {
     expect(GOLDEN_DATASET_PHASE7.length).toBe(150);
+  });
+
+  it('phase8 adds 150 entries (bootstrap strategy alignment)', () => {
+    expect(GOLDEN_DATASET_PHASE8.length).toBe(150);
   });
 
   it('all entries have unique IDs', () => {
@@ -176,6 +181,6 @@ describe('Prompt Coverage', () => {
   it('extraction prompt has at least 110 few-shot examples', () => {
     const exampleMatches = EXTRACTION_SYSTEM_PROMPT.match(/Example \d+/g);
     expect(exampleMatches).toBeTruthy();
-    expect(exampleMatches!.length).toBeGreaterThanOrEqual(110);
+    expect(exampleMatches!.length).toBeGreaterThanOrEqual(130);
   });
 });

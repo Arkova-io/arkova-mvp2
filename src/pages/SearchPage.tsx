@@ -272,10 +272,10 @@ export function SearchPage() {
           <div className="flex justify-center mb-4">
             <ArkovaLogo size={64} />
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">
+          <h1 className="text-[28px] font-bold tracking-tight">
             {standalone ? 'Arkova Search' : SEARCH_LABELS.PAGE_TITLE}
           </h1>
-          <p className="text-[#bbc9cf] mt-2 max-w-md mx-auto font-mono text-xs uppercase tracking-widest">
+          <p className="text-[13px] text-white/45 mt-2 max-w-md mx-auto">
             {standalone
               ? 'Verify credentials with immutable proof of authenticity'
               : 'Search by issuer name, verification ID, or document fingerprint'}

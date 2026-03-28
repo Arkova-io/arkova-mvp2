@@ -255,10 +255,10 @@ export function DocumentsPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{DOCUMENTS_PAGE_LABELS.PAGE_TITLE}</h1>
-          <p className="text-muted-foreground mt-1">{DOCUMENTS_PAGE_LABELS.PAGE_SUBTITLE}</p>
+          <h1 className="text-[24px] font-bold tracking-tight">{DOCUMENTS_PAGE_LABELS.PAGE_TITLE}</h1>
+          <p className="text-[13px] text-muted-foreground mt-1">{DOCUMENTS_PAGE_LABELS.PAGE_SUBTITLE}</p>
         </div>
-        <Button onClick={() => setSecureDialogOpen(true)} className="shrink-0 self-start sm:self-auto">
+        <Button onClick={() => setSecureDialogOpen(true)} className="shrink-0 self-start sm:self-auto bg-[#00d4ff] text-[#0a0f14] hover:bg-[#00a3cc] font-medium text-[13px]">
           <Plus className="mr-2 h-4 w-4" />
           {DOCUMENTS_PAGE_LABELS.SECURE_DOCUMENT}
         </Button>
@@ -300,7 +300,7 @@ export function DocumentsPage() {
       </Tabs>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-white/[0.06] bg-white/[0.015]">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 gap-2">
@@ -446,7 +446,7 @@ function AllDocumentsList({
           key={item.id}
           role="button"
           tabIndex={0}
-          className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer"
+          className="flex items-center gap-4 py-4 px-2 hover:bg-[#00d4ff]/[0.02] transition-colors cursor-pointer"
           onClick={item.action}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.action(); } }}
         >
@@ -508,7 +508,7 @@ function RecordsList({
             key={record.id}
             role="button"
             tabIndex={0}
-            className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer"
+            className="flex items-center gap-4 py-4 px-2 hover:bg-[#00d4ff]/[0.02] transition-colors cursor-pointer"
             onClick={() => navigate(recordDetailPath(record.id))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(recordDetailPath(record.id)); } }}
           >
@@ -605,7 +605,7 @@ function CredentialsList({
             key={cred.recipientId}
             role="button"
             tabIndex={0}
-            className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer"
+            className="flex items-center gap-4 py-4 px-2 hover:bg-[#00d4ff]/[0.02] transition-colors cursor-pointer"
             onClick={() => navigate(verifyPath(cred.publicId))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(verifyPath(cred.publicId)); } }}
           >
@@ -673,7 +673,7 @@ function AttestationsList({
           key={att.id}
           role="button"
           tabIndex={0}
-          className="flex items-center gap-4 py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer"
+          className="flex items-center gap-4 py-4 px-2 hover:bg-[#00d4ff]/[0.02] transition-colors cursor-pointer"
           onClick={() => navigate(`/verify/attestation/${att.public_id}`)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/verify/attestation/${att.public_id}`); } }}
         >
