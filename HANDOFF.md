@@ -22,6 +22,21 @@
 
 **No active code blockers.** All remaining items are operational (infrastructure provisioning).
 
+### Recent Changes (2026-03-30, Session 19 — Nessie Model Comparison Eval)
+
+**Three fine-tuned Nessie models evaluated on local Apple Silicon (MLX 4-bit quantized).**
+
+| Change | Detail |
+|--------|--------|
+| Local eval infrastructure | MLX-based inference on M4 Mac (4-bit quantized Llama 3.1 8B). Download merged models from Together AI → quantize → serve via mlx_lm.server. Eval script at `services/worker/scripts/eval-model-comparison.ts`. |
+| Minimal extraction prompt | Created 600-token prompt (field defs only) vs production 25K-token prompt. Fine-tuned models don't need few-shot examples for basic extraction. |
+| v3 baseline eval | Macro F1: 56.4%, Weighted F1: 58.4%. Best types: PROFESSIONAL (85.6%), LEGAL (83.3%), INSURANCE (72.2%), DEGREE (70.8%). |
+| Reasoning v1 eval | Macro F1: 34.2%, **Weighted F1: 63.3%** (best). Best types: LEGAL (100%), INSURANCE (83.3%), DEGREE (79.5%), OTHER (78.3%). Lower macro F1 due to 0% RESUME. |
+| DPO v1 eval | Macro F1: 30.7%, Weighted F1: 57.8%. Best confidence calibration (r=0.337). Best types: INSURANCE (83.3%), LEGAL (83.3%), DEGREE (76.0%). |
+| All models overconfident | 85-90% reported confidence vs 34-46% actual accuracy. Training data needs confidence recalibration. |
+| Comparison report | Full analysis at `services/worker/docs/eval/model-comparison-2026-03-30.md` |
+| HuggingFace repos created | `carsonarkova/nessie-v3-llama-3.1-8b`, `carsonarkova/nessie-reasoning-v1-llama-3.1-8b`, `carsonarkova/nessie-dpo-v1-llama-3.1-8b` (private, empty — need weight upload) |
+
 ### Recent Changes (2026-03-28, Session 18 — AI Extraction Accuracy + Golden Dataset Phase 8)
 
 **Major AI extraction improvements targeting Bootstrap Strategy priorities.**
